@@ -1,0 +1,16 @@
+# Conda environment
+name: vhr-cloudmask
+
+channels:
+  - conda-forge
+  - defaults
+  - anaconda
+
+dependencies:
+  - cudatoolkit=10.2
+  - cudnn
+  - pip:
+    - numpy
+    - rasterio
+    - xarray
+    - dask
