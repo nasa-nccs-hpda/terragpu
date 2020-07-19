@@ -1,3 +1,3 @@
 # vhr-cloudmask
 
-Deep learning models for cloud masking of very high resolution images.
+Deep learning and Random Forest models for cloud masking of very high resolution images.
