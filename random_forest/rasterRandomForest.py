@@ -14,36 +14,32 @@ Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
 #--------------------------------------------------------------------------------
 # Import System Libraries
 #--------------------------------------------------------------------------------
+import sys, os, glob, argparse  # system modifications
+from time import time           # tracking time
+from datetime import datetime   # datetime library
+import numpy as np              # for arrays modifications
+import pandas as pd             # csv data frame modifications
+import skimage.io as io         # managing images
+import matplotlib.pyplot as plt # visualizations
 
+from osgeo import gdal, gdal_array                   # gdal for raster changes
+from sklearn.externals import joblib                 # joblib for parallel jobs
+from sklearn.model_selection import train_test_split # train/test data split
 
+from sklearn.ensemble import RandomForestClassifier # random forest classifier
+from hummingbird.ml import convert                  # support GPU training
 
-
-
-# Import GDAL, NumPy, and matplotlib
-import sys, os
-import glob
-from osgeo import gdal, gdal_array
-import numpy as np
-import matplotlib.pyplot as plt
-##%matplotlib inline # IPython
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.externals import joblib
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import skimage.io as io
+# maybe remove later
 from timeit import default_timer as timer
-import datetime
-import pandas
-import argparse
+
+# Fix seed reproducibility.
+seed = 42
+np.random.seed = seed
 
 # Tell GDAL to throw Python exceptions, and register all drivers
-gdal.UseExceptions()
-gdal.AllRegister()
-
-##import gdal
-##from osgeo.gdal import *
-gdal.UseExceptions() # enable exceptions to report errors
-drvtif = gdal.GetDriverByName("GTiff")
+gdal.UseExceptions()                    # enable exceptions to report errors
+gdal.AllRegister()                      # GDAL register all drivers
+drvtif = gdal.GetDriverByName("GTiff")  # load GTiff driver to open rasters
 
 n_trees = 20
 max_feat = 'log2'
