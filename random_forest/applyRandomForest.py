@@ -1,7 +1,21 @@
-# created 1/29/2016
+"""
+Created: 01/29/2016, Refactored: 07/20/2020
 
-# purpose: To build a Random Forest model with an input csv and then save/apply model to a raster
-# Inputs: input CSV, Raster Stack
+Purpose: Build, save and apply random forest model for the pixel classification 
+         of raster data. Usage requirements are referenced in README.
+         
+Data Source: This script has been tested with very high-resolution NGA data.
+             Additional testing will be required to validate the applicability 
+             of this model for other datasets.
+
+Original Author: Margaret Wooten, SCIENTIFIC PROGRAMMER/ANALYST, Code 610
+Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
+"""
+#--------------------------------------------------------------------------------
+# Import System Libraries
+#--------------------------------------------------------------------------------
+
+
 
 
 
