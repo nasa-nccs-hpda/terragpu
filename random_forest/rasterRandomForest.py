@@ -373,28 +373,31 @@ def create_directories(main_dir):
 
 def getparser():
     parser = argparse.ArgumentParser()
-    parser._action_groups.pop()
-    requiredargs = parser.add_argument_group("Required Arguments")
-    optionalargs = parser.add_argument_group("Optional Arguments")
-    requiredargs.add_argument("-dir", "--directory", type=str, required=True, help="specify the processing directory")
-    optionalargs.add_argument("-t", "--train",       type=str, default=False, help="Train Model Based on Specified CSV Files")
-    optionalargs.add_argument("-a", "--apply",       type=str, default=False, help="Apply Specified Model to VHR Stacks")
+
+    # General
+    parser.add_argument("-w", "--work-directory", type=str, required=True, dest='workdir',
+                        default="", help="Specify working directory")
+    parser.add_argument("-m", "--model", type=str, required=True, dest='model',
+                        default="", help="Specify model filename that will be saved or evaluated")
+    parser.add_argument('-b', '--bands', nargs='*', dest='bands', default=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+                        help='Specify number of bands.', required=True, type=int)
+    parser.add_argument('-bn', '--band-names', nargs='*', dest='band_names', help='Specify number of bands.', 
+                        required=True, type=int, ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge', 
+                        'Near-IR1', 'Near-IR2', 'DVI', 'FDI', 'SI'])
+    # Train
+    parser.add_argument("-c", "--csv", type=str, required=False, dest='csvdata',
+                        default="", help="Specify CSV file to train the model.")
+    parser.add_argument("-t", "--n-trees", type=int, required=False, dest='n_trees',
+                        default=20, help="Specify number of trees for random forest model.")
+    parser.add_argument("-f", "--max-features", type=str, required=False, dest='max_feat',
+                        default='log2', help="Specify random forest max features.")
+    # Evaluate
+    parser.add_argument("-c", "--csv", type=str, required=False, dest='csvdata',
+                        default="", help="CSV file to train the model.")
+                               
 
     return parser.parse_args()
     
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-x', '--x-data', nargs='*', dest='x',
-                        help='filenames to load x data from', default=['Data.tif'], type=str)
-    parser.add_argument('-y', '--y-data', nargs='*', dest='y',
-                        help='filename to load y data from', default=['Train.tif'], type=str)
-    parser.add_argument('-np', '--n-patches', action='store', dest='npatch',
-                        help='number of patches to crop image', default='16000', type=int)
-    parser.add_argument('-ts', '--tile-size', action='store', dest='tsize',
-                        help='tile size for each segment', default='256', type=int)
-    parser.add_argument('-nc', '--n-classes', action='store', dest='nclass',
-                        help='number of classes present', default='19', type=int)
-    """
 
 
 #############################################################################
@@ -403,11 +406,36 @@ def getparser():
 def main():
 
     start_time = time() # record start time
-
+    args = getparser()  # initialize arguments parser
     
-
+    print ('Initializing script with the following parameters')
+    print(f'Working Directory: {args.workdir}')
+    print(f'Working Directory: {args.workdir}')
+    
+    """
+    parser.add_argument("-w", "--work-directory", type=str, required=True, dest='workdir',
+                        default="", help="Specify working directory")
+    parser.add_argument("-m", "--model", type=str, required=True, dest='model',
+                        default="", help="Specify model filename that will be saved or evaluated")
+    parser.add_argument('-b', '--bands', nargs='*', dest='bands', default=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+                        help='Specify number of bands.', required=True, type=int)
+    parser.add_argument('-bn', '--band-names', nargs='*', dest='band_names', help='Specify number of bands.', 
+                        required=True, type=int, ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge', 
+                        'Near-IR1', 'Near-IR2', 'DVI', 'FDI', 'SI'])
+    # Train
+    parser.add_argument("-c", "--csv", type=str, required=False, dest='csvdata',
+                        default="", help="Specify CSV file to train the model.")
+    parser.add_argument("-t", "--n-trees", type=int, required=False, dest='n_trees',
+                        default=20, help="Specify number of trees for random forest model.")
+    parser.add_argument("-f", "--max-features", type=str, required=False, dest='max_feat',
+                        default='log2', help="Specify random forest max features.")
+    # Evaluate
+    parser.add_argument("-c", "--csv", type=str, required=False, dest='csvdata',
+                        default="", help="CSV file to train the model.")
+    
+    """
     print("Elapsed Time: ", (time() - start_time) / 60.0) # output program run time
-
+    
     """
     
     args = arg_parser_train()
