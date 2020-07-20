@@ -51,14 +51,6 @@ if True:
 #############################################################################
 
 
-def find_elapsed_time(start, end): # example time = round(find_elapsed_time(start, end),3) where start and end = timer()
-    elapsed_min = (end-start)/60
-    return float(elapsed_min)
-
-
-#############################################################################
-
-
 """Function to read data stack into img object"""
 def stack_to_obj(VHRstack):
 
@@ -385,10 +377,10 @@ def getparser():
     requiredargs = parser.add_argument_group("Required Arguments")
     optionalargs = parser.add_argument_group("Optional Arguments")
     requiredargs.add_argument("-dir", "--directory", type=str, required=True, help="specify the processing directory")
-    optionalargs.add_argument("-t", "--train", type=str, default=False, help="Train Model Based on Specified CSV Files")
-    optionalargs.add_argument("-a", "--apply", type=str, default=False, help="Apply Specified Model to VHR Stacks")
+    optionalargs.add_argument("-t", "--train",       type=str, default=False, help="Train Model Based on Specified CSV Files")
+    optionalargs.add_argument("-a", "--apply",       type=str, default=False, help="Apply Specified Model to VHR Stacks")
 
-    return parser
+    return parser.parse_args()
     
     """
     parser = argparse.ArgumentParser()
@@ -409,7 +401,11 @@ def getparser():
 
 
 def main():
+
     start_time = time() # record start time
+
+    
+
     print("Elapsed Time: ", (time() - start_time) / 60.0) # output program run time
 
     """
@@ -477,9 +473,6 @@ def main():
     
     #run_diagnostics(model_save, X_test, y_test)
 
-    elapsed = round(find_elapsed_time(start, timer()),3)
-
-    print("\n\nElapsed time = {}".format(elapsed))
     """
 
 

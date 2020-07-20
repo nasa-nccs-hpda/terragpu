@@ -1,0 +1,10 @@
+numpy
+pandas
+matplotlib
+scikit-image
+scikit-learn
+rasterio
+xarray
+dask
+pygdal==3.0.4.6
+hummingbird-ml

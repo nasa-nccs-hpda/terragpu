@@ -1,4 +1,6 @@
-# Conda environment
+# vhr-cloudmask conda environment
+# Modify gdal version based on the systems installed library.
+# Author: Jordan A. Caraballo-Vega, Science Data Processing Branch, 587
 name: vhr-cloudmask
 
 channels:
@@ -11,6 +13,12 @@ dependencies:
   - cudnn
   - pip:
     - numpy
+    - pandas
+    - matplotlib
+    - scikit-image
+    - scikit-learn
     - rasterio
     - xarray
     - dask
+    - pygdal==3.0.4.6
+    - hummingbird-ml
