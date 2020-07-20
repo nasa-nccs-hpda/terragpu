@@ -393,13 +393,36 @@ def getparser():
     optionalargs.add_argument("-a", "--apply", type=str, default=False, help="Apply Specified Model to VHR Stacks")
 
     return parser
+    
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-x', '--x-data', nargs='*', dest='x',
+                        help='filenames to load x data from', default=['Data.tif'], type=str)
+    parser.add_argument('-y', '--y-data', nargs='*', dest='y',
+                        help='filename to load y data from', default=['Train.tif'], type=str)
+    parser.add_argument('-np', '--n-patches', action='store', dest='npatch',
+                        help='number of patches to crop image', default='16000', type=int)
+    parser.add_argument('-ts', '--tile-size', action='store', dest='tsize',
+                        help='tile size for each segment', default='256', type=int)
+    parser.add_argument('-nc', '--n-classes', action='store', dest='nclass',
+                        help='number of classes present', default='19', type=int)
+    """
 
 
 #############################################################################
 
 
 def main():
-    start = timer()
+    start_time = time() # record start time
+    print("Elapsed Time: ", (time() - start_time) / 60.0) # output program run time
+
+    """
+    
+    args = arg_parser_train()
+    print('Initializing model with parameters:')
+    print('# GPUs: {}'              .format(args.gpu_devs))
+    print('Data filenames: {}'      .format(args.x))
+    print('Labels filenames: {}'    .format(args.y))
 
     # Get Arguments
     parser = getparser()
@@ -427,7 +450,7 @@ def main():
         catalogid = '0002'
         print('TRAINING MODEL FOR IMAGE: {}\n\n\n'.format(catalogid))
         
-        """Before calling the model train or apply, read and configure the inputs into test and train """
+        #Before calling the model train or apply, read and configure the inputs into test and train 
         print('Input Text: ', train_csv)
 
         (X_train, X_test, y_train, y_test) = get_test_training_sets(train_csv)
@@ -461,6 +484,14 @@ def main():
     elapsed = round(find_elapsed_time(start, timer()),3)
 
     print("\n\nElapsed time = {}".format(elapsed))
+    """
 
 
-main()
+# -----------------------------------------------------------------------------------------------------------------
+# Main
+# -----------------------------------------------------------------------------------------------------------------
+
+
+if __name__ == "__main__":
+
+    main()
