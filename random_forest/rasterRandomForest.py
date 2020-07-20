@@ -15,6 +15,7 @@ Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
 # Import System Libraries
 #--------------------------------------------------------------------------------
 import sys, os, glob, argparse  # system modifications
+import joblib                   # joblib for parallel jobs
 from time import time           # tracking time
 from datetime import datetime   # datetime library
 import numpy as np              # for arrays modifications
@@ -23,14 +24,9 @@ import skimage.io as io         # managing images
 import matplotlib.pyplot as plt # visualizations
 
 from osgeo import gdal, gdal_array                   # gdal for raster changes
-from sklearn.externals import joblib                 # joblib for parallel jobs
 from sklearn.model_selection import train_test_split # train/test data split
-
-from sklearn.ensemble import RandomForestClassifier # random forest classifier
-from hummingbird.ml import convert                  # support GPU training
-
-# maybe remove later
-from timeit import default_timer as timer
+from sklearn.ensemble import RandomForestClassifier  # random forest classifier
+from hummingbird.ml import convert                   # support GPU training
 
 # Fix seed reproducibility.
 seed = 42
