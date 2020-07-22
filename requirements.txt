@@ -2,9 +2,11 @@ numpy
 pandas
 matplotlib
 scikit-image
-scikit-learn
+scikit-learn==0.22.1
 rasterio
 xarray
 dask
-pygdal==3.0.4.6
+opencv-python
+#pygdal==3.0.4.6
+#pygdal==2.2.2.6
 hummingbird-ml

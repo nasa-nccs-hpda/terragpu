@@ -382,7 +382,7 @@ def getparser():
     parser.add_argument('-b', '--bands', nargs='*', dest='bands', default=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
                         help='Specify number of bands.', required=True, type=int)
     parser.add_argument('-bn', '--band-names', nargs='*', dest='band_names', help='Specify number of bands.', 
-                        required=True, type=int, ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge', 
+                        required=True, type=int, default=['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge', 
                         'Near-IR1', 'Near-IR2', 'DVI', 'FDI', 'SI'])
     # Train
     parser.add_argument("-c", "--csv", type=str, required=False, dest='csvdata',
@@ -392,9 +392,6 @@ def getparser():
     parser.add_argument("-f", "--max-features", type=str, required=False, dest='max_feat',
                         default='log2', help="Specify random forest max features.")
     # Evaluate
-    parser.add_argument("-c", "--csv", type=str, required=False, dest='csvdata',
-                        default="", help="CSV file to train the model.")
-                               
 
     return parser.parse_args()
     

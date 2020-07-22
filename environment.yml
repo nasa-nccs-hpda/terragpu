@@ -20,5 +20,7 @@ dependencies:
     - rasterio
     - xarray
     - dask
-    - pygdal==3.0.4.6
+    - opencv-python
+    #- pygdal==3.0.4.6
+    - pygdal=2.2.2
     - hummingbird-ml
