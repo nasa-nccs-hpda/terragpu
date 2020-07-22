@@ -35,7 +35,13 @@ plt.imsave('test_blurred_bw.png', blurred, cmap=cc)
 cnts = cv2.findContours(blurred.copy(), cv2.RETR_EXTERNAL,
     cv2.CHAIN_APPROX_SIMPLE)
 cnts = imutils.grab_contours(cnts)
+#(cnts, _) = cv2.findContours(blurred.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 print (len(cnts))
+
+#cv2.drawContours(blurred, [c[0]], -1, (0, 255, 0), cv2.FILLED)
+#cv2.drawContours(blurred, cnts, (240, 0, 159), 3)
+#cv2.imwrite("Image.png", blurred)
+
 
 # loop over the contours
 for c in cnts[:40]:
@@ -48,7 +54,7 @@ for c in cnts[:40]:
     #cY = int(M["m01"] / M["m00"])
     # draw the contour and center of the shape on the image
     print (np.unique(blurred))
-    cv2.drawContours(blurred, [c], -1, (0, 255, 0), cv2.FILLED)#2)
+    cv2.drawContours(blurred, [c], -1, (240, 0, 159), 3)#cv2.FILLED)#2)
     print (np.unique(blurred))
 
     #cv2.circle(raster, (cX, cY), 7, (255, 255, 255), -1)
@@ -58,3 +64,4 @@ for c in cnts[:40]:
     #cv2.imshow("Image", image)
     #cv2.waitKey(0)
     cv2.imwrite("Image.png", blurred)
+
