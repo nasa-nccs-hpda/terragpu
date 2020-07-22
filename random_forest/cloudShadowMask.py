@@ -1,5 +1,5 @@
 # Cloud mask test
-# identify polygon
+# identify polygon: https://www.pyimagesearch.com/2016/02/01/opencv-center-of-contour/
 import sys, os            # system modifications
 import numpy as np        # for arrays modifications
 from time import time     # tracking time
@@ -19,7 +19,7 @@ print (np.unique(raster), type(raster))
 #gray = cv2.cvtColor(raster, cv2.COLOR_BGR2GRAY)
 gray = raster
 blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
+#thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
 
 import matplotlib.pyplot as plt 
 import matplotlib.pyplot as plt
@@ -29,7 +29,7 @@ import imutils
 cc = pltc.ListedColormap(['black', 'white'])
 
 plt.imsave('test_blurred_bw.png', blurred, cmap=cc)
-plt.imsave('test_thresh_bw.png', thresh, cmap=cc)
+#plt.imsave('test_thresh_bw.png', thresh, cmap=cc)
 
 # find contours in the thresholded image
 cnts = cv2.findContours(blurred.copy(), cv2.RETR_EXTERNAL,
@@ -40,13 +40,16 @@ print (len(cnts))
 # loop over the contours
 for c in cnts[:40]:
     # compute the center of the contour
+    print (c)
     M = cv2.moments(c)
-    print ("Center of contour: ", M)
+    #print ("Center of contour: ", M)
 
     #cX = int(M["m10"] / M["m00"])
     #cY = int(M["m01"] / M["m00"])
     # draw the contour and center of the shape on the image
-    cv2.drawContours(blurred, [c], -1, (0, 255, 0), 2)
+    print (np.unique(blurred))
+    cv2.drawContours(blurred, [c], -1, (0, 255, 0), cv2.FILLED)#2)
+    print (np.unique(blurred))
 
     #cv2.circle(raster, (cX, cY), 7, (255, 255, 255), -1)
     #cv2.putText(raster, "center", (cX - 20, cY - 20),
