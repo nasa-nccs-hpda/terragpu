@@ -18,7 +18,14 @@ print (np.unique(raster))
 #gray = cv2.cvtColor(raster, cv2.COLOR_BGR2GRAY)
 gray = raster
 blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
+#thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
 
 import matplotlib.pyplot as plt 
-plt.imsave('test.png', thresh)
+import matplotlib.pyplot as plt
+import matplotlib.colors as pltc
+
+cc = pltc.ListedColormap(['black', 'white'])
+colormap = plt.imshow(blurred)
+colormap.set_cmap(cc)
+
+plt.imsave('test_blurred_bw.png', blurred, cmap=cc)
