@@ -41,14 +41,17 @@ print (len(cnts))
 for c in cnts[:40]:
     # compute the center of the contour
     M = cv2.moments(c)
+    print ("Center of contour: ", M)
+
     #cX = int(M["m10"] / M["m00"])
     #cY = int(M["m01"] / M["m00"])
     # draw the contour and center of the shape on the image
-    cv2.drawContours(raster, [c], -1, (0, 255, 0), 2)
+    cv2.drawContours(blurred, [c], -1, (0, 255, 0), 2)
+
     #cv2.circle(raster, (cX, cY), 7, (255, 255, 255), -1)
     #cv2.putText(raster, "center", (cX - 20, cY - 20),
     #    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
     # show the image
     #cv2.imshow("Image", image)
     #cv2.waitKey(0)
-cv2.imwrite("Image.png", raster)
+    cv2.imwrite("Image.png", blurred)
