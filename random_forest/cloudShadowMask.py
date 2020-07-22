@@ -44,7 +44,7 @@ print (len(cnts))
 
 
 # loop over the contours
-for c in cnts[:40]:
+for c in cnts[:20]:
     # compute the center of the contour
     print (c)
     M = cv2.moments(c)
@@ -53,9 +53,9 @@ for c in cnts[:40]:
     #cX = int(M["m10"] / M["m00"])
     #cY = int(M["m01"] / M["m00"])
     # draw the contour and center of the shape on the image
-    print (np.unique(blurred))
-    cv2.drawContours(blurred, [c], -1, (240, 0, 159), 3)#cv2.FILLED)#2)
-    print (np.unique(blurred))
+    #print (np.unique(blurred))
+    cv2.drawContours(blurred, [c], -1, (255, 0, 0), 3)#cv2.FILLED)#2)
+    #print (np.unique(blurred))
 
     #cv2.circle(raster, (cX, cY), 7, (255, 255, 255), -1)
     #cv2.putText(raster, "center", (cX - 20, cY - 20),
@@ -63,5 +63,5 @@ for c in cnts[:40]:
     # show the image
     #cv2.imshow("Image", image)
     #cv2.waitKey(0)
-    cv2.imwrite("Image.png", blurred)
+    cv2.imwrite("ImageRed.png", blurred)
 
