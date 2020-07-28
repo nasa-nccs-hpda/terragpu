@@ -22,7 +22,7 @@ from osgeo.osr import SpatialReference
 from osgeo import gdal
 
 from EvhrEngine.management.GdalFile import GdalFile
-from EvhrEngine.management.SystemCommand import SystemCommand
+#from EvhrEngine.management.SystemCommand import SystemCommand
 
 #-------------------------------------------------------------------------------
 # class DgFile
@@ -203,10 +203,11 @@ class DgFile(GdalFile):
                   ' ' + self.fileName                   + \
                   ' ' + tempBandFile
 
-            sCmd = SystemCommand(cmd, self.fileName, self.logger)
-
-            if sCmd.returnCode:
-                tempBandFile = None
+            # removed this to about using the SystemCommand Class.
+            # we migth be able to do this pythotonic way.
+            #sCmd = SystemCommand(cmd, self.fileName, self.logger)
+            #if sCmd.returnCode:
+            #    tempBandFile = None
         
         # Copy scene .xml to accompany the extracted .tif (needed for dg_mosaic) 
         shutil.copy(self.xmlFileName, tempBandFile.replace('.tif', '.xml'))        
