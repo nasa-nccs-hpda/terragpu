@@ -11,3 +11,4 @@ imutils
 #pygdal==3.0.4.6
 #pygdal==2.2.2.6
 hummingbird-ml
+joblib

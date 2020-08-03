@@ -63,5 +63,10 @@ for c in cnts[:20]:
     # show the image
     #cv2.imshow("Image", image)
     #cv2.waitKey(0)
-    cv2.imwrite("ImageRed.png", blurred)
+
+    # Write image to file if running somewhere else
+    #cv2.imwrite("ImageRed.png", blurred)
+
+    cv2.imshow("Image", blurred)
+
 
