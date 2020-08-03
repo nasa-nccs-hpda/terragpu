@@ -1,0 +1,16 @@
+Command used:  ['rasterRF.py', '-w', 'results', '-m', 'newmodel', '-b', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '-bn', 'Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red', 'Edge', 'Near-IR1', 'Near-IR2', 'DVI', 'FDI', 'SI', '-c', 'results/TrainingData/cloud_training.csv']
+Input train CSV: results/TrainingData/cloud_training.csv
+y_train lenght: 700000 and y_test lenght: 300000
+Building model with n_trees=20 and max_feat=log2...
+The training data include 2 classes.
+Our X matrix is sized: (700000, 11)
+Our y array is sized:  (700000,)
+Initializing model...
+Training model...
+/home/jacaraba/.conda/envs/vhr-cloudmask/lib/python3.8/site-packages/sklearn/ensemble/_forest.py:523: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable oob estimates.
+  warn("Some inputs do not have OOB scores. "
+/home/jacaraba/.conda/envs/vhr-cloudmask/lib/python3.8/site-packages/sklearn/ensemble/_forest.py:527: RuntimeWarning: invalid value encountered in true_divide
+  decision = (predictions[k] /
+Score: 0.99991
+Model has been saved as results/Models/model_20_log2.pkl
+Elapsed Time:  0.4768374641736349

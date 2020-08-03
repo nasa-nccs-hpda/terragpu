@@ -15,36 +15,60 @@ Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
 # Import System Libraries
 #--------------------------------------------------------------------------------
 import sys, os, glob, argparse  # system modifications
-#import joblib                   # joblib for parallel jobs
+import joblib                   # joblib for parallel jobs
 from time import time           # tracking time
-from datetime import datetime
+from datetime import datetime   # tracking date
 import numpy as np              # for arrays modifications
 import pandas as pd             # csv data frame modifications
 import xarray as xr             # read rasters
-#import skimage.io as io         # managing images
 
-#from sklearn.model_selection import train_test_split # train/test data split
-#from sklearn.ensemble import RandomForestClassifier  # random forest classifier
-#from hummingbird.ml import convert                   # support GPU training
+from sklearn.model_selection import train_test_split # train/test data split
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from hummingbird.ml import convert # support GPU inference
 
 # Fix seed reproducibility.
 seed = 21
 np.random.seed = seed
 
 
+def train_model(x, y, modelDir, n_trees, max_feat):
+
+    labels = np.unique(y) # now it's the unique values in y array from text file
+    print(f'The training data include {labels.size} classes.')
+    print(f'Our X matrix is sized: {x.shape}') # shape of x data
+    print(f'Our y array is sized:  {y.shape}') # shape of y data
+
+    print ('Initializing model...')
+    if '.' not in labels[0]: # if labels are integers, check first value from y (come as string)
+        rf = RandomForestClassifier(n_estimators=n_trees, max_features=max_feat, oob_score=True) 
+    else: # if labels are floats, use random forest regressor
+        rf = RandomForestRegressor(n_estimators=n_trees, max_features=max_feat, oob_score=True)
+
+    print("Training model...")
+    rf.fit(x, y) # fit model to training data
+    print('Score:', rf.oob_score_)
+
+    try: # export model to file
+        model_save = os.path.join(modelDir, f'model_{n_trees}_{max_feat}.pkl')
+        joblib.dump(rf, model_save)
+    except Exception as e:
+        print(f'Error: {e}')
+
+    return model_save # Return output model for application and validation
+
+
 def get_test_training_sets(traincsv, testsize=0.30):
 
-    df = pandas.read_csv(traincsv, header=None, sep=',') # generate pd dataframe
+    df = pd.read_csv(traincsv, header=None, sep=',') # generate pd dataframe
     data = df.values # get values, TODO: maybe remove this line and add it on top
     x = data.T[0:-1].T.astype(str)
     y = data.T[-1].astype(str)
 
-    # Now we have X and y, but this is not split into validation and training. Do that here:
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=testsize, random_state=seed)
-    return x_train, x_test, y_train, y_test
+    # return x_train, x_test, y_train, y_test
+    return train_test_split(x, y, test_size=testsize, random_state=seed)
 
 
-def create_logfile(logdir, args):
+def create_logfile(args, logdir='results'):
     logfile = os.path.join(logdir, '{}_log_{}trees_{}.txt'.format(
         datetime.now().strftime("%Y%m%d-%H%M%S"), args.n_trees, args.max_feat))
     print('See ', logfile)
@@ -55,7 +79,7 @@ def create_logfile(logdir, args):
     return logfile
 
 
-def create_directories(work_dir):
+def create_directories(work_dir='results'):
     """
     :param work_dir: working directory, comes from argparser option -w.
     :return: dictionary with keys and real paths to working subdirs.
@@ -91,8 +115,10 @@ def getparser():
     parser.add_argument("-f", "--max-features", type=str, required=False, dest='max_feat',
                         default='log2', help="Specify random forest max features.")
     parser.add_argument("-ts", "--test-size", type=float, required=False, dest='testsize',
-                        default='log2', help="Size of test data (e.g: .30)")
+                        default='0.30', help="Size of test data (e.g: .30)")
     # Evaluate
+    parser.add_argument("-i", "--rasters", type=str, nargs='*', required=False, dest='rasters',
+                        default=['*.tif'], help="Image or pattern to evaluate images.")
 
     return parser.parse_args()
 
@@ -114,24 +140,27 @@ def main():
     dir_dict = create_directories(args.workdir)
 
     # 2. set log file for script - enable after developing
-    #logfile = create_logfile(dir_dict['Logs'], args)
+    logfile = create_logfile(args, logdir=dir_dict['Logs'])
     print ("Command used: ", sys.argv) # saving command into log file
 
-    # 3. if does not exist, proceed and train
+    # 3a. if does not exist, proceed and train
     if os.path.isfile(args.traincsv):
 
-        # 3a. read CSV training data and split into train and test sets
+        # 3a1. read CSV training data and split into train and test sets
         print(f'Input train CSV: {args.traincsv}')
-        (X_train, X_test, y_train, y_test) = get_test_training_sets(train_csv, args.testsize)
-        print('Y_TRAIN LENGTH: {}\nY_TEST LENGTH: {}'.format(len(y_train), len(y_test)))
+        x_train, x_test, y_train, y_test = get_test_training_sets(args.traincsv, args.testsize)
+        print(f'y_train lenght: {len(y_train)} and y_test lenght: {len(y_test)}')
 
-        # TRAIN MODEL:
-        #print("Building model with n_trees={} and max_feat={}...".format(n_trees, max_feat))
-        #model_save = train_model(X_train, y_train, dir_dict['Models'], n_trees, max_feat, catalogid)
-        #print(model_save)
+        # 3a2. train and save the model
+        print(f'Building model with n_trees={args.n_trees} and max_feat={args.max_feat}...')
+        model_save = train_model(x_train, y_train, dir_dict['Models'], args.n_trees, args.max_feat)
+        print(f'Model has been saved as {model_save}')
 
+    # 3b. evaluate images from model
     elif os.path.isfile(args.model):
-        print ("Performing inference.")
+        print ("Performing inference to given images.")
+        apply_model(args.rasters, dir_dict['Classified'], args.model)
+        ### TBD: add apply model, gpu support, parallelization, xarray rasterio
 
     else:
         sys.exit("ERROR: You should specify a train csv or a model to load. Refer to python " +
