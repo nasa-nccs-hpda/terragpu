@@ -17,6 +17,7 @@ Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
 from datetime import datetime  # tracking date
 from time import time          # tracking time
 import sys, os, argparse       # system libraries
+from tqdm import tqdm          # progress bar
 import joblib                  # joblib for parallel jobs
 import numpy as np             # for arrays modifications
 import pandas as pd            # csv data frame modifications
@@ -114,7 +115,7 @@ def apply_model(rasters, model, ws=[5120, 5120], bands=[1, 2, 3, 4, 5, 6, 7, 8],
         final_prediction = np.zeros(rast_shape)  # crop out the window for prediction
         print("Final prediction initial shape: ", final_prediction.shape)
 
-        for sx in range(0, rast_shape[0], wsx):  # iterate over x-axis
+        for sx in tqdm(range(0, rast_shape[0], wsx)):  # iterate over x-axis
             for sy in range(0, rast_shape[1], wsy):  # iterate over y-axis
                 x0, x1, y0, y1 = sx, sx+wsx, sy, sy+wsy  # assign window indices
                 if x1 > rast_shape[0]:  # if selected x-indices exceeds boundary
@@ -259,7 +260,7 @@ def main():
     dir_dict = create_directories(args.workdir)
 
     # 2. set log file for script - you may disable this when developing
-    logfile = create_logfile(args, logdir=dir_dict['Logs'])
+    #logfile = create_logfile(args, logdir=dir_dict['Logs'])
     print("Command used: ", sys.argv)  # saving command into log file
 
     # 3a. if training csv does not exist, proceed and train
