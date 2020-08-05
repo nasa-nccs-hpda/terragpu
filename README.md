@@ -39,6 +39,31 @@ Simple prediction command.
 python rasterRF.py -w results -m results/Models/model_20_log2.pkl -b 1 2 3 4 5 6 7 8 9 10 11 -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/RandomForests/VHR-Stacks/WV02_20140716_M1BS_103001003328DB00-toa_pansharpen.tif
 ```
 
+### Performance Statistics
+rasterRF.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
+on our current use cases. GPU system running one V100 GPU, while CPU system running 24 cores. Memory consumption will 
+depend greatly on the window size. 
+
+#### Memory consumption
+```
+Size 
+1. Without using smaller window sizes: ~200GB memory consumption
+window size of 1000x1000 for image of size 21GB
+    CPU - About 45 minutes to finish.
+    GPU - About 11 minutes to finish.
+window 5000x5000
+    GPU - About 8 minutes to finish.
+```
+
+#### Inference Speed
+```
+window size of 1000x1000 for image of size 21GB
+    CPU - About 45 minutes to finish.
+    GPU - About 11 minutes to finish.
+window 5000x5000
+    GPU - About 8 minutes to finish.
+```
+
 ### Authors
 
 * Margaret Wooten, margaret.wooten@nasa.gov
