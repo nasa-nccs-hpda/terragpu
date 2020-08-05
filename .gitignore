@@ -1,2 +1,5 @@
 *.tif
 *.pkl
+Results/
+Models/
+Logs/

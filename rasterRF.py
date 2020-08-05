@@ -47,7 +47,7 @@ def add_SI(data):
     # Shadow Index (SI) = (1-Blue)*(1-Green)*(1-Red), for 6 bands images, (SI) = (1-B2)*(1-B3)*(1-B5)
     return ((1 - data[1,:,:]) * (1 - data[2,:,:]) * (1 - data[4,:,:])).expand_dims(dim="band", axis=0)
 
-def add_bands(rastarr, bands):
+def add_bands(rastarr):
     nbands = rastarr.shape[0]
     for band in [add_DVI(rastarr), add_FDI(rastarr), add_SI(rastarr)]:
         nbands = nbands + 1
@@ -71,71 +71,44 @@ def to_raster(rast, prediction, output='rfmask.tif'):
     with rio.open(output, 'w', **out_meta) as dst:
         dst.write(prediction, 1)
 
+def apply_model(rasters, model, ws=[5120, 5120], bands=[1,2,3,4,5,6,7,8], resultsdir='results/Results'): 
 
-def apply_model(rasters, model, bands=[1,2,3,4,5,6,7,8], resultsdir='results/Results'): 
-   
     # open rasters and get both data and coordinates
-    for rast in rasters:
+    for rast in rasters: # iterate over each raster
         rastarr = xr.open_rasterio(rast, chunks={'band': 1, 'x': 2048, 'y': 2048}) # open raster into xarray
         if rastarr.shape[0] != len(bands): # add additional bands if required, preferibly not
-            rastarr = add_bands(rastarr, bands) # add bands here
-        print (rastarr)
+            rastarr = add_bands(rastarr) # add bands here
+        print (rastarr) # print raster information
         
-        # getting the shape of the wider scene
-        rast_shape = rastarr[0,:,:].shape
+        rast_shape = rastarr[0,:,:].shape # getting the shape of the wider scene
+        wsx, wsy = ws[0], ws[1] # chunking and doing in memory sliding window predictions
 
-        # chunking and doing in memory sliding window predictions
-        # size of the scene shape=(11, 9831, 10374), dtype=int16, chunksize=(1, 2048, 2048)
-        # <xarray.DataArray (band: 11, y: 39324, x: 47751)
-        # window size selected of 10000x10000
-        # NOTE: GPU out of memory at 6000x6000 windows
-        wsx, wsy = 5120, 5120
-        
-        # crop out the window for prediction
-        final_prediction = np.zeros(rast_shape)
+        # if the window size is bigger than the image, ignore and predict full image
+        if wsx > rast_shape[0]:
+            wsx = rast_shape[0]
+        if wsy > rast_shape[1]:
+            wsy = rast_shape[1]
+
+        final_prediction = np.zeros(rast_shape) # crop out the window for prediction
         print ("Final prediction initial shape: ", final_prediction.shape)
 
-        for sx in range(0, rast_shape[0], wsx):
-            for sy in range(0, rast_shape[1], wsy):
-                x0, x1, y0, y1 = sx, sx+wsx, sy, sy+wsy
-                if x1 > rast_shape[0]:
-                    x1 = rast_shape[0]
-                if y1 > rast_shape[1]:
-                    y1 = rast_shape[1]
-                #print (x0, x1, y0, y1)
+        for sx in range(0, rast_shape[0], wsx): # iterate over x-axis
+            for sy in range(0, rast_shape[1], wsy): # iterate over y-axis
+                x0, x1, y0, y1 = sx, sx+wsx, sy, sy+wsy # assign window indices
+                if x1 > rast_shape[0]: # if selected x-indices exceeds boundary
+                    x1 = rast_shape[0] # assign boundary to x-window
+                if y1 > rast_shape[1]: # if selected y-indices exceeds boundary
+                    y1 = rast_shape[1] # assign boundary to y-window
 
-                window = rastarr[:, x0:x1, y0:y1]
-                #print ("window type: ", type(window), window.shape)
-
-                # testing the speed of two methods
-                # method #1 - numpy array after reshape
-                window = window.stack(z=('y', 'x'))
-                window = window.transpose("z", "band")
-                window = window.values
-                
-                # method #2
-                #window = window.values
-                #window = np.transpose(window, (1, 2, 0))
-                #window = window.reshape(window.shape[0] * window.shape[1], window.shape[2])
-                
-                #print (window.shape, type(window))
-                
-                prediction = model.predict(window)
-                prediction = prediction.reshape((x1-x0, y1-y0))
-                #print (prediction.shape)
-
-                final_prediction[x0:x1, y0:y1] = prediction
-                #print ("in between final prediction: ", final_prediction.shape)
+                window = rastarr[:, x0:x1, y0:y1] # get window
+                window = window.stack(z=('y', 'x')) # stack y and x axis
+                window = window.transpose("z", "band").values # reshape xarray, return numpy arr
+                final_prediction[x0:x1, y0:y1] = (model.predict(window)).reshape((x1-x0, y1-y0))
 
         # save raster
-        output_name = "{}/cm_{}".format(resultsdir, rast.split('/')[-1])
-        final_prediction = final_prediction.astype(np.int16)
-        to_raster(rast, final_prediction, output=output_name)
-
-        # reshape into new format to be feed into model - long 2D array (nrow * ncol, nband)
-        #rastarr = rastarr.stack(z=('y', 'x')) # merge together x-y dimensions.
-        #rastarr = rastarr.transpose("z", "band") # change from channel-first to channel last format
-        #print (rastarr)
+        output_name = "{}/cm_{}".format(resultsdir, rast.split('/')[-1]) # model name
+        final_prediction = final_prediction.astype(np.int16) # change type of prediction to int16
+        to_raster(rast, final_prediction, output=output_name) # load prediction to raster
 
 
 def train_model(x, y, modelDir='results/Models', modelname='rfmodel', n_trees=20, max_feat='log2'):
@@ -166,9 +139,7 @@ def train_model(x, y, modelDir='results/Models', modelname='rfmodel', n_trees=20
 
 
 def get_test_training_sets(traincsv, testsize=0.30):
-
     df = (pd.read_csv(traincsv, header=None, sep=',')).values # generate pd dataframe
-    #data = df.values # get values, TODO: maybe remove this line and add it on top
     x = df.T[0:-1].T.astype(str)
     y = df.T[-1].astype(str)
     # returns 4 numpy arrays with train and test data
@@ -225,7 +196,7 @@ def getparser():
                         default='0.30', help="Size of test data (e.g: .30)")
     # Evaluate
     parser.add_argument("-i", "--rasters", type=str, nargs='*', required=False, dest='rasters',
-                        default=['*.tif'], help="Image or pattern to evaluate images.")
+                        default='*.tif', help="Image or pattern to evaluate images.")
     parser.add_argument("-ws", "--window-size", nargs=2, type=int, required=False, dest='windowsize',
                         default=[5000, 5000], help="Specify window size to perform sliding predictions.")
     return parser.parse_args()
@@ -274,14 +245,18 @@ def main():
 
         # 3b1. load model - CPU or GPU bound
         rfmodel = joblib.load(args.model) # loading the model in parallel
+        device = 'cpu' # set cpu as default device
         if torch.cuda.is_available(): # if cuda is available, assign model to GPU
             device = torch.device('cuda:0') # assign device
             rfmodel = convert(rfmodel, 'pytorch') # convert model to tensors for GPU
             rfmodel.to(device) # assign model to GPU
-            print (f'Loaded model {args.model} into {device}.')
+        print (f'Loaded model {args.model} into {device}.')
+        
+        if not args.rasters: # if raster -i variable is empty, stop process and log.
+            sys.exit("ERROR: No images to predict. Refer to python rasterRF.py -h for options.")
 
         # 3b2. apply model and save predictions
-        apply_model(rasters=args.rasters, model=rfmodel, windowsize=args.windowsize, 
+        apply_model(rasters=args.rasters, model=rfmodel, ws=args.windowsize, 
            bands=args.bands, resultsdir=dir_dict['Results'])
     else:
         sys.exit("ERROR: You should specify a train csv or a model to load. Refer to python " +
