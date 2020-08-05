@@ -260,7 +260,7 @@ def main():
     dir_dict = create_directories(args.workdir)
 
     # 2. set log file for script - you may disable this when developing
-    #logfile = create_logfile(args, logdir=dir_dict['Logs'])
+    logfile = create_logfile(args, logdir=dir_dict['Logs'])
     print("Command used: ", sys.argv)  # saving command into log file
 
     # 3a. if training csv does not exist, proceed and train
