@@ -14,40 +14,37 @@ Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
 #--------------------------------------------------------------------------------
 # Import System Libraries
 #--------------------------------------------------------------------------------
-import sys, os, glob, argparse  # system modifications
-import joblib                   # joblib for parallel jobs
-from time import time           # tracking time
-from datetime import datetime   # tracking date
-import numpy as np              # for arrays modifications
-import pandas as pd             # csv data frame modifications
-import xarray as xr             # read rasters
-import rasterio as rio          # import rasterio for geotiff manipulation
+from datetime import datetime # tracking date
+from time import time         # tracking time
+import sys, os, argparse      # system libraries
+import joblib                 # joblib for parallel jobs
+import numpy as np            # for arrays modifications
+import pandas as pd           # csv data frame modifications
+import xarray as xr           # read rasters
+import rasterio as rio        # geotiff manipulation
 
 from sklearn.model_selection import train_test_split # train/test data split
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from hummingbird.ml import convert # support GPU inference
 import torch # import torch to verify available devices
 
-# Fix seed reproducibility.
+# Fix seed for reproducibility.
 seed = 21
 np.random.seed = seed
 
+#--------------------------------------------------------------------------------
+# Functions
+#--------------------------------------------------------------------------------
 def add_DVI(data):
-    """
-    Difference Vegetation Index (DVI) = (NIR - Red), for 6 bands images, (DVI) = B7 - B5, for 8 bands images
-    """
+    # Difference Vegetation Index (DVI) = B7 - B5, for 8 bands images
     return ((data[6,:,:] - data[4,:,:])).expand_dims(dim="band", axis=0)
 
 def add_FDI(data):
-    """
-    Forest Discrimination Index (FDI) = (NIR - (Red + Blue)), for 6 bands images, (FDI) = (B8 - (B6 + B2)), for 8 bands images
-    """
+    # Forest Discrimination Index (FDI) = (B8 - (B6 + B2)), for 8 bands images
     return ((data[7,:,:] - (data[5,:,:] + data[1,:,:]))).expand_dims(dim="band", axis=0)
 
 def add_SI(data):
-    """
-    Shadow Index (SI) = (1-Blue)*(1-Green)*(1-Red), for 6 bands images, (SI) = (1-B2)*(1-B3)*(1-B5)
-    """
+    # Shadow Index (SI) = (1-Blue)*(1-Green)*(1-Red), for 6 bands images, (SI) = (1-B2)*(1-B3)*(1-B5)
     return ((1 - data[1,:,:]) * (1 - data[2,:,:]) * (1 - data[4,:,:])).expand_dims(dim="band", axis=0)
 
 def add_bands(rastarr, bands):
@@ -91,7 +88,8 @@ def apply_model(rasters, model, bands=[1,2,3,4,5,6,7,8], resultsdir='results/Res
         # size of the scene shape=(11, 9831, 10374), dtype=int16, chunksize=(1, 2048, 2048)
         # <xarray.DataArray (band: 11, y: 39324, x: 47751)
         # window size selected of 10000x10000
-        wsx, wsy = 1000, 1000
+        # NOTE: GPU out of memory at 6000x6000 windows
+        wsx, wsy = 5120, 5120
         
         # crop out the window for prediction
         final_prediction = np.zeros(rast_shape)
@@ -104,30 +102,30 @@ def apply_model(rasters, model, bands=[1,2,3,4,5,6,7,8], resultsdir='results/Res
                     x1 = rast_shape[0]
                 if y1 > rast_shape[1]:
                     y1 = rast_shape[1]
-                print (x0, x1, y0, y1)
+                #print (x0, x1, y0, y1)
 
                 window = rastarr[:, x0:x1, y0:y1]
-                print ("window type: ", type(window), window.shape)
+                #print ("window type: ", type(window), window.shape)
 
                 # testing the speed of two methods
                 # method #1 - numpy array after reshape
                 window = window.stack(z=('y', 'x'))
                 window = window.transpose("z", "band")
-                #window = window.values
+                window = window.values
                 
                 # method #2
                 #window = window.values
                 #window = np.transpose(window, (1, 2, 0))
                 #window = window.reshape(window.shape[0] * window.shape[1], window.shape[2])
                 
-                print (window.shape, type(window))
+                #print (window.shape, type(window))
                 
                 prediction = model.predict(window)
                 prediction = prediction.reshape((x1-x0, y1-y0))
-                print (prediction.shape)
+                #print (prediction.shape)
 
                 final_prediction[x0:x1, y0:y1] = prediction
-                print ("in between final prediction: ", final_prediction.shape)
+                #print ("in between final prediction: ", final_prediction.shape)
 
         # save raster
         output_name = "{}/cm_{}".format(resultsdir, rast.split('/')[-1])
@@ -139,32 +137,8 @@ def apply_model(rasters, model, bands=[1,2,3,4,5,6,7,8], resultsdir='results/Res
         #rastarr = rastarr.transpose("z", "band") # change from channel-first to channel last format
         #print (rastarr)
 
-        ### TODO 
-        ### A. CHUNK PIECE OF ARRAY
-        ### B. stack PIECE OF ARRAY
-        ### C. PREDICT PIECE OF ARRAY
-        ### D. PLACE INTO FINAL PRODUCT
 
-        """
-        # print model information
-        print (f'Performing prediction of {rast}...')
-        print (rastarr.shape)
-        prediction = model.predict(rastarr)
-        print (prediction.shape, type(prediction), np.unique(prediction))
-        #prediction = np.expand_dims(prediction, axis=1)
-        print (rast_shape)
-        prediction = prediction.reshape(rast_shape).astype(np.int16)
-        print (prediction.shape, np.unique(prediction))
-        
-        ## TODO: ADD NODATA VALUES TO PREDICTION HERE
-        # class_prediction[img[:, :, 0] == ndval] = ndval 
-
-        # save raster
-        output_name = "{}/cm_{}".format(resultsdir, rast.split('/')[-1])
-        to_raster(rast, prediction, output=output_name)
-        """
-
-def train_model(x, y, modelDir, n_trees, max_feat):
+def train_model(x, y, modelDir='results/Models', modelname='rfmodel', n_trees=20, max_feat='log2'):
 
     labels = np.unique(y) # now it's the unique values in y array from text file
     print(f'The training data include {labels.size} classes.')
@@ -184,22 +158,20 @@ def train_model(x, y, modelDir, n_trees, max_feat):
     print('Score:', rf.oob_score_)
 
     try: # export model to file
-        model_save = os.path.join(modelDir, f'model_{n_trees}_{max_feat}.pkl')
+        model_save = os.path.join(modelDir, f'{modelname}.pkl')
         joblib.dump(rf, model_save)
     except Exception as e:
         print(f'Error: {e}')
-
     return model_save # Return output model for application and validation
 
 
 def get_test_training_sets(traincsv, testsize=0.30):
 
-    df = pd.read_csv(traincsv, header=None, sep=',') # generate pd dataframe
-    data = df.values # get values, TODO: maybe remove this line and add it on top
-    x = data.T[0:-1].T.astype(str)
-    y = data.T[-1].astype(str)
-
-    # return x_train, x_test, y_train, y_test
+    df = (pd.read_csv(traincsv, header=None, sep=',')).values # generate pd dataframe
+    #data = df.values # get values, TODO: maybe remove this line and add it on top
+    x = df.T[0:-1].T.astype(str)
+    y = df.T[-1].astype(str)
+    # returns 4 numpy arrays with train and test data
     return train_test_split(x, y, test_size=testsize, random_state=seed)
 
 
@@ -235,7 +207,7 @@ def getparser():
     # General
     parser.add_argument("-w", "--work-directory", type=str, required=True, dest='workdir',
                         default="", help="Specify working directory")
-    parser.add_argument("-m", "--model", type=str, required=True, dest='model',
+    parser.add_argument("-m", "--model", type=str, required=False, dest='model',
                         default="", help="Specify model filename that will be saved or evaluated")
     parser.add_argument('-b', '--bands', nargs='*', dest='bands', default=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
                         help='Specify number of bands.', required=True, type=int)
@@ -245,7 +217,7 @@ def getparser():
     # Train
     parser.add_argument("-c", "--csv", type=str, required=False, dest='traincsv',
                         default="", help="Specify CSV file to train the model.")
-    parser.add_argument("-t", "--n-trees", type=str, required=False, dest='n_trees',
+    parser.add_argument("-t", "--n-trees", type=int, required=False, dest='n_trees',
                         default=20, help="Specify number of trees for random forest model.")
     parser.add_argument("-f", "--max-features", type=str, required=False, dest='max_feat',
                         default='log2', help="Specify random forest max features.")
@@ -254,6 +226,8 @@ def getparser():
     # Evaluate
     parser.add_argument("-i", "--rasters", type=str, nargs='*', required=False, dest='rasters',
                         default=['*.tif'], help="Image or pattern to evaluate images.")
+    parser.add_argument("-ws", "--window-size", nargs=2, type=int, required=False, dest='windowsize',
+                        default=[5000, 5000], help="Specify window size to perform sliding predictions.")
     return parser.parse_args()
 
 
@@ -262,59 +236,60 @@ def getparser():
 # --------------------------------------------------------------------------------
 def main():
 
-    start_time = time()  # record start time
+    start_time = time() # record start time
     args = getparser()  # initialize arguments parser
 
-    print('Initializing script with the following parameters')
+    print('Initializing Random Forest script with the following parameters')
     print(f'Working Directory: {args.workdir}')
     print(f'n_trees:           {args.n_trees}')
     print(f'max features:      {args.max_feat}')
 
-    # 1. set working and results directories
+    # 1. set working, logs,  and results directories, return dictionary
     dir_dict = create_directories(args.workdir)
 
-    # 2. set log file for script - enable after developing
+    # 2. set log file for script - you may disable this when developing
     #logfile = create_logfile(args, logdir=dir_dict['Logs'])
     print ("Command used: ", sys.argv) # saving command into log file
 
-    # 3a. if does not exist, proceed and train
+    # 3a. if training csv does not exist, proceed and train
     if os.path.isfile(args.traincsv):
 
         # 3a1. read CSV training data and split into train and test sets
+        # returns four numpy arrays to train the model on
         print(f'Input train CSV: {args.traincsv}')
         x_train, x_test, y_train, y_test = get_test_training_sets(args.traincsv, args.testsize)
         print(f'y_train lenght: {len(y_train)} and y_test lenght: {len(y_test)}')
 
         # 3a2. train and save the model
         print(f'Building model with n_trees={args.n_trees} and max_feat={args.max_feat}...')
-        model_save = train_model(x_train, y_train, dir_dict['Models'], args.n_trees, args.max_feat)
+        if not args.model: # if model argument was not given, set default model name
+            args.model = 'model_{}_{}'.format(args.n_trees, args.max_feat)
+        # training and saving the model in this step
+        model_save = train_model(x_train, y_train, modelDir=dir_dict['Models'], 
+            modelname=args.model, n_trees=args.n_trees, max_feat=args.max_feat)
         print(f'Model has been saved as {model_save}')
 
     # 3b. evaluate images from model
     elif os.path.isfile(args.model):
 
         # 3b1. load model - CPU or GPU bound
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        rfmodel = joblib.load(args.model)
-        # TODO: GPU support - not accepting dask arrays
-        #rfmodel = convert(joblib.load(args.model), 'pytorch')        
-        #rfmodel.to(device)
-        print (f'Loaded model {args.model} into {device}.')
+        rfmodel = joblib.load(args.model) # loading the model in parallel
+        if torch.cuda.is_available(): # if cuda is available, assign model to GPU
+            device = torch.device('cuda:0') # assign device
+            rfmodel = convert(rfmodel, 'pytorch') # convert model to tensors for GPU
+            rfmodel.to(device) # assign model to GPU
+            print (f'Loaded model {args.model} into {device}.')
 
         # 3b2. apply model and save predictions
-        apply_model(rasters=args.rasters, model=rfmodel, bands=args.bands, resultsdir=dir_dict['Results'])
-        ### TBD: add apply model, gpu support, parallelization, xarray rasterio
-
+        apply_model(rasters=args.rasters, model=rfmodel, windowsize=args.windowsize, 
+           bands=args.bands, resultsdir=dir_dict['Results'])
     else:
         sys.exit("ERROR: You should specify a train csv or a model to load. Refer to python " +
                  "rasterRF.py -h for more options.")
 
-    print("Elapsed Time: ", (time() - start_time) / 60.0)  # output program run time
+    print("Elapsed Time: ", (time() - start_time) / 60.0)  # output program run time in minutes
 
 
 if __name__ == "__main__":
 
     main()
-
-    # simple test:
-    # python rasterRF.py -w results -m test -b 1 2 3 -bn red green blue

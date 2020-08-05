@@ -20,4 +20,8 @@ python rasterRF.py -w results -m results/Models/model_20_log2.pkl -b 1 2 3 4 5 6
 ## Formal testing
 python rasterRF.py -w results -m results/Models/model_20_log2.pkl -b 1 2 3 4 5 6 7 8 9 10 11 -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/RandomForests/VHR-Stacks/WV02_20140716_M1BS_103001003328DB00-toa_pansharpen.tif
 
-About 45 minutes to finish.
+window 1000x1000 
+    CPU - About 45 minutes to finish.
+    GPU - About 11 minutes to finish.
+window 5000x5000
+    GPU - About 8 minutes to finish.
