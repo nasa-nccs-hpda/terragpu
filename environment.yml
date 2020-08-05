@@ -14,15 +14,11 @@ dependencies:
   - pip:
     - numpy
     - pandas
-    - matplotlib
-    - scikit-image
     - scikit-learn
     - rasterio
     - xarray
     - dask[complete]
     - opencv-python
     - imutils
-    #- pygdal==3.0.4.6
-    #- pygdal=2.2.2
     - hummingbird-ml
-    - rioxarray
+    - joblib

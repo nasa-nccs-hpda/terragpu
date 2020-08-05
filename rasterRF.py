@@ -14,19 +14,19 @@ Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
 #--------------------------------------------------------------------------------
 # Import System Libraries
 #--------------------------------------------------------------------------------
-from datetime import datetime # tracking date
-from time import time         # tracking time
-import sys, os, argparse      # system libraries
-import joblib                 # joblib for parallel jobs
-import numpy as np            # for arrays modifications
-import pandas as pd           # csv data frame modifications
-import xarray as xr           # read rasters
-import rasterio as rio        # geotiff manipulation
+from datetime import datetime  # tracking date
+from time import time          # tracking time
+import sys, os, argparse       # system libraries
+import joblib                  # joblib for parallel jobs
+import numpy as np             # for arrays modifications
+import pandas as pd            # csv data frame modifications
+import xarray as xr            # read rasters
+import rasterio as rio         # geotiff manipulation
 
-from sklearn.model_selection import train_test_split # train/test data split
+from sklearn.model_selection import train_test_split  # train/test data split
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from hummingbird.ml import convert # support GPU inference
-import torch # import torch to verify available devices
+from hummingbird.ml import convert  # support GPU inference
+import torch  # import torch to verify available devices
 
 # Fix seed for reproducibility.
 seed = 21
@@ -37,51 +37,73 @@ np.random.seed = seed
 #--------------------------------------------------------------------------------
 def add_DVI(data):
     # Difference Vegetation Index (DVI) = B7 - B5, for 8 bands images
-    return ((data[6,:,:] - data[4,:,:])).expand_dims(dim="band", axis=0)
+    return (data[6, :, :] - data[4, :, :]).expand_dims(dim="band", axis=0)
 
 def add_FDI(data):
     # Forest Discrimination Index (FDI) = (B8 - (B6 + B2)), for 8 bands images
-    return ((data[7,:,:] - (data[5,:,:] + data[1,:,:]))).expand_dims(dim="band", axis=0)
+    return (data[7, :, :] - (data[5, :, :] + data[1, :, :])).expand_dims(dim="band", axis=0)
 
 def add_SI(data):
     # Shadow Index (SI) = (1-Blue)*(1-Green)*(1-Red), for 6 bands images, (SI) = (1-B2)*(1-B3)*(1-B5)
-    return ((1 - data[1,:,:]) * (1 - data[2,:,:]) * (1 - data[4,:,:])).expand_dims(dim="band", axis=0)
+    return ((1 - data[1, :, :]) * (1 - data[2, :, :]) * (1 - data[4, :, :])).expand_dims(dim="band", axis=0)
+
 
 def add_bands(rastarr):
-    nbands = rastarr.shape[0]
+    """
+    Add indices if they are missing
+    :param rastarr: xarray raster
+    :return: xarray raster with three additional bands
+    """
+    nbands = rastarr.shape[0]  # get number of bands
     for band in [add_DVI(rastarr), add_FDI(rastarr), add_SI(rastarr)]:
         nbands = nbands + 1
-        band.coords['band'] = [nbands]
-        rastarr = xr.concat([rastarr, band], dim='band')
-    rastarr.attrs['scales']  = [rastarr.attrs['scales'][0]] * nbands
+        band.coords['band'] = [nbands]  # add band indices to raster
+        rastarr = xr.concat([rastarr, band], dim='band')  # concat new band
+    rastarr.attrs['scales'] = [rastarr.attrs['scales'][0]] * nbands
     rastarr.attrs['offsets'] = [rastarr.attrs['offsets'][0]] * nbands
-    return rastarr
+    return rastarr  # return xarray with new bands
+
 
 def to_raster(rast, prediction, output='rfmask.tif'):
+    """
+    :param rast: raster name to get metadata from
+    :param prediction: numpy array with prediction output
+    :param output: raster name to save on
+    :return: tif file saved to disk
+    """
     # get meta features from raster
     with rio.open(rast) as src:
         meta = src.profile
         print(meta)
 
-    out_meta = meta # modify profile based on numpy array
-    out_meta['count'] = 1 # output is single band
-    out_meta['dtype'] = 'int16' # data type is float64
+    out_meta = meta  # modify profile based on numpy array
+    out_meta['count'] = 1  # output is single band
+    out_meta['dtype'] = 'int16'  # data type is float64
 
     # write to a raster
     with rio.open(output, 'w', **out_meta) as dst:
         dst.write(prediction, 1)
+    print(f'Prediction saved at {output}.')
 
-def apply_model(rasters, model, ws=[5120, 5120], bands=[1,2,3,4,5,6,7,8], resultsdir='results/Results'): 
 
+def apply_model(rasters, model, ws=[5120, 5120], bands=[1, 2, 3, 4, 5, 6, 7, 8], resultsdir='results/Results'):
+    """
+    :param rasters: list of raster names
+    :param model: model object to predict with
+    :param ws: window size to predict
+    :param bands: list with band ids
+    :param resultsdir: where to store results
+    :return: tif prediction files save to disk
+    """
     # open rasters and get both data and coordinates
-    for rast in rasters: # iterate over each raster
-        rastarr = xr.open_rasterio(rast, chunks={'band': 1, 'x': 2048, 'y': 2048}) # open raster into xarray
-        if rastarr.shape[0] != len(bands): # add additional bands if required, preferibly not
-            rastarr = add_bands(rastarr) # add bands here
-        print (rastarr) # print raster information
+    for rast in rasters:  # iterate over each raster
+        rastarr = xr.open_rasterio(rast, chunks={'band': 1, 'x': 2048, 'y': 2048})  # open raster into xarray
+        if rastarr.shape[0] != len(bands):  # add additional bands if required, preferibly not
+            rastarr = add_bands(rastarr)  # add bands here
+        print(rastarr)  # print raster information
         
-        rast_shape = rastarr[0,:,:].shape # getting the shape of the wider scene
-        wsx, wsy = ws[0], ws[1] # chunking and doing in memory sliding window predictions
+        rast_shape = rastarr[0, :, :].shape  # getting the shape of the wider scene
+        wsx, wsy = ws[0], ws[1]  # chunking and doing in memory sliding window predictions
 
         # if the window size is bigger than the image, ignore and predict full image
         if wsx > rast_shape[0]:
@@ -89,57 +111,70 @@ def apply_model(rasters, model, ws=[5120, 5120], bands=[1,2,3,4,5,6,7,8], result
         if wsy > rast_shape[1]:
             wsy = rast_shape[1]
 
-        final_prediction = np.zeros(rast_shape) # crop out the window for prediction
-        print ("Final prediction initial shape: ", final_prediction.shape)
+        final_prediction = np.zeros(rast_shape)  # crop out the window for prediction
+        print("Final prediction initial shape: ", final_prediction.shape)
 
-        for sx in range(0, rast_shape[0], wsx): # iterate over x-axis
-            for sy in range(0, rast_shape[1], wsy): # iterate over y-axis
-                x0, x1, y0, y1 = sx, sx+wsx, sy, sy+wsy # assign window indices
-                if x1 > rast_shape[0]: # if selected x-indices exceeds boundary
-                    x1 = rast_shape[0] # assign boundary to x-window
-                if y1 > rast_shape[1]: # if selected y-indices exceeds boundary
-                    y1 = rast_shape[1] # assign boundary to y-window
+        for sx in range(0, rast_shape[0], wsx):  # iterate over x-axis
+            for sy in range(0, rast_shape[1], wsy):  # iterate over y-axis
+                x0, x1, y0, y1 = sx, sx+wsx, sy, sy+wsy  # assign window indices
+                if x1 > rast_shape[0]:  # if selected x-indices exceeds boundary
+                    x1 = rast_shape[0]  # assign boundary to x-window
+                if y1 > rast_shape[1]:  # if selected y-indices exceeds boundary
+                    y1 = rast_shape[1]  # assign boundary to y-window
 
-                window = rastarr[:, x0:x1, y0:y1] # get window
-                window = window.stack(z=('y', 'x')) # stack y and x axis
-                window = window.transpose("z", "band").values # reshape xarray, return numpy arr
+                window = rastarr[:, x0:x1, y0:y1]  # get window
+                window = window.stack(z=('y', 'x'))  # stack y and x axis
+                window = window.transpose("z", "band").values  # reshape xarray, return numpy arr
                 final_prediction[x0:x1, y0:y1] = (model.predict(window)).reshape((x1-x0, y1-y0))
 
         # save raster
-        output_name = "{}/cm_{}".format(resultsdir, rast.split('/')[-1]) # model name
-        final_prediction = final_prediction.astype(np.int16) # change type of prediction to int16
-        to_raster(rast, final_prediction, output=output_name) # load prediction to raster
+        output_name = "{}/cm_{}".format(resultsdir, rast.split('/')[-1])  # model name
+        final_prediction = final_prediction.astype(np.int16)  # change type of prediction to int16
+        to_raster(rast, final_prediction, output=output_name)  # load prediction to raster
 
 
-def train_model(x, y, modelDir='results/Models', modelname='rfmodel', n_trees=20, max_feat='log2'):
-
-    labels = np.unique(y) # now it's the unique values in y array from text file
+def train_model(x, y, modeldir='results/Models', modelname='rfmodel', n_trees=20, max_feat='log2'):
+    """
+    :param x: dataframe with x data
+    :param y: dataframe with y data
+    :param modeldir: directory to save model on
+    :param modelname: name for the model to store
+    :param n_trees: number of trees for random forest
+    :param max_feat: max features for random forest
+    :return: saved model object
+    """
+    labels = np.unique(y)  # now it's the unique values in y array from text file
     print(f'The training data include {labels.size} classes.')
-    print(f'Our X matrix is sized: {x.shape}') # shape of x data
-    print(f'Our y array is sized:  {y.shape}') # shape of y data
+    print(f'Our X matrix is sized: {x.shape}')  # shape of x data
+    print(f'Our y array is sized:  {y.shape}')  # shape of y data
 
-    print ('Initializing model...')
-    if '.' not in labels[0]: # if labels are integers, check first value from y (come as string)
+    print('Initializing model...')
+    if '.' not in labels[0]:  # if labels are integers, check first value from y (come as string)
         rf = RandomForestClassifier(n_estimators=n_trees, max_features=max_feat, oob_score=True) 
         y = y.astype(np.int)
-    else: # if labels are floats, use random forest regressor
+    else:  # if labels are floats, use random forest regressor
         rf = RandomForestRegressor(n_estimators=n_trees, max_features=max_feat, oob_score=True)
         y = y.astype(np.float)
 
     print("Training model...")
-    rf.fit(x, y) # fit model to training data
+    rf.fit(x, y)  # fit model to training data
     print('Score:', rf.oob_score_)
 
-    try: # export model to file
-        model_save = os.path.join(modelDir, f'{modelname}.pkl')
+    try:  # export model to file
+        model_save = os.path.join(modeldir, f'{modelname}.pkl')
         joblib.dump(rf, model_save)
     except Exception as e:
         print(f'Error: {e}')
-    return model_save # Return output model for application and validation
+    return model_save  # Return output model for application and validation
 
 
 def get_test_training_sets(traincsv, testsize=0.30):
-    df = (pd.read_csv(traincsv, header=None, sep=',')).values # generate pd dataframe
+    """
+    :param traincsv: csv filename to create dataframe
+    :param testsize: size of testing features
+    :return: 4 arrays with train and test data respectively
+    """
+    df = (pd.read_csv(traincsv, header=None, sep=',')).values  # generate pd dataframe
     x = df.T[0:-1].T.astype(str)
     y = df.T[-1].astype(str)
     # returns 4 numpy arrays with train and test data
@@ -147,6 +182,11 @@ def get_test_training_sets(traincsv, testsize=0.30):
 
 
 def create_logfile(args, logdir='results'):
+    """
+    :param args: argparser object
+    :param logdir: log directory to store log file
+    :return: logfile instance, stdour and stderr being logged to file
+    """
     logfile = os.path.join(logdir, '{}_log_{}trees_{}.txt'.format(
         datetime.now().strftime("%Y%m%d-%H%M%S"), args.n_trees, args.max_feat))
     print('See ', logfile)
@@ -219,8 +259,8 @@ def main():
     dir_dict = create_directories(args.workdir)
 
     # 2. set log file for script - you may disable this when developing
-    #logfile = create_logfile(args, logdir=dir_dict['Logs'])
-    print ("Command used: ", sys.argv) # saving command into log file
+    logfile = create_logfile(args, logdir=dir_dict['Logs'])
+    print("Command used: ", sys.argv)  # saving command into log file
 
     # 3a. if training csv does not exist, proceed and train
     if os.path.isfile(args.traincsv):
@@ -233,31 +273,31 @@ def main():
 
         # 3a2. train and save the model
         print(f'Building model with n_trees={args.n_trees} and max_feat={args.max_feat}...')
-        if not args.model: # if model argument was not given, set default model name
+        if not args.model:  # if model argument was not given, set default model name
             args.model = 'model_{}_{}'.format(args.n_trees, args.max_feat)
         # training and saving the model in this step
-        model_save = train_model(x_train, y_train, modelDir=dir_dict['Models'], 
-            modelname=args.model, n_trees=args.n_trees, max_feat=args.max_feat)
+        model_save = train_model(x_train, y_train, modelDir=dir_dict['Models'],
+                                 modelname=args.model, n_trees=args.n_trees, max_feat=args.max_feat)
         print(f'Model has been saved as {model_save}')
 
     # 3b. evaluate images from model
     elif os.path.isfile(args.model):
 
         # 3b1. load model - CPU or GPU bound
-        rfmodel = joblib.load(args.model) # loading the model in parallel
-        device = 'cpu' # set cpu as default device
-        if torch.cuda.is_available(): # if cuda is available, assign model to GPU
-            device = torch.device('cuda:0') # assign device
-            rfmodel = convert(rfmodel, 'pytorch') # convert model to tensors for GPU
-            rfmodel.to(device) # assign model to GPU
-        print (f'Loaded model {args.model} into {device}.')
+        rfmodel = joblib.load(args.model)  # loading the model in parallel
+        device = 'cpu'  # set cpu as default device
+        if torch.cuda.is_available():  # if cuda is available, assign model to GPU
+            device = torch.device('cuda:0')  # assign device
+            rfmodel = convert(rfmodel, 'pytorch')  # convert model to tensors for GPU
+            rfmodel.to(device)  # assign model to GPU
+        print(f'Loaded model {args.model} into {device}.')
         
-        if not args.rasters: # if raster -i variable is empty, stop process and log.
+        if not args.rasters:  # if raster -i variable is empty, stop process and log.
             sys.exit("ERROR: No images to predict. Refer to python rasterRF.py -h for options.")
 
         # 3b2. apply model and save predictions
-        apply_model(rasters=args.rasters, model=rfmodel, ws=args.windowsize, 
-           bands=args.bands, resultsdir=dir_dict['Results'])
+        apply_model(rasters=args.rasters, model=rfmodel, ws=args.windowsize,
+                    bands=args.bands, resultsdir=dir_dict['Results'])
     else:
         sys.exit("ERROR: You should specify a train csv or a model to load. Refer to python " +
                  "rasterRF.py -h for more options.")
