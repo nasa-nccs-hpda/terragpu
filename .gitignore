@@ -1,5 +1,6 @@
 *.tif
 *.pkl
+.idea/
 Results/
 Models/
 Logs/
