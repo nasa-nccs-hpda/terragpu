@@ -113,7 +113,7 @@ def apply_model(rasters, model, ws=[5120, 5120], bands=[1, 2, 3, 4, 5, 6, 7, 8],
             wsy = rast_shape[1]
 
         final_prediction = np.zeros(rast_shape)  # crop out the window for prediction
-        print("Final prediction initial shape: ", final_prediction.shape)
+        print(f'Window Size: {wsx} x {wsy}. Final prediction initial shape: {final_prediction.shape}')
 
         for sx in tqdm(range(0, rast_shape[0], wsx)):  # iterate over x-axis
             for sy in range(0, rast_shape[1], wsy):  # iterate over y-axis
