@@ -1,3 +1,0 @@
-Command used:  ['rasterRF.py', '-w', 'results', '-m', 'test', '-b', '1', '2', '3', '-bn', 'red', 'green', 'blue']
-File does not exist.
-Elapsed Time:  0.0003278175989786784

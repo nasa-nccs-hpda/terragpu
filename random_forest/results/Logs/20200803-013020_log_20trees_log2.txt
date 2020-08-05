@@ -1,7 +1,0 @@
-Command used:  ['rasterRF.py', '-w', 'results', '-m', 'test', '-b', '1', '2', '3', '-bn', 'red', 'green', 'blue']
-Traceback (most recent call last):
-  File "rasterRF.py", line 115, in <module>
-    main()
-  File "rasterRF.py", line 107, in main
-    if not os.path.isfile(model):
-NameError: name 'model' is not defined

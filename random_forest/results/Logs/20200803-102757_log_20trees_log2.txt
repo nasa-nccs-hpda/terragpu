@@ -1,8 +1,0 @@
-Command used:  ['rasterRF.py', '-w', 'results', '-m', 'results/Models/model_20_log2.pkl', '-b', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '-bn', 'Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red', 'Edge', 'Near-IR1', 'Near-IR2', 'DVI', 'FDI', 'SI', '-i', '/att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/WV02_20140716_M1BS_103001003328DB00-toa.tif']
-Performing inference to given images.
-Traceback (most recent call last):
-  File "rasterRF.py", line 247, in <module>
-    main()
-  File "rasterRF.py", line 230, in main
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-NameError: name 'torch' is not defined

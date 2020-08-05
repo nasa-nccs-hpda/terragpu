@@ -1,3 +1,0 @@
-Command used:  ['rasterRF.py', '-w', 'results', '-m', 'results/Models/model_20_log2.pkl', '-b', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '-bn', 'Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red', 'Edge', 'Near-IR1', 'Near-IR2', 'DVI', 'FDI', 'SI']
-Performing inference.
-Elapsed Time:  0.0007168451944986979
