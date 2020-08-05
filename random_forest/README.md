@@ -13,4 +13,11 @@ python rasterRF.py -w results -m results/Models/model_20_log2.pkl -b 1 2 3 4 5 6
 
 ### Test images
 /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/RandomForests/VHR-Stacks/WV02_20140716_M1BS_103001003328DB00-toa_pansharpen.tif - 21G
-/att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band - couple of images
+/att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band - couple of images - small images
+/att/nobackup/jacaraba/deep-rsensing-data/data/Vietnam_2019228_data_pansharp.tif - 98GB image
+/att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/WV02_20140716_M1BS_103001003328DB00-toa.tif - 1.2GB
+
+## Formal testing
+python rasterRF.py -w results -m results/Models/model_20_log2.pkl -b 1 2 3 4 5 6 7 8 9 10 11 -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/RandomForests/VHR-Stacks/WV02_20140716_M1BS_103001003328DB00-toa_pansharpen.tif
+
+About 45 minutes to finish.

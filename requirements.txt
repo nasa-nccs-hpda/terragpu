@@ -5,10 +5,11 @@ scikit-image
 scikit-learn==0.22.1
 rasterio
 xarray
-dask
+dask[complete]
 opencv-python
 imutils
 #pygdal==3.0.4.6
 #pygdal==2.2.2.6
 hummingbird-ml
 joblib
+rioxarray
