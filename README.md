@@ -56,7 +56,7 @@ Raster Size: 1.2GB, 8 bands; dimensions: y: 9831, x: 10374
 | :--------------: |:----------:| :-------------: | :-------------: |
 | Full Raster      | ~40 GB     | ~2.55 min       | ~0.72 min       |
 | 1000 x 1000      | ~4 GB      | ~2.40 min       | ~0.64 min       |
-| 5000 x 5000      | ~1 6GB     | ~2.29 min       | ~0.49 min       |
+| 5000 x 5000      | ~16 GB     | ~2.29 min       | ~0.49 min       |
 
 Raster Size: 21GB, 8 bands; dimensions: y: 47751, x: 39324
 
