@@ -24,19 +24,24 @@ Note: PIP installations do not include CUDA libraries for GPU support. Make sure
 NVIDIA libraries are installed locally in the system.
 
 ### Training
-Adding description of arguments here.
+
+The CSV file generated for training has the format of n x bands, which implies that there
+is a column per band, and each row represents a point in the raster.
+
+Adding additional description of arguments here.
 
 Simple training command. 
 ```
-python rasterRF.py -w results -c /att/nobackup/aweis/forMaggie/cloud_training.csv -b 1 2 3 4 5 6 7 8 9 10 11
+python rasterRF.py -w results -c cloud_training.csv -b 1 2 3 4 5 6 7 8 9 10 11
 ```
 
 ### Inference
-Adding description of arguments here.
+
+Adding additional description of arguments here.
 
 Simple prediction command.
 ```
-python rasterRF.py -w results -m results/Models/model_20_log2.pkl -b 1 2 3 4 5 6 7 8 9 10 11 -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/RandomForests/VHR-Stacks/WV02_20140716_M1BS_103001003328DB00-toa_pansharpen.tif
+python rasterRF.py -w results -m results/Models/model_20_log2.pkl -b 1 2 3 4 5 6 7 8 9 10 11 -i /somewhere/toa_pansharpen.tif
 ```
 
 ### Performance Statistics
@@ -119,5 +124,3 @@ export CPLUS_INCLUDE_PATH=/usr/include/gdal
 export C_INCLUDE_PATH=/usr/include/gdal
 pip install GDAL
 ```
-
-

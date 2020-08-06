@@ -3,6 +3,7 @@
 *.xml
 __pycache__/
 .idea/
+results/
 Results/
 Models/
 Logs/
