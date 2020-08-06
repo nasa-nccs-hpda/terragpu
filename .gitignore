@@ -1,5 +1,7 @@
 *.tif
 *.pkl
+*.xml
+__pycache__/
 .idea/
 Results/
 Models/

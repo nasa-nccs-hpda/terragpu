@@ -8,3 +8,4 @@ opencv-python
 imutils
 hummingbird-ml
 joblib
+toolz
