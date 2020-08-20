@@ -140,10 +140,12 @@ class RandomForest(Raster):
                 window = window.stack(z=('y', 'x'))  # stack y and x axis
                 window = window.transpose("z", "band").values  # reshape xarray, return numpy arr
                 print ("WINDOW SHAPE :", window.shape)
-                window = np.delete(window, 0, 1)
-                window = np.delete(window, 3, 1)
+                #window = np.delete(window, 0, 1)
+                #window = np.delete(window, 3, 1)
+                #window = np.delete(window, 5, 1)
+                #window = np.delete(window, 7, 1)
+                window = np.delete(window, 4, 1)
                 window = np.delete(window, 5, 1)
-                window = np.delete(window, 7, 1)
                 self.prediction[x0:x1, y0:y1] = (self.model.predict(window)).reshape((x1 - x0, y1 - y0))
 
         # save raster
