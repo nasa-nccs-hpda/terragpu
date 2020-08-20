@@ -106,8 +106,8 @@ def main():
     dir_dict = create_directories(args.workdir)
 
     # 2. set log file for script - you may disable this when developing
-    logfile = create_logfile(args, logdir=dir_dict['Logs'])
-    print("Command used: ", sys.argv)  # saving command into log file
+    #logfile = create_logfile(args, logdir=dir_dict['Logs'])
+    #print("Command used: ", sys.argv)  # saving command into log file
 
     # 3. Instantiate RandomForest object
     rfobj = RandomForest(args.traincsv, args.model)

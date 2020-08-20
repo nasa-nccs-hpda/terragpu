@@ -73,6 +73,10 @@ class RandomForest(Raster):
         :return: 4 arrays with train and test data respectively
         """
         df = (pd.read_csv(self.traincsvfile, header=None, sep=',')).values  # generate pd dataframe
+        df = np.delete(df, 0, 1)
+        df = np.delete(df, 3, 1)
+        df = np.delete(df, 5, 1)
+        df = np.delete(df, 7, 1)
         x = df.T[0:-1].T.astype(str)
         y = df.T[-1].astype(str)
         self.x_train, self.x_test, \
@@ -135,6 +139,11 @@ class RandomForest(Raster):
                 window = self.data[:, x0:x1, y0:y1]  # get window
                 window = window.stack(z=('y', 'x'))  # stack y and x axis
                 window = window.transpose("z", "band").values  # reshape xarray, return numpy arr
+                print ("WINDOW SHAPE :", window.shape)
+                window = np.delete(window, 0, 1)
+                window = np.delete(window, 3, 1)
+                window = np.delete(window, 5, 1)
+                window = np.delete(window, 7, 1)
                 self.prediction[x0:x1, y0:y1] = (self.model.predict(window)).reshape((x1 - x0, y1 - y0))
 
         # save raster
