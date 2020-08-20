@@ -1,6 +1,7 @@
 *.tif
 *.pkl
 *.xml
+*.csv
 __pycache__/
 .idea/
 results/

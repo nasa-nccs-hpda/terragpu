@@ -1,7 +1,6 @@
-# vhr-cloudmask conda environment
-# Modify gdal version based on the systems installed library.
+# nccs-rasterlib conda environment
 # Author: Jordan A. Caraballo-Vega, Science Data Processing Branch, 587
-name: vhr-cloudmask
+name: nccs-rasterlib
 
 channels:
   - conda-forge

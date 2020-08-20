@@ -251,6 +251,9 @@ def main():
     start_time = time() # record start time
     args = getparser()  # initialize arguments parser
 
+
+
+    """
     print('Initializing Random Forest script with the following parameters')
     print(f'Working Directory: {args.workdir}')
     print(f'n_trees:           {args.n_trees}')
@@ -304,7 +307,7 @@ def main():
                  "rasterRF.py -h for more options.")
 
     print("Elapsed Time: ", (time() - start_time) / 60.0)  # output program run time in minutes
-
+    """
 
 if __name__ == "__main__":
 
