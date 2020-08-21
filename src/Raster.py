@@ -3,6 +3,7 @@
 # This class performs operations over raster objects.
 # -------------------------------------------------------------------------------
 import sys  # system library
+import numpy as np
 import xarray as xr  # read rasters
 import rasterio as rio  # geospatial library
 import rasterio.features as riofeat
@@ -24,20 +25,26 @@ class Raster:
         # get raster data - xarray object memory mapped
         if filename is not None:
             self.data = xr.open_rasterio(filename, chunks={'band': 1, 'x': 2048, 'y': 2048})
+            self.initbands = self.data.shape[0]
+            self.nodataval = self.data.attrs['nodatavals']
         else:
             self.data = filename
+            self.initbands = None
+            self.initbands = None
 
     # ---------------------------------------------------------------------------
     # methods
     # ---------------------------------------------------------------------------
     def readraster(self, filename):
         self.data = xr.open_rasterio(filename, chunks={'band': 1, 'x': 2048, 'y': 2048})
+        self.initbands = self.data.shape[0]
+        self.nodataval = self.data.attrs['nodatavals']
 
     def addindices(self, indices, factor=1.0):
         nbands = self.data.shape[0]  # get number of bands
         for indfunc in indices:  # iterate over each new band
             nbands = nbands + 1  # counter for number of bands
-            band = indfunc(self.data, factor=factor)  # calculate band (indices)
+            band = indfunc(self.data, initbands=self.initbands, factor=factor)  # calculate band (indices)
             band.coords['band'] = [nbands]  # add band indices to raster
             self.data = xr.concat([self.data, band], dim='band')  # concat new band
         self.data.attrs['scales'] = [self.data.attrs['scales'][0]] * nbands
@@ -56,7 +63,11 @@ class Raster:
         # get meta features from raster
         with rio.open(rast) as src:
             meta = src.profile
-            print(meta)
+            nodatavals = src.read_masks(1).astype('int16')
+        print(meta)
+
+        nodatavals[nodatavals == 0] = self.nodataval[0]
+        prediction[nodatavals == self.nodataval[0]] = nodatavals[nodatavals == self.nodataval[0]]
 
         out_meta = meta  # modify profile based on numpy array
         out_meta['count'] = 1  # output is single band
@@ -88,10 +99,19 @@ if __name__ == "__main__":
     print(raster.data)
 
     # 3. Test adding multiple bands (indices) to raster.data - either way is fine
-    # raster.data = indices.addindices(raster.data, [indices.si, indices.fdi, indices.dvi], factor=10000.0)
-    raster.addindices([indices.si, indices.fdi, indices.dvi], factor=10000.0)  # call Raster method
+    # raster.data = indices.addindices(raster.data, [indices.si, indices.fdi, indices.dvi],
+    #                                   initbands=raster.initbands, factor=10000.0)
+    raster.addindices([indices.si, indices.fdi, indices.dvi], factor=10000.0)
     print(raster.data)
 
     # 4. Read raster file through method
     raster.readraster(sys.argv[1])
     print(raster.data)
+
+    # 5. Validate nodatamask
+    #print(raster.nodatamask)
+    #print(raster.nodatamask.shape)
+    #print(raster.nodatamask[0,4999])
+
+
+
