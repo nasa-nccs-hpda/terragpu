@@ -73,10 +73,6 @@ class RandomForest(Raster):
         :return: 4 arrays with train and test data respectively
         """
         df = (pd.read_csv(self.traincsvfile, header=None, sep=',')).values  # generate pd dataframe
-        df = np.delete(df, 0, 1)
-        df = np.delete(df, 3, 1)
-        df = np.delete(df, 5, 1)
-        df = np.delete(df, 7, 1)
         x = df.T[0:-1].T.astype(str)
         y = df.T[-1].astype(str)
         self.x_train, self.x_test, \
@@ -137,28 +133,8 @@ class RandomForest(Raster):
                     y1 = rast_shape[1]  # assign boundary to y-window
 
                 window = self.data[:, x0:x1, y0:y1]  # get window
-
-                #smallmask =
-                #nodata_mask = window[window == self.nodataval]
-                #print(nodata_mask)
-
-                #rint (window.shape)
-                #mask = np.ma.masked_where(window == self.nodataval, window)
-                #mask = (window[0,:,:] == self.nodataval)
-                #print("after mask ", np.unique(mask))
-
                 window = window.stack(z=('y', 'x'))  # stack y and x axis
                 window = window.transpose("z", "band").values  # reshape xarray, return numpy arr
-                print ("WINDOW SHAPE :", window.shape)
-                #window = np.delete(window, 0, 1)
-                #window = np.delete(window, 3, 1)
-                #window = np.delete(window, 5, 1)
-                #window = np.delete(window, 7, 1)
-                window = np.delete(window, 4, 1)
-                window = np.delete(window, 5, 1)
-
-                # array_a[array_a == -999] = array_b[array_a == -999]
-
                 self.prediction[x0:x1, y0:y1] = (self.model.predict(window)).reshape((x1 - x0, y1 - y0))
 
         # save raster

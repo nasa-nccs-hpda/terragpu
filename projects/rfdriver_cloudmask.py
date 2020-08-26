@@ -140,7 +140,7 @@ def main():
             rfobj.addindices([indices.dvi, indices.fdi, indices.si], factor=1.0)
 
             rfobj.predictrf(rastfile=rast, ws=args.windowsize)
-            rfobj.sieve(rfobj.prediction, rfobj.prediction, size=350, mask=None, connectivity=8)
+            rfobj.sieve(rfobj.prediction, rfobj.prediction, size=800, mask=None, connectivity=8)
             output_name = "{}/cm_{}".format(rfobj.resultsdir, rast.split('/')[-1])  # model name
             rfobj.toraster(rast, rfobj.prediction, output_name)
 
