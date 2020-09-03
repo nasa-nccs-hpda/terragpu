@@ -17,12 +17,8 @@ from datetime import datetime
 import os, subprocess                     
 import shutil
 import xml.etree.ElementTree as ET
+from Raster import Raster
 
-#from osgeo.osr import SpatialReference
-#from osgeo import gdal
-
-import xarray as xr            # read rasters
-import rasterio as rio         # geotiff manipulation
 
 #-------------------------------------------------------------------------------
 # class DgFile
@@ -31,12 +27,13 @@ import rasterio as rio         # geotiff manipulation
 # GeoTiff with an XML counterpart.  It is unique because of the metadata tags
 # within.
 #-------------------------------------------------------------------------------
-class DGFileMem:
+class DGFileRast(Raster):
 
     # ---------------------------------------------------------------------------
     # __init__
     # ---------------------------------------------------------------------------
     def __init__(self, filename, logger=None):
+        super().__init__()
 
         # Check that the file is NITF or TIFF
         extension = os.path.splitext(filename)[1]
@@ -68,16 +65,16 @@ class DGFileMem:
         except:
             self.bandNameList = None
 
-        # get raster data
-        self.dataset = xr.open_rasterio(filename, chunks={'band': 1, 'x': 2048, 'y': 2048})
-
-        # get number of bands
-        try:
-            self.numBands = self.dataset.shape[0]
-        except:
-            self.numBands = None
-
         self.footprintsGml = None
+
+        self.MEANSUNAZ = float(self.imd_tag.find('IMAGE').find('MEANSUNAZ').text)
+        self.MEANSUNEL = float(self.imd_tag.find('IMAGE').find('MEANSUNEL').text)
+        self.MEANSATAZ = float(self.imd_tag.find('IMAGE').find('MEANSATAZ').text)
+        self.MEANSATEL = float(self.imd_tag.find('IMAGE').find('MEANSATEL').text)
+        self.MEANINTRACKVIEWANGLE = float(self.imd_tag.find('IMAGE').find('MEANINTRACKVIEWANGLE').text)
+        self.MEANCROSSTRACKVIEWANGLE = float(self.imd_tag.find('IMAGE').find('MEANCROSSTRACKVIEWANGLE').text)
+        self.MEANOFFNADIRVIEWANGLE = float(self.imd_tag.find('IMAGE').find('MEANOFFNADIRVIEWANGLE').text)
+
 
     # ---------------------------------------------------------------------------
     # getField

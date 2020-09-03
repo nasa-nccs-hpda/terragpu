@@ -16,11 +16,6 @@ print (img.block_shapes)
 
 
 
-
-
-
-
-
 """
 import PIL.Image
 import tensorflow as tf

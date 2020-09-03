@@ -22,7 +22,8 @@ seed = 21
 np.random.seed(seed)
 
 # Add src path to system PATH
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + '/src')
+#sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + '/src')
+sys.path.append('/Users/jacaraba/Documents/Development/nccs-rasterlib/src')
 
 import indices
 from RandomForest import RandomForest
@@ -122,7 +123,7 @@ def main():
 
         # 3a2. train and save the model
         print(f'Building model with n_trees={rfobj.n_trees} and max_feat={rfobj.max_feat}...')
-        rfobj.trainrf()
+        rfobj.trainrf()  # train the random forest model
         print(f'Model has been saved as {rfobj.modelfile}')
 
     # 3b. evaluate images from model
