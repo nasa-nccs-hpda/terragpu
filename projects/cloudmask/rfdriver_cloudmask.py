@@ -23,7 +23,8 @@ np.random.seed(seed)
 
 # Add src path to system PATH
 #sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + '/src')
-sys.path.append('/Users/jacaraba/Documents/Development/nccs-rasterlib/src')
+#sys.path.append('/Users/jacaraba/Documents/Development/nccs-rasterlib/src')
+sys.path.append('/att/gpfsfs/briskfs01/ppl/jacaraba/nccs-rasterlib/src')
 
 import indices
 from RandomForest import RandomForest
