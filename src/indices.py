@@ -52,6 +52,7 @@ def dvi(data, initbands=8, factor=1.0):
     if initbands > 8:  # 8 band imagery: DVI := NIR1 - Red = B7 - B5
         return ((data[6, :, :] / factor) - (data[4, :, :] / factor)).expand_dims(dim="band", axis=0)
     else:  # 4 band imagery: DVI := NIR - Red = B4 - B1
+        print ("SHAPEPEPE: ", ((data[3, :, :] / factor) - (data[0, :, :] / factor)).shape)
         return ((data[3, :, :] / factor) - (data[0, :, :] / factor)).expand_dims(dim="band", axis=0)
 
 

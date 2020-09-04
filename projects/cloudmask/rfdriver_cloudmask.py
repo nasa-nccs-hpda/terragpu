@@ -16,6 +16,8 @@ from datetime import datetime  # tracking date
 from time import time  # tracking time
 import sys, os, argparse  # system libraries
 import numpy as np  # for arrays modifications
+import xarray as xr
+from scipy import ndimage
 
 # Fix seed for reproducibility.
 seed = 21
@@ -102,6 +104,7 @@ def main():
     print(f'Working Directory: {args.workdir}')
     print(f'n_trees:           {args.n_trees}')
     print(f'max features:      {args.max_feat}')
+    print(f'model to predict:  {args.model}')
 
     # 1. set working, logs, and results directories, return dictionary
     # this is not necessary, just doing it to keep things organized
@@ -138,15 +141,41 @@ def main():
 
         # 3b3. apply model and get predictions
         for rast in args.rasters:  # iterate over each raster
+            # read raster and start only with 4 bands
             rfobj.readraster(rast)
+            print("Size of raster: ", rfobj.data.shape, rfobj.initbands)
+            
+            # support keelin squares - 4band model
+            #rfobj.data = rfobj.data[:4, :, :]
+            #rfobj.initbands = 4
+            
+            #"""
+            # support 8 band rasters  - 4 band model
+            red = rfobj.data[4, :, :]
+            green = rfobj.data[2, :, :]
+            rfobj.data = rfobj.data.drop(dim="band", labels=[1, 3, 4, 5, 6, 8], drop=True)
+            rfobj.data = xr.concat([red, green, rfobj.data], dim="band")  # concat new band
+            rfobj.data = rfobj.data.transpose('band', 'y', 'x')
+            rfobj.initbands = 4
+            #"""
+            print("Size of raster: ", rfobj.data.shape, rfobj.initbands)
+            print(rfobj.data)
+            
             #rfobj.addindices([indices.dvi, indices.fdi, indices.si], factor=1.0)
-            rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs1, indices.cs2], factor=1.0)
+            #rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs1], factor=1.0)
+            rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs2], factor=1.0)
+            #rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs1, indices.cs2], factor=1.0)
+
+            print("Size of raster: ", rfobj.data.shape)
 
             rfobj.predictrf(rastfile=rast, ws=args.windowsize)
             rfobj.sieve(rfobj.prediction, rfobj.prediction, size=800, mask=None, connectivity=8)
             output_name = "{}/cm_{}".format(rfobj.resultsdir, rast.split('/')[-1])  # model name
-            rfobj.toraster(rast, rfobj.prediction, output_name)
 
+            #rfobj.prediction = ndimage.median_filter(rfobj.prediction, size=20)
+
+            rfobj.toraster(rast, rfobj.prediction, output_name)
+            
     # 3c. exit if csv or model are not present or given
     else:
         sys.exit("ERROR: You should specify a train csv or a model to load. Refer to python " +
@@ -160,3 +189,4 @@ if __name__ == "__main__":
 
     # python rfdriver_cloudmask.py -w results -c ../cloudmask/cloud_training.csv -b 1 2 3 4 5 6 7 8 9 10 11
     # python rfdriver_cloudmask.py -w results -m model_20_log2.pkl -b 1 2 3 4 5 6 7 8 9 10 11 -i /Users/jacaraba/Desktop/cloud-mask-data/WV02_20140716_M1BS_103001003328DB00-toa.tif
+    # /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/*.tif
