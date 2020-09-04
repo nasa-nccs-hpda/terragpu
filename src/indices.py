@@ -103,3 +103,35 @@ def si(data, initbands=8, factor=1.0):
     else:  # 4 band imagery: SI := (1-Blue) * (1-Green) * (1-Red) = (1-B3) * (1-B2) * (1-B1)
         return ((1 - (data[0, :, :]/factor)) * (1 - (data[1, :, :]/factor)) * (1 - (data[2, :, :]/factor))
                 ).expand_dims(dim="band", axis=0)
+
+# Shadow Index (SI)
+def cs1(data, initbands=8, factor=1.0):
+    """
+    :param data: xarray or numpy array object in the form (c, h, w)
+    :param initbands: number of the original bands of the raster
+    :param factor: factor used for toa imagery
+    :return: new band with SI calculated
+    """
+    #if initbands > 8:  # 8 band imagery: SI := (1-Blue) * (1-Green) * (1-Red) = (1-B2) * (1-B3) * (1-B5)
+    #    return ((1 - (data[1, :, :]/factor)) * (1 - (data[2, :, :]/factor)) * (1 - (data[4, :, :]/factor))
+    #            ).expand_dims(dim="band", axis=0)
+    #else:  # 4 band imagery: SI := (1-Blue) * (1-Green) * (1-Red) = (1-B3) * (1-B2) * (1-B1)
+    # df['CI1'] = df.apply(lambda row: (3. * row.NearIR1) / (row.Blue + row.Green + row.Red), axis=1)
+    return ((3.0 * (data[3, :, :]/factor)) / (data[2, :, :] + data[1, :, :] + data[0, :, :])
+                ).expand_dims(dim="band", axis=0)
+
+# Shadow Index (SI)
+def cs2(data, initbands=8, factor=1.0):
+    """
+    :param data: xarray or numpy array object in the form (c, h, w)
+    :param initbands: number of the original bands of the raster
+    :param factor: factor used for toa imagery
+    :return: new band with SI calculated
+    """
+    #if initbands > 8:  # 8 band imagery: SI := (1-Blue) * (1-Green) * (1-Red) = (1-B2) * (1-B3) * (1-B5)
+    #    return ((1 - (data[1, :, :]/factor)) * (1 - (data[2, :, :]/factor)) * (1 - (data[4, :, :]/factor))
+    #            ).expand_dims(dim="band", axis=0)
+    #else:  # 4 band imagery: SI := (1-Blue) * (1-Green) * (1-Red) = (1-B3) * (1-B2) * (1-B1)
+    # df['CI2'] = df.apply(lambda row: (row.Blue + row.Green + row.Red + row.NearIR1) / 4., axis=1)
+    return ((data[3, :, :] + data[2, :, :] + data[1, :, :] + data[0, :, :]) / 4.0
+                ).expand_dims(dim="band", axis=0)

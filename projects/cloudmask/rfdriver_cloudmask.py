@@ -139,7 +139,8 @@ def main():
         # 3b3. apply model and get predictions
         for rast in args.rasters:  # iterate over each raster
             rfobj.readraster(rast)
-            rfobj.addindices([indices.dvi, indices.fdi, indices.si], factor=1.0)
+            #rfobj.addindices([indices.dvi, indices.fdi, indices.si], factor=1.0)
+            rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs1, indices.cs2], factor=1.0)
 
             rfobj.predictrf(rastfile=rast, ws=args.windowsize)
             rfobj.sieve(rfobj.prediction, rfobj.prediction, size=800, mask=None, connectivity=8)
