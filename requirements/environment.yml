@@ -1,5 +1,4 @@
-# nccs-rasterlib conda environment
-# Author: Jordan A. Caraballo-Vega, Science Data Processing Branch, 587
+# definition file to build xrasterlib conda environment
 name: xrasterlib
 
 channels:

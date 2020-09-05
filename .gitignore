@@ -1,12 +1,18 @@
+# Ignore compiled files
+__pycache__/
+.idea/
+.DS_Store
+
+# Ignore data products
 *.tif
 *.pkl
 *.xml
 *.csv
-__pycache__/
-.idea/
+
+# Ignore debugging and testing logs
 results/
 Results/
 Models/
 Logs/
-.DS_Store
-####
+
+# EOF
