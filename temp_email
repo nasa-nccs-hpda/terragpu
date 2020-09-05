@@ -1,8 +1,17 @@
 Hi Jordan,
  
-I have owed you an email about our changes to the indices we were using in the RF process for some time now, my apologies. I may be missing some info but I did want to send you what we were using for the indices now. The way we calculated SI has changed, and per Brian’s PCA we were using a different index in place of the DWI (NDWI instead). There was also some discussion with Mark about potential TOA values outside of the (0, 10000) range that we wanted to take care of. This came up because the calculated indices were resulting in weird values that wouldn’t be expected with input toa values in the (0, 10000) range. Although I still need to talk to Mark and Chris about this, the plan moving forward I believe is to fix this in our TOA process in EVHR where we will bin values <0 to 0 and those >10000 to 10000, but because the existing TOA data may still have these extraneous values, we implemented an additional step in the RF process to take care of them if they exist.
+I have owed you an email about our changes to the indices we were using in the RF process for some time now, my apologies. 
+I may be missing some info but I did want to send you what we were using for the indices now. The way we calculated SI has changed, 
+and per Brian’s PCA we were using a different index in place of the DWI (NDWI instead). There was also some discussion with Mark 
+about potential TOA values outside of the (0, 10000) range that we wanted to take care of. This came up because the calculated 
+indices were resulting in weird values that wouldn’t be expected with input toa values in the (0, 10000) range. Although I still 
+need to talk to Mark and Chris about this, the plan moving forward I believe is to fix this in our TOA process in EVHR where we will 
+bin values <0 to 0 and those >10000 to 10000, but because the existing TOA data may still have these extraneous values, we implemented 
+an additional step in the RF process to take care of them if they exist.
  
-So this is what we did before calculating indices to take care of the TOA problem (TBD whether we want to do this in the RF but I thought I should mention. Maybe this could be implemented temporarily until I am able to reprocess the Vietnam TOA data? Not sure how greatly this would affect things on your end):
+So this is what we did before calculating indices to take care of the TOA problem (TBD whether we want to do this in the RF but I 
+thought I should mention. Maybe this could be implemented temporarily until I am able to reprocess the Vietnam TOA data? Not sure how 
+greatly this would affect things on your end):
 ndArr = img[:, :, 0] == ndval # Before removing extraneous values, remember the location of NoData pixels
 img[img < 0] = 0 # This will convert -9999 to 0 but it's fine because we have ND array to use after classification
 img[img >  10000] =  10000
@@ -11,8 +20,10 @@ As for the indices, we are currently calculating this way:
 FDI (I think this is the same as what you already have):
 calc = (b8 - (b6 + b2))
 img = np.append(img, calc[..., np.newaxis], axis = 2)
-SI (The way we were calculating initially was wrong. You can probably do this differently from below but this was the way I found worked without getting memory errors from extremely large intermediate values):
-calc = (((1-b2/10000.0)*(1-b3/10000.0)*(1-b5/10000.0))**(1.0/3))*10000 # should be mathematically the same as ((10000-b2)*(10000-b3)*(10000-b5))**(1.0/3), but while I had trouble with the latter, the former worked
+SI (The way we were calculating initially was wrong. You can probably do this differently from below but this was the way I found worked 
+without getting memory errors from extremely large intermediate values):
+calc = (((1-b2/10000.0)*(1-b3/10000.0)*(1-b5/10000.0))**(1.0/3))*10000 # should be mathematically the same as ((10000-b2)*(10000-b3)*(10000-b5))**(1.0/3),
+but while I had trouble with the latter, the former worked
         calc = calc.astype(np.int16) # had to let the initial calc be float for calculation, convert it back to 16-bit
 img = np.append(img, calc[..., np.newaxis], axis = 2)
 NWDI (To replace DWI):
@@ -27,4 +38,5 @@ And here is the location of the Vietnam MS data:
 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen
 8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
  
-I will keep you posted on any other changes to the process that may need to be implemented in the RF model for cloud masking but this should be it for now. Let me know if you have any questions or trouble accessing the data.
+I will keep you posted on any other changes to the process that may need to be implemented in the RF model for cloud masking but this should 
+be it for now. Let me know if you have any questions or trouble accessing the data.
