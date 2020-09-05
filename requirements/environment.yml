@@ -1,6 +1,6 @@
 # nccs-rasterlib conda environment
 # Author: Jordan A. Caraballo-Vega, Science Data Processing Branch, 587
-name: nccs-rasterlib
+name: xrasterlib
 
 channels:
   - conda-forge
