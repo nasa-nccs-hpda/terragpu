@@ -54,6 +54,12 @@ they will be migrated to their own repository.
 
 Raster processing relies in xarray and rasterio for memory mapping operations.
 
+## Short Term Enhancements
+
+- [ ] Create and publish PIP package
+- [ ] Add additional indices
+- [ ] Document Random Forest
+
 ## Authors
 
 * Jordan Alexis Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
