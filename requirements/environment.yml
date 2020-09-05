@@ -9,6 +9,7 @@ channels:
 dependencies:
   - cudatoolkit=10.2
   - cudnn
+  - pip
   - pip:
     - numpy
     - pandas

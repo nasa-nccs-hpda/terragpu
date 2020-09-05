@@ -10,9 +10,18 @@
 
 ### Installation
 
-#### Build Conda Environment
+#### Build Conda Environment - Single Step (GPU support)
 ```
 conda env create -f requirements/environment.yml
+```
+
+#### Build Conda Environment - Multi Step
+```
+conda create --name xrasterlib
+conda activate xrasterlib
+conda install -c anaconda pip 
+conda install -c anaconda cudatoolkit=10.1 cudnn # if GPU available
+pip install --upgrade -r requirements/requirements.txt
 ```
 
 #### Build PyEnv
