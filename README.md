@@ -1,6 +1,6 @@
 # xrasterlib: Python library to process and classify remote sensing imagery
 
-![nccs-logo](images/nccslogo.png | width=100)
+<img src="images/nccslogo.png" height="150" width="250">
 
 ### Objectives
 
