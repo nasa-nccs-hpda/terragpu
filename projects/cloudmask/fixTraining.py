@@ -1,5 +1,7 @@
 # Script to fix training data to work with 4 band model
-# modifies existing csv file provided by Andrew and company
+# modifies existing csv file provided by Weis and Wooten
+# Author: Jordan A Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
+
 import pandas as pd
 
 # csv file to read

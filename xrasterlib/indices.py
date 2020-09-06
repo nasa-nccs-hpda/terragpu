@@ -1,45 +1,45 @@
-# -------------------------------------------------------------------------------
-# module indices
-# This class calculates remote sensing indices given xarray or numpy objects.
-# -------------------------------------------------------------------------------
+import xarray as xr  # read rasters
+import dask
+
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
 __status__ = "Production"
 
-# Note:
-# We assume 8 band nad 6 band imagery has the following order
-# ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge', 'Near-IR1', 'Near-IR2']
-# ['Red', 'Green', 'Blue', 'Near-IR1', 'HOM1', 'HOM2']
-# In a future implementation we can provide the methods with the bands to calculate
-# instead of trying to calculate them using predefined array indices.
 # -------------------------------------------------------------------------------
-# Import System Libraries
+# module indices
+# This class calculates remote sensing indices given xarray or numpy objects.
+# Note: Most of our imagery uses the following set of bands.
+# 8 band: ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
+# 4 band: ['Red', 'Green', 'Blue', 'NIR1', 'HOM1', 'HOM2']
 # -------------------------------------------------------------------------------
-import xarray as xr  # read rasters
-import dask
 
 # -------------------------------------------------------------------------------
 # Module Methods
 # -------------------------------------------------------------------------------
 
 
-def addindices(rastarr, indices, initbands=8, factor=1.0) -> dask.array:
+def addindices(rastarr, bands, indices, factor=1.0) -> dask.array:
     """
-    :param rastarr:
-    :param indices:
-    :param initbands:
-    :param factor:
-    :return:
-    """
-    nbands = rastarr.shape[0]  # get number of bands
-    for indfunc in indices:  # iterate over each new band
-        nbands = nbands + 1  # counter for number of bands
-        band = indfunc(rastarr, initbands=initbands, factor=factor)  # calculate band (indices)
+     :param rastarr:
+     :param indices:
+     :param bands:
+     :param factor:
+     :return:
+     """
+    nbands = len(bands)  # get initial number of bands
+    for indices_function in indices:  # iterate over each new band
+        nbands += 1  # counter for number of bands
+
+        # calculate band (indices)
+        band, bandid = indices_function(rastarr, bands=bands, factor=factor)
+        bands.append(bandid)  # append new band id to list of bands
         band.coords['band'] = [nbands]  # add band indices to raster
         rastarr = xr.concat([rastarr, band], dim='band')  # concat new band
+
+    # update raster metadata, xarray attributes
     rastarr.attrs['scales'] = [rastarr.attrs['scales'][0]] * nbands
     rastarr.attrs['offsets'] = [rastarr.attrs['offsets'][0]] * nbands
-    return rastarr  # return xarray with new bands
+    return rastarr, bands
 
 
 # Difference Vegetation Index (DVI), type int16

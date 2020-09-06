@@ -9,3 +9,4 @@ imutils
 hummingbird-ml
 joblib
 toolz
+tqdm

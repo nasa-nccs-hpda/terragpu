@@ -1,6 +1,3 @@
-# -------------------------------------------------------------------------------
-# Import System Libraries
-# -------------------------------------------------------------------------------
 import os
 import joblib
 from tqdm import tqdm
@@ -12,42 +9,46 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from hummingbird.ml import convert  # support GPU inference
 import torch  # import torch to verify available devices
 
-from Raster import Raster
+from raster import Raster
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587"
 __email__  = "jordan.a.caraballo-vega@nasa.gov"
 __status__ = "Production"
+
 # -------------------------------------------------------------------------------
-# class Indices
-# This class calculates remote sensing indices given xarray or numpy objects.
+# class RF
+# This class performs training and classification of satellite imagery using a
+# Random Forest classifier.
 # -------------------------------------------------------------------------------
 
 
-class RandomForest(Raster):
+class RF(Raster):
 
     # ---------------------------------------------------------------------------
     # __init__
     # ---------------------------------------------------------------------------
-    def __init__(self, traincsvfile=None, modelfile=None):
+    def __init__(self, traincsvfile=None, modelfile=None, resultsdir='results',
+                 ntrees=20, maxfeat='log2'
+                 ):
         super().__init__()
 
         # working directory to store result artifacts
-        self.resultsdir = 'results'
+        self.resultsdir = resultsdir
 
         # training csv filename
         if traincsvfile is not None and not os.path.isfile(traincsvfile):
             raise RuntimeError('{} does not exist'.format(traincsvfile))
         self.traincsvfile = traincsvfile
 
-        # training and test data variables
+        # training parameters
+        self.ntrees = ntrees
+        self.maxfeat = maxfeat
+
+        # training and test data variables, initialize them as empty
         self.x_train = None
         self.x_test  = None
         self.y_train = None
         self.y_test  = None
-
-        # training parameters
-        self.n_trees = 20
-        self.max_feat = 'log2'
 
         # trained model filename
         if modelfile is not None and not os.path.isfile(modelfile):
@@ -78,7 +79,7 @@ class RandomForest(Raster):
         self.x_train, self.x_test, \
             self.y_train, self.y_test = train_test_split(x, y, test_size=testsize, random_state=seed)
 
-    def trainrf(self):
+    def train(self):
         labels = np.unique(self.y_train)  # now it's the unique values in y array from text file
         print(f'Training data includes {labels.size} classes.')
         print(f'X matrix is sized: {self.x_train.shape}')  # shape of x data
@@ -100,7 +101,7 @@ class RandomForest(Raster):
         except Exception as e:
             print(f'ERROR: {e}')
 
-    def loadrf(self):
+    def load(self):
         self.model = joblib.load(self.modelfile)  # loading the model in parallel
         device = 'cpu'  # set cpu as default device
         if torch.cuda.is_available():  # if cuda is available, assign model to GPU
@@ -109,7 +110,7 @@ class RandomForest(Raster):
             self.model.to(device)  # assign model to GPU
         print(f'Loaded model {self.modelfile} into {device}.')
 
-    def predictrf(self, rastfile='Vietnam.tif', ws=[5120, 5120]):
+    def predict(self, rastfile='Vietnam.tif', ws=[5120, 5120]):
         # open rasters and get both data and coordinates
         rast_shape = self.data[0, :, :].shape  # getting the shape of the wider scene
         print ("rasy shape ", rast_shape)

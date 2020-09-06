@@ -22,3 +22,4 @@ dependencies:
     - hummingbird-ml
     - joblib
     - toolz
+    - tqdm

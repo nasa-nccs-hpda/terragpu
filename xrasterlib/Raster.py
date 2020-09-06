@@ -1,6 +1,5 @@
 import sys  # system library
 import os  # system library
-import numpy as np  # array manipulation library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
 import rasterio.features as riofeat  # rasterio features include sieve filter
@@ -136,7 +135,7 @@ class Raster:
 if __name__ == "__main__":
 
     # Running Unit Tests
-    # python Raster.py /Users/jacaraba/Desktop/cloudtest/WV02_20181109_M1BS_1030010086582600-toa.tif
+    # python raster.py /Users/jacaraba/Desktop/cloudtest/WV02_20181109_M1BS_1030010086582600-toa.tif
 
     # Local variables
     filename = sys.argv[1]
