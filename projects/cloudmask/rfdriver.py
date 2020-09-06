@@ -101,29 +101,34 @@ def main():
     print(f'max features:      {args.maxfeat}')
     print(f'model to predict:  {args.model}')
 
+    # --------------------------------------------------------------------------------
     # 1. set log file for script if requested (-l command line option)
+    # --------------------------------------------------------------------------------
     os.system(f'mkdir -p {args.outdir}')  # create output dir
     if args.logbool:  # if command line option -l was given
         logfile = create_logfile(args, logdir=args.outdir)  # create logfile for std
     print("Command line executed: ", sys.argv)  # saving command into log file
 
+    # --------------------------------------------------------------------------------
     # 2. Instantiate RandomForest object
+    # --------------------------------------------------------------------------------
     raster_obj = RF(traincsvfile=args.traincsv, modelfile=args.model,
                     outdir=args.outdir, ntrees=args.ntrees, maxfeat=args.maxfeat)
 
-    # 3a. if training csv exists, proceed and train
+    # --------------------------------------------------------------------------------
+    # 3a. if training csv exists, train
+    # --------------------------------------------------------------------------------
     if raster_obj.traincsvfile is not None:
-
         raster_obj.splitdata(testsize=args.testsize, seed=seed)  # 3a1. read CSV split train/test
         raster_obj.train()  # 3a2. train and save RF model
 
-    # 3b. evaluate images from model
+    # --------------------------------------------------------------------------------
+    # 3b. if model exists, predict
+    # --------------------------------------------------------------------------------
     elif raster_obj.modelfile is not None:
-
         raster_obj.load()  # 3b1. load model - CPU or GPU bound
-
         if not args.rasters or args.rasters == '*.tif':  # if raster -i variable is empty, stop process and log.
-            sys.exit("ERROR: No images to predict. Refer to python rfdriver.py -h for options.")
+            sys.exit("ERROR: No rasters to predict, python rfdriver.py -h for options.")
 
         # 3b3. apply model and get predictions
         for rast in args.rasters:  # iterate over each raster
@@ -141,19 +146,22 @@ def main():
 
             # TODO: check if order matters between sive and median
 
+            # apply sieve filter if necessary
             if args.sievebool:
                 raster_obj.sieve(raster_obj.prediction, raster_obj.prediction, size=args.sieve_sz)  # apply sieve
 
+            # apply median filter if necessary
             if args.medianbool:
                 raster_obj.prediction = raster_obj.median(raster_obj.prediction, ksize=args.median_sz)  # apply median
 
             output_name = "{}/cm_{}".format(raster_obj.outdir, rast.split('/')[-1])  # out mask name
             raster_obj.toraster(rast, raster_obj.prediction, output_name)
 
+    # --------------------------------------------------------------------------------
     # 3c. exit if csv or model are not present or given
+    # --------------------------------------------------------------------------------
     else:
         sys.exit("ERROR: Specify a train csv or model to load, python rfdriver.py -h for more options.")
-
     print("Elapsed Time: ", (time() - start_time) / 60.0)  # output program run time in minutes
 
 

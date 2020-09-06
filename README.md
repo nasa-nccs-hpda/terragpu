@@ -1,6 +1,8 @@
-# xrasterlib: Python library to process and classify remote sensing imagery
+# xrasterlib
 
-<img src="images/nccslogo.png" height="150" width="250">
+Python library to process and classify remote sensing imagery
+
+<img src="images/nccslogo.png" height="150" width="300">
 
 ### Objectives
 
@@ -10,15 +12,23 @@
 
 ### Installation
 
+The following library is intended to be used to accelerate the development
+of data science products for remote sensing satellite imagery. xrasterlib can 
+be installed by itself, but instructions for installing the full environments 
+are listed below so projects, examples, and notebooks can be run.
+
 #### Build Conda Environment - Single Step (GPU support)
 ```
-conda env create -f requirements/environment.yml
+git clone https://github.com/jordancaraballo/xrasterlib.git
+cd xrasterlib; conda env create -f requirements/environment.yml;
+conda activate xrasterlib
 python setup.py install
 ```
 
 #### Build Conda Environment - Multi Step
 ```
-conda create --name xrasterlib
+git clone https://github.com/jordancaraballo/xrasterlib.git
+cd xrasterlib; conda create --name xrasterlib;
 conda activate xrasterlib
 conda install -c anaconda pip 
 conda install -c anaconda cudatoolkit=10.1 cudnn # if GPU available
@@ -26,13 +36,14 @@ pip install --upgrade -r requirements/requirements.txt
 python setup.py install
 ```
 
-#### Build PyEnv
+#### Pip only
 ```
+git clone https://github.com/jordancaraballo/xrasterlib.git
 pip install -r requirements/requirements.txt
 python setup.py install
 ```
 Note: PIP installations do not include CUDA libraries for GPU support. Make sure
-NVIDIA libraries are installed locally in the system.
+NVIDIA libraries are installed locally in the system if not using conda.
 
 ## Getting Started
 
