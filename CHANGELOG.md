@@ -18,3 +18,6 @@ Any security or bug findings should be documented a CVE or BUG respectively.
 
 ### Removed
 - Reference to Weis modular code.
+
+### Approved
+Jordan A. Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
