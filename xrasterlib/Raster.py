@@ -2,8 +2,9 @@ import sys  # system library
 import os  # system library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
+from scipy.ndimage import median_filter  # scipy includes median filter
 import rasterio.features as riofeat  # rasterio features include sieve filter
-import indices  # custom indices calculation module
+import xrasterlib.indices as indices  # custom indices calculation module
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
@@ -60,6 +61,10 @@ class Raster:
     # ---------------------------------------------------------------------------
     # methods
     # ---------------------------------------------------------------------------
+
+    # ---------------------------------------------------------------------------
+    # input
+    # ---------------------------------------------------------------------------
     def readraster(self, filename, bands):
         """
         Read raster and append data to existing Raster object
@@ -73,6 +78,9 @@ class Raster:
         self.bands = bands
         self.nodataval = self.data.attrs['nodatavals']
 
+    # ---------------------------------------------------------------------------
+    # raster modification
+    # ---------------------------------------------------------------------------
     def addindices(self, indices, factor=1.0):
         """
         Add multiple indices to existing Raster object self.data
@@ -98,9 +106,24 @@ class Raster:
         self.data.attrs['scales'] = [self.data.attrs['scales'][0]] * nbands
         self.data.attrs['offsets'] = [self.data.attrs['offsets'][0]] * nbands
 
+    def dropindices(self, dropindices):
+        assert all(band in self.bands for band in dropindices), "Specified band not in raster."
+        dropind = [self.bands.index(ind_id)+1 for ind_id in dropindices]
+        self.data = self.data.drop(dim="band", labels=dropind, drop=True)
+        self.bands = [band for band in self.bands if band not in dropindices]
+
+    # ---------------------------------------------------------------------------
+    # post processing
+    # ---------------------------------------------------------------------------
     def sieve(self, prediction, out, size=350, mask=None, connectivity=8):
         riofeat.sieve(prediction, size, out, mask, connectivity)
 
+    def median(self, prediction, ksize=20):
+        return median_filter(prediction, size=ksize)
+
+    # ---------------------------------------------------------------------------
+    # output
+    # ---------------------------------------------------------------------------
     def toraster(self, rast, prediction, output='rfmask.tif'):
         """
         :param rast: raster name to get metadata from

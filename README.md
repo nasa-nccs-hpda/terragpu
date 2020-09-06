@@ -13,6 +13,7 @@
 #### Build Conda Environment - Single Step (GPU support)
 ```
 conda env create -f requirements/environment.yml
+python setup.py install
 ```
 
 #### Build Conda Environment - Multi Step
@@ -22,11 +23,13 @@ conda activate xrasterlib
 conda install -c anaconda pip 
 conda install -c anaconda cudatoolkit=10.1 cudnn # if GPU available
 pip install --upgrade -r requirements/requirements.txt
+python setup.py install
 ```
 
 #### Build PyEnv
 ```
 pip install -r requirements/requirements.txt
+python setup.py install
 ```
 Note: PIP installations do not include CUDA libraries for GPU support. Make sure
 NVIDIA libraries are installed locally in the system.
@@ -42,6 +45,7 @@ NVIDIA libraries are installed locally in the system.
 ├── requirements          <- Requirements for installing the dependencies
 ├── xrasterlib            <- Library source code
 ├── README.md             <- The top-level README for developers using this project
+├── CHANGELOG.md          <- Releases documentation
 └── LICENSE
 ```
 
@@ -57,8 +61,13 @@ Raster processing relies in xarray and rasterio for memory mapping operations.
 ## Short Term Enhancements
 
 - [ ] Create and publish PIP package
-- [ ] Add additional indices
+- [X] Add additional indices
 - [ ] Document Random Forest
+
+## Ongoing Projects
+
+- projects/cloudmask  - cloud masking of VHR imagery using Random Forest
+- projects/shadowmask - shadow masking of VHR imagery using geometry properties.
 
 ## Authors
 

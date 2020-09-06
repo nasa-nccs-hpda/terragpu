@@ -33,8 +33,55 @@ Adding additional description of arguments here.
 Simple training command. 
 ```
 python rasterRF.py -w results -c cloud_training.csv -b 1 2 3 4 5 6 7 8 9 10 11
-```
 
+python rfdriver.py -o results -c data/cloud_training.csv
+python rfdriver.py -o results -c data/cloud_training.csv -l
+python rfdriver.py -o results -c data/cloud_training.csv -m newmodel.pkl
+```
+Prediction
+Assuming default bands are ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge',
+                                                           'Near-IR1', 'Near-IR2']
+                                                        
+```
+python rfdriver.py -o results -m newmodel.pkl -i /Users/jacaraba/Desktop/cloud-mask-data/WV02_*.tif
+python rfdriver.py -o results -m newmodel.pkl -i /Users/jacaraba/Desktop/cloud-mask-data/WV02_20140716_M1BS_103001003328DB00-toa.tif  
+```
+else specify bands with 
+add it here
+
+
+        """    
+            # support keelin squares - 4band model
+            #rfobj.data = rfobj.data[:4, :, :]
+            #rfobj.initbands = 4
+            
+            ## support 8 band rasters  - 4 band model
+            #red = rfobj.data[4, :, :]
+            #green = rfobj.data[2, :, :]
+            #rfobj.data = rfobj.data.drop(dim="band", labels=[1, 3, 4, 5, 6, 8], drop=True)
+            #rfobj.data = xr.concat([red, green, rfobj.data], dim="band")  # concat new band
+            #rfobj.data = rfobj.data.transpose('band', 'y', 'x')
+            #rfobj.initbands = 4
+
+            print("Size of raster: ", raster_obj.data.shape, raster_obj.bands)
+            print(raster_obj.data)
+            
+            #rfobj.addindices([indices.dvi, indices.fdi, indices.si], factor=1.0)
+            #rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs1], factor=1.0)
+            raster_obj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs2], factor=1.0)
+            #rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs1, indices.cs2], factor=1.0)
+
+            print("Size of raster: ", rfobj.data.shape)
+
+            raster_obj.predictrf(rastfile=rast, ws=args.windowsize)
+            raster_obj.sieve(raster_obj.prediction, raster_obj.prediction, size=800, mask=None, connectivity=8)
+            output_name = "{}/cm_{}".format(raster_obj.resultsdir, rast.split('/')[-1])  # model name
+
+            #rfobj.prediction = ndimage.median_filter(rfobj.prediction, size=20)
+
+            raster_obj.toraster(rast, raster_obj.prediction, output_name)
+            """
+            
 ### Inference
 
 Adding additional description of arguments here.

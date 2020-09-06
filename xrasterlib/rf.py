@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from hummingbird.ml import convert  # support GPU inference
 import torch  # import torch to verify available devices
 
-from raster import Raster
+from xrasterlib.raster import Raster
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587"
 __email__  = "jordan.a.caraballo-vega@nasa.gov"
@@ -27,13 +27,13 @@ class RF(Raster):
     # ---------------------------------------------------------------------------
     # __init__
     # ---------------------------------------------------------------------------
-    def __init__(self, traincsvfile=None, modelfile=None, resultsdir='results',
+    def __init__(self, traincsvfile=None, modelfile=None, outdir='results',
                  ntrees=20, maxfeat='log2'
                  ):
         super().__init__()
 
         # working directory to store result artifacts
-        self.resultsdir = resultsdir
+        self.outdir = outdir
 
         # training csv filename
         if traincsvfile is not None and not os.path.isfile(traincsvfile):
@@ -51,11 +51,11 @@ class RF(Raster):
         self.y_test  = None
 
         # trained model filename
-        if modelfile is not None and not os.path.isfile(modelfile):
+        if traincsvfile is None and modelfile is not None and not os.path.isfile(modelfile):
             raise RuntimeError('{} does not exist'.format(modelfile))
         elif modelfile is None and self.traincsvfile is not None:
-            self.modelfile = 'model_{}_{}.pkl'.format(self.n_trees, self.max_feat)
-        else:
+            self.modelfile = 'model_{}_{}.pkl'.format(self.ntrees, self.maxfeat)
+        else:  # if a model name is given
             self.modelfile = modelfile
 
         # store loaded model
@@ -84,20 +84,21 @@ class RF(Raster):
         print(f'Training data includes {labels.size} classes.')
         print(f'X matrix is sized: {self.x_train.shape}')  # shape of x data
         print(f'Y array is sized:  {self.y_train.shape}')  # shape of y data
+        print(f'Training model with n_trees={self.ntrees} and max_feat={self.maxfeat}...')
 
         if '.' not in labels[0]:  # if labels are integers, check first value from y (come as string)
-            rf = RandomForestClassifier(n_estimators=self.n_trees, max_features=self.max_feat, oob_score=True)
+            rf = RandomForestClassifier(n_estimators=self.ntrees, max_features=self.maxfeat, oob_score=True)
             self.y_train = self.y_train.astype(np.int)
         else:  # if labels are floats, use random forest regressor
-            rf = RandomForestRegressor(n_estimators=self.n_trees, max_features=self.max_feat, oob_score=True)
+            rf = RandomForestRegressor(n_estimators=self.ntrees, max_features=self.maxfeat, oob_score=True)
             self.y_train = self.y_train.astype(np.float)
 
-        print("Training model...")
         rf.fit(self.x_train, self.y_train)  # fit model to training data
         print('Score:', rf.oob_score_)
 
         try:  # export model to file
             joblib.dump(rf, self.modelfile)
+            print(f'Model has been saved as {self.modelfile}')
         except Exception as e:
             print(f'ERROR: {e}')
 
@@ -110,7 +111,7 @@ class RF(Raster):
             self.model.to(device)  # assign model to GPU
         print(f'Loaded model {self.modelfile} into {device}.')
 
-    def predict(self, rastfile='Vietnam.tif', ws=[5120, 5120]):
+    def predict(self, ws=[5120, 5120]):
         # open rasters and get both data and coordinates
         rast_shape = self.data[0, :, :].shape  # getting the shape of the wider scene
         print ("rasy shape ", rast_shape)
