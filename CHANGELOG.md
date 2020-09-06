@@ -1,9 +1,9 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
-Any security or bug findings should be documented a CVE or BUG respectively.
+Any security or bug findings should be documented as CVE or BUG respectively.
 
-## [Unreleased]
+## Status: [Unreleased]
 
 ## [0.0.1] - 2020-09-05
 
