@@ -33,8 +33,9 @@ You will only need to do this the first time you login, or if you want to create
 The following steps let you configure a symbolic link to your $NOBACKUP space since your $HOME 
 quota is limited. Replace username with your auid.
 ```
-module load anaconda
-mkdir /att/nobackup/username/.conda; ln -s /att/nobackup/username/.conda /home/username/.conda
+ssh username@adaptlogin.nccs.nasa.gov
+module load ml/anaconda3
+mkdir /att/nobackup/username/.conda; ln -s /att/nobackup/username/.conda /home/username/.conda;
 ```
 #### Installing anaconda environment
 Now we will create an anaconda environment to execute the software included in this project.
