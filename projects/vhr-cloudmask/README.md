@@ -1,15 +1,46 @@
 # vhr-cloudmask
 
-Generalized Random Forest models for processing very high-resolution rasters. 
-Use case included in this repository aims to perform cloud/shadow masking.
+Cloud masking of very high-resolution imagery using Random Forest. 
 
-### Objectives
+## Objectives
 
 - Generalized Random forest script for pixel-wise classification of very high-resolution rasters.
 - Application of random forest script to generate cloud masks.
-- Geometry based approach to generate cloud masks.
 
-### Prerequisites
+## Using this project at the NCCS
+
+The following is a step by step guide to classify rasters using the [NASA Center for Climate Simulation (NCCS)](https://www.nccs.nasa.gov/) 
+GPU cluster. Steps should be similar in any other working station or HPC cluster. This project assumes that an initial CSV with the
+training data has been given. There is a script included that modifies the calculated indices if necessary. 
+
+<!--ts-->
+   * [Prerequisites](#Prerequisites)
+     * [Login to the GPU cluster](#Login to the GPU cluster)
+     * [Installation](#Installation)
+       * [Configuring anaconda](#Configuring anaconda)
+
+<!--te-->
+
+### Login to the GPU cluster
+```
+ssh username@adaptlogin.nccs.nasa.gov
+ssh username@gpulogin1
+```
+
+### Installation
+
+#### Configuring anaconda
+You will only need to do this the first time you login, or if you want to create a new environment. 
+The following steps let you configure a symbolic link to your $NOBACKUP space since your $HOME 
+quota is limited. Replace username with your auid.
+```
+module load anaconda
+mkdir /att/nobackup/username/.conda; ln -s /att/nobackup/username/.conda /home/username/.conda
+```
+#### Installing anaconda environment
+```
+#
+```
 
 #### Conda
 ```
