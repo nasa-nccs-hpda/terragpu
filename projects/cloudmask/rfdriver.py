@@ -127,12 +127,17 @@ def main():
     # --------------------------------------------------------------------------------
     elif raster_obj.modelfile is not None:
         raster_obj.load()  # 3b1. load model - CPU or GPU bound
-        if not args.rasters or args.rasters == '*.tif':  # if raster -i variable is empty, stop and log.
-            sys.exit("ERROR: No rasters to predict, python rfdriver.py -h for options.")
+        assert (args.rasters and args.rasters != '*.tif'), "No raster to predict, python rfdriver.py -h for options."
 
         # 3b3. apply model and get predictions
         for rast in args.rasters:  # iterate over each raster
             raster_obj.readraster(rast, args.bands)  # read raster
+
+            # preprocess raster to remove anomalous pixels, make boundaries (0, 10000)
+            raster_obj.preprocess(op='>', boundary=0, replace=0)
+            raster_obj.preprocess(op='<', boundary=10000, replace=10000)
+            assert (raster_obj.data.min().values == 0 and raster_obj.data.max().values == 10000), \
+                "min and max should be (0, 10000). Verify preprocess."
 
             # add additional indices if necessary
             if raster_obj.model.n_features_ != raster_obj.data.shape[0]:

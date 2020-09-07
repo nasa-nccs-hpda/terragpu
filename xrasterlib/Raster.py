@@ -1,5 +1,6 @@
 import sys  # system library
 import os  # system library
+import operator  # operator library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
 from scipy.ndimage import median_filter  # scipy includes median filter
@@ -79,8 +80,29 @@ class Raster:
         self.nodataval = self.data.attrs['nodatavals']
 
     # ---------------------------------------------------------------------------
-    # raster modification
+    # preprocessing
     # ---------------------------------------------------------------------------
+    def preprocess(self, op='>', boundary=0, replace=0):
+        """
+        Remove anomalous values from self.data
+        ----------
+        Parameters
+        ----------
+        op : str with operator, currently <, and >
+            string with operator value
+        boundary : int
+            boundary for classifying as anomalous
+        replace : float
+            Value to replace with
+        ----------
+        Example
+        ----------
+            raster.preprocess(op='>', boundary=0, replace=0) := get all values that
+            satisfy the condition self.data > boundary. In this case above 0.
+        """
+        ops = {'<': operator.lt, '>': operator.gt}
+        self.data = self.data.where(ops[op](self.data, boundary), other=replace)
+
     def addindices(self, indices, factor=1.0):
         """
         Add multiple indices to existing Raster object self.data
@@ -163,7 +185,7 @@ if __name__ == "__main__":
     # Local variables
     filename = sys.argv[1]
     bands = ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
-    unit_tests = [1, 2, 3, 4, 5]
+    unit_tests = [4]
 
     # 1. Create raster object
     if 1 in unit_tests:
@@ -183,8 +205,18 @@ if __name__ == "__main__":
         raster = Raster(filename, bands)
         raster.addindices([indices.fdi, indices.si, indices.ndwi], factor=10000.0)  # call method from Raster
         assert raster.data.shape[0] == 11, "Number of bands should be 11."
-        #raster.data = raster.addindices(raster.data, [indices.si], factor=10000.0)  # call method from indices
+        # raster.data = raster.addindices(raster.data, [indices.si], factor=10000.0)  # call method from indices
         print("Unit Test #3: ", raster.data, raster.bands)
+
+    # 4. Test preprocess function
+    if 4 in unit_tests:
+        raster = Raster(filename, bands)
+        raster.preprocess(op='>', boundary=0, replace=0)
+        assert raster.data.min().values == 0, "Minimum should be 0."
+        raster.preprocess(op='<', boundary=10000, replace=10000)
+        assert raster.data.max().values == 10000, "Maximum should be 10000."
+        print("Unit Test #4: (min, max)", raster.data.min().values, raster.data.max().values)
+
 
 
 
