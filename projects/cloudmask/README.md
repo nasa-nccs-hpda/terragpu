@@ -130,6 +130,13 @@ cloud height iteration and spectral analysis for Landsat 8 OLI data. ISPRS Journ
 
 ### Additional Notes
 
+#### Location of the Data
+Location of Vietnam MS data:
+4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS
+8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band
+4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/pansharpen
+8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
+
 #### rasterRF.py usage output
 ```
 (vhr-cloudmask)$ python rasterRF.py -h
