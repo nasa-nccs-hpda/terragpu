@@ -14,10 +14,9 @@ GPU cluster. Steps should be similar in any other working station or HPC cluster
 training data has been given. There is a script included that modifies the calculated indices if necessary. 
 
 <!--ts-->
-   * [Prerequisites](#Prerequisites)
-     * [Login to the GPU cluster](#Login to the GPU cluster)
-     * [Installation](#Installation)
-       * [Configuring anaconda](#Configuring anaconda)
+  * [Login to the GPU cluster](#Login to the GPU cluster)
+  * [Installation](#Installation)
+    * [Configuring anaconda](#Configuring anaconda)
 
 <!--te-->
 
@@ -38,21 +37,18 @@ module load anaconda
 mkdir /att/nobackup/username/.conda; ln -s /att/nobackup/username/.conda /home/username/.conda
 ```
 #### Installing anaconda environment
+Now we will create an anaconda environment to execute the software included in this project.
+This environment can also be included as a kernel when using Jupyter Notebooks.
 ```
-#
+cd $NOBACKUP
+git clone https://github.com/jordancaraballo/xrasterlib.git
+cd xrasterlib
+conda create --name xrasterlib
+conda activate xrasterlib
+conda install -c anaconda pip cudatoolkit cudnn
+pip install -r requirements/requirements.txt
+python setup.py install
 ```
-
-#### Conda
-```
-conda env create -f environment.yml
-```
-
-#### Pip            
-```
-pip install -r requirements.txt
-```
-Note: PIP installations do not include CUDA libraries for GPU support. Make sure 
-NVIDIA libraries are installed locally in the system.
 
 ### Training
 
