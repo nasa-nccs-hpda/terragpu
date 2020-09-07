@@ -8,7 +8,7 @@ Python library to process and classify remote sensing imagery
 
 - Library to process remote sensing imagery using memory efficient libraries.
 - Machine Learning and Deep Learning image classification.
-- CPU and GPU support.
+- Provide GPU accelaration for the evaluation of sckit models.
 
 ### Installation
 
