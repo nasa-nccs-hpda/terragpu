@@ -99,7 +99,7 @@ def main():
     print(f'Working Directory: {args.outdir}')
     print(f'ntrees:            {args.ntrees}')
     print(f'max features:      {args.maxfeat}')
-    print(f'model to predict:  {args.model}')
+    print(f'model filename:    {args.model}')
 
     # --------------------------------------------------------------------------------
     # 1. set log file for script if requested (-l command line option)
@@ -127,7 +127,7 @@ def main():
     # --------------------------------------------------------------------------------
     elif raster_obj.modelfile is not None:
         raster_obj.load()  # 3b1. load model - CPU or GPU bound
-        if not args.rasters or args.rasters == '*.tif':  # if raster -i variable is empty, stop process and log.
+        if not args.rasters or args.rasters == '*.tif':  # if raster -i variable is empty, stop and log.
             sys.exit("ERROR: No rasters to predict, python rfdriver.py -h for options.")
 
         # 3b3. apply model and get predictions
@@ -155,7 +155,7 @@ def main():
                 raster_obj.prediction = raster_obj.median(raster_obj.prediction, ksize=args.median_sz)  # apply median
 
             output_name = "{}/cm_{}".format(raster_obj.outdir, rast.split('/')[-1])  # out mask name
-            raster_obj.toraster(rast, raster_obj.prediction, output_name)
+            raster_obj.toraster(rast, raster_obj.prediction, output_name)  # save raster with mask
 
     # --------------------------------------------------------------------------------
     # 3c. exit if csv or model are not present or given
