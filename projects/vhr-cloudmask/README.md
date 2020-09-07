@@ -17,7 +17,7 @@ training data has been given. There is a script included that modifies the calcu
   * [Login to the GPU cluster](#Login to the GPU cluster)
   * [Installation](#Installation)
     * [Configuring anaconda](#Configuring anaconda)
-
+    * [Installing anaconda environment](#Installing anaconda environment)
 <!--te-->
 
 ### Login to the GPU cluster
