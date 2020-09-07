@@ -92,7 +92,7 @@ class Raster:
             string with operator value
         boundary : int
             boundary for classifying as anomalous
-        replace : float
+        replace : int, float
             Value to replace with
         ----------
         Example

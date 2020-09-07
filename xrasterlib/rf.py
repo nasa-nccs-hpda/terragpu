@@ -97,8 +97,9 @@ class RF(Raster):
         print('Score:', rf.oob_score_)
 
         try:  # export model to file
-            joblib.dump(rf, self.modelfile)
-            print(f'Model has been saved as {self.modelfile}')
+            outmodel = self.outdir + '/' + self.modelfile
+            joblib.dump(rf, outmodel)
+            print(f'Model has been saved as {outmodel}')
         except Exception as e:
             print(f'ERROR: {e}')
 
