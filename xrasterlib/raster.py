@@ -105,7 +105,7 @@ class Raster:
 
     def addindices(self, indices, factor=1.0):
         """
-        Add multiple indices to existing Raster object self.data
+        Add multiple indices to existing Raster object self.data.
         ----------
         Parameters
         ----------
