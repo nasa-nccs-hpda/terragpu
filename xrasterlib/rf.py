@@ -60,6 +60,7 @@ class RF(Raster):
 
         # store loaded model
         self.model = None
+        self.model_nfeat = None
 
         # store prediction if required
         self.prediction = None
@@ -105,6 +106,7 @@ class RF(Raster):
 
     def load(self):
         self.model = joblib.load(self.modelfile)  # loading the model in parallel
+        self.model_nfeat = self.model.n_features_
         device = 'cpu'  # set cpu as default device
         if torch.cuda.is_available():  # if cuda is available, assign model to GPU
             device = torch.device('cuda:0')  # assign device

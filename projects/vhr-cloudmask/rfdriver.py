@@ -140,11 +140,11 @@ def main():
                 "min and max should be (0, 10000). Verify preprocess."
 
             # add additional indices if necessary
-            if raster_obj.model.n_features_ != raster_obj.data.shape[0]:
+            if raster_obj.model_nfeat != raster_obj.data.shape[0]:
                 raster_obj.addindices([indices.fdi, indices.si, indices.ndwi], factor=args.toaf)
 
             # drop unnecessary bands if necessary
-            if raster_obj.model.n_features_ != raster_obj.data.shape[0]:
+            if raster_obj.model_nfeat != raster_obj.data.shape[0]:
                 raster_obj.dropindices(args.dropbands)
 
             raster_obj.predict(ws=args.windowsize)  # predict
