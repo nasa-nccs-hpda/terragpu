@@ -225,9 +225,9 @@ connection, your work will keep running at the NCCS.
 | Status    | Description   | Classified Path                                                                  | 
 | :-------- |:--------------|:--------------------------------------------------------------------------------:|
 | Done      | 8-band 2 m    | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_8band2m  |
-| Progress  | 8-band 0.5 m  | |
-| Progress  | 4-band 2 m    | |
-| Progress  | 4-band 0.5 m  | |
+|   | 8-band 0.5 m  | |
+|   | 4-band 2 m    | |
+|   | 4-band 0.5 m  | |
 
 
 - [x] 8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band
