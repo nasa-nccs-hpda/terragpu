@@ -213,6 +213,13 @@ your resources and use a window size of up to 5000 x 5000. This issue will be re
 so they can look into it. I always recommend using screen or tmux sessions so if something happens with your network
 connection, your work will keep running at the NCCS.
 
+- [x] 8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band
+- [ ] progress - 8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
+- [ ] 4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS (WV02)
+- [x] 4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS (WV03)
+- [ ] 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen (WV03)
+- [ ] 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen (WV03)
+
 ### Performance Statistics
 rasterRF.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
 on our current use cases. GPU system running one V100 GPU, while CPU system running 24 cores. Memory consumption will 
