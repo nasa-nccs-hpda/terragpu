@@ -93,16 +93,13 @@ are being studied in this project depend on the number of bands included in the 
 #### Training Data
 
 A couple of files have been located in ADAPT to ease finding data for training. The files with
-their description are listed below.
+their description are listed below, the path is /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data.
 
-cloud_training_8band_fdi_si_ndwi.csv: training data using all 8 bands from imagery and the 3 indices
-calculated using all of the bands.
-
-cloud_training_4band_fdi_si_ndwi.csv: training data using only 4 bands from imagery and the 3 indices
-calculated using only 4 bands. The order of the bands goes accordingly to 8 band imagery (B-G-R-NIR).
-
-cloud_training_4band_rgb_fdi_si_ndwi.csv: training data using only 4 bands from imagery and the 3 indices
-calculated using only 4 bands. The order of the bands was fixed to match (R-G-B-NIR).
+| Filename                                  | Description     | 
+| :---------------------------------------- |:----------------|
+| cloud_training_8band_fdi_si_ndwi.csv      | training data using all 8 bands from imagery and the 3 indices calculated using all of the bands.    | 
+| cloud_training_4band_fdi_si_ndwi.csv      | training data using only 4 bands from imagery and the 3 indices calculated using only 4 bands. The order of the bands goes accordingly to 8 band imagery (B-G-R-NIR).     |
+| cloud_training_4band_rgb_fdi_si_ndwi.csv  | training data using only 4 bands from imagery and the 3 indices calculated using only 4 bands. The order of the bands was fixed to match (R-G-B-NIR).    |
 
 #### Training a Model
 
