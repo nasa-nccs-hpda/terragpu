@@ -139,7 +139,7 @@ def main():
             # preprocess raster to remove anomalous pixels, make boundaries (0, 10000)
             raster_obj.preprocess(op='>', boundary=0, replace=0)
             raster_obj.preprocess(op='<', boundary=10000, replace=10000)
-            assert (raster_obj.data.min().values == 0 and raster_obj.data.max().values == 10000), \
+            assert (raster_obj.data.min().values >= 0 and raster_obj.data.max().values <= 10000), \
                 "min and max should be (0, 10000). Verify preprocess."
 
             # add additional indices if necessary
