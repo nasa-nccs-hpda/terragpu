@@ -149,10 +149,10 @@ we can use 8 band models or 4 band models after dropping the unnecessary bands. 
 and 4 band model for 4 band imagery. This can be discussed further in a later discussion.
 ```
 Location of Vietnam MS data:
-4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS
-8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band
-4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/pansharpen
-8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
+4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS
+8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band
+4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen
+8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
 ```
 
 #### Classification of Rasters
@@ -162,16 +162,11 @@ Given a model, classification can be performed with the following command.
 python rfdriver.py -o results -m model.pkl -i data/WV02_20140716_M1BS_103001003328DB00-toa.tif  # predict single raster
 python rfdriver.py -o results -m model.pkl -i data/WV02_*.tif  # uses wildcards to predict all rasters matching pattern
 ```
-
-
-
-Prediction
-Assuming default bands are ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge',
-                                                           'Near-IR1', 'Near-IR2']
-                                                        
+The driver by default assumes that the order and number of bands included in the raster is 
+['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']. That said, 8-band imagery can 
+be classified with the following command.
 ```
-python rfdriver.py -o results -m newmodel.pkl -i /Users/jacaraba/Desktop/cloud-mask-data/WV02_*.tif
-python rfdriver.py -o results -m newmodel.pkl -i /Users/jacaraba/Desktop/cloud-mask-data/WV02_20140716_M1BS_103001003328DB00-toa.tif  
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_8band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/*.tif --sieve
 ```
 
 
