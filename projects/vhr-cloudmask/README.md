@@ -176,11 +176,11 @@ python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classifi
 ```
 4-band 2m: bands ['Blue', 'Green', 'Red', 'NIR1'] 
 ```
-python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen/*.tif --sieve
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen/*.tif -b [Blue', 'Green', 'Red', 'NIR1'] --sieve
 ```
 4-band 0.5m: bands ['Blue', 'Green', 'Red', 'NIR1'] 
 ```
-python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/*.tif --sieve
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/*.tif -b [Blue', 'Green', 'Red', 'NIR1'] --sieve
 ```
 
 ### Performance Statistics
