@@ -27,6 +27,10 @@ training data has been given. There is a script included that modifies the calcu
   4. [Classification](#Classification)  
     * [Classification Background](#Classification Background)  
     * [Classification of Rasters](#Classification of Rasters)  
+  4. [Performance Statistics](#Performance Statistics)  
+  5. [Things to test at some point](#Things to test at some point)  
+
+
 <!--te-->
 
 ### 1. Login to the GPU cluster
@@ -205,12 +209,24 @@ Raster Size: 21GB, 8 bands; dimensions: y: 47751, x: 39324
 | 1000 x 1000      | 4 GB      | ~45.00 min      | ~11.00 min      |
 | 5000 x 5000      | 16 6GB    | ~40.00 min      | ~8.00 min       |
 
+### Things to test at some point
+
+Below are a couple of things that should be tested and implemented at some point.
+1. Apply median filter after cloud mask, and then apply sieve filter: this is supposed to smooth cloud mask borders.
+2. Make sure we can the correct sieve filter size. Currently using 800.
+3. Adding more parallelization to the indices addition function (calculate indices in parallel, might save some seconds).
+4. Adding more parallelization to the prediction process (make it multi-gpu, parallel windows predicted and returned).
+5. Add a module for pandas data fram indices calculation. This will speed up the generation of training.
 
 ### Authors
 
-* Margaret Wooten, margaret.wooten@nasa.gov
 * Jordan Alexis Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
+* Margaret Wooten, margaret.wooten@nasa.gov
+
+### Contributors
+
 * Andrew Weis, aweis1998@icloud.com
+* Brian Lee, brianlee52@bren.ucsb.edu
 
 ### References
 
