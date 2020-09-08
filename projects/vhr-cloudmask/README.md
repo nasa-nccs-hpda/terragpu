@@ -153,10 +153,10 @@ we can use 8 band models or 4 band models after dropping the unnecessary bands. 
 and 4 band model for 4 band imagery. This can be discussed further in a later discussion.
 ```
 Location of Vietnam MS data:
-4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS
 8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band
-4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen
 8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
+4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS
+4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen
 ```
 
 #### Classification of Rasters
@@ -172,10 +172,12 @@ be classified with the following command.
 
 8-band 2m: bands ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
 ```
-python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_8band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_8band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/*.tif --sieve
+salloc # from gpulogin1, gets a session in a GPU system
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_8band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_8band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/*.tif --sieve
 ```
 8-band 0.5m: bands ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
 ```
+salloc # from gpulogin1, gets a session in a GPU system
 python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_8band05m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_8band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen/*.tif --sieve
 ```
 Since 4-band imagery has a different set of bands, you may specify the available bands using the -b option. 
@@ -184,17 +186,32 @@ calls to speed up classification by using more resources and systems.
 
 4-band 2m: bands ['Blue', 'Green', 'Red', 'NIR1'] 
 ```
-python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/*.tif -b Blue Green Red NIR1 --sieve
+# session #1
+salloc # from gpulogin1, gets a session in a GPU system
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/WV02*.tif -b Blue Green Red NIR1 --sieve
+```
+```
+# session #2
+salloc # from gpulogin1, gets a session in a GPU system
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/WV03*.tif -b Blue Green Red NIR1 --sieve
 ```
 4-band 0.5m: bands ['Blue', 'Green', 'Red', 'NIR1'] 
 ```
-python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/*.tif -b Blue Green Red NIR1 --sieve
+# session #1
+salloc # from gpulogin1, gets a session in a GPU system
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/WV02*.tif -b Blue Green Red NIR1 --sieve
+```
+```
+# session #2
+salloc # from gpulogin1, gets a session in a GPU system
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/WV03*.tif -b Blue Green Red NIR1 --sieve
 ```
 Note: All of these predictions have been performed using salloc. A script to submit slurm allocations is included
 but not recommended at this time. For some reason there is something odd in the way the ADAPT GPU cluster is 
-allocationg GPU memory, so only small windows can be used. Thus it is recommended to use direct salloc to allocate
+allocating GPU memory, so only small windows can be used. Thus it is recommended to use direct salloc to allocate
 your resources and use a window size of up to 5000 x 5000. This issue will be reported to NCCS User Services
-so they can look into it.
+so they can look into it. I always recommend using screen or tmux sessions so if something happens with your network
+connection, your work will keep running at the NCCS.
 
 ### Performance Statistics
 rasterRF.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
