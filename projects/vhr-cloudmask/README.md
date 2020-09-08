@@ -13,35 +13,33 @@ The following is a step by step guide to classify rasters using the [NASA Center
 GPU cluster. Steps should be similar in any other working station or HPC cluster. This project assumes that an initial CSV with the
 training data has been given. There is a script included that modifies the calculated indices if necessary. 
 
-<!--ts-->
-  1. [Login to the GPU cluster](#Login to the GPU cluster)  
-  2. [Installation](#Installation)  
-    * [Configuring anaconda](#Configuring anaconda)  
-    * [Installing anaconda environment](#Installing anaconda environment)  
-    * [Common errors when installing anaconda environment](#Common errors when installing anaconda environment)  
-  3. [Training](#Training)  
-    * [Training Background](#Training Background)  
-    * [Training Data](#Training Data)  
-    * [Training a Model](#Training a Model)  
-    * [Trained Models](#Trained Models)  
-  4. [Classification](#Classification)  
-    * [Classification Background](#Classification Background)  
-    * [Classification of Rasters](#Classification of Rasters)  
-  4. [Performance Statistics](#Performance Statistics)  
-  5. [Things to test at some point](#Things to test at some point)  
+  1. [Login to the GPU cluster](#login-cluster)  
+  2. [Installation](#installation)  
+    a. [Configuring anaconda](#configuring-anaconda)  
+    b. [Installing anaconda environment](#installing-conda-environment)  
+    c. [Common errors when installing anaconda environment](#common-errors)  
+  3. [Training](#training)  
+    a. [Training Background](#training-background)  
+    b. [Training Data](#training-data)  
+    c. [Training a Model](#training-model)  
+    d. [Trained Models](#trained-models)  
+  4. [Classification](#classification)  
+    a. [Classification Background](#classification-background)  
+    b. [Classification of Rasters](#classification-rasters)  
+  5. [Performance Statistics](#performance-statistics)  
+  6. [Things to test at some point](#test-later)  
 
 
-<!--te-->
-
-### 1. Login to the GPU cluster
+### 1. Login to the GPU cluster <a name="login-cluster"></a>
 ```
 ssh username@adaptlogin.nccs.nasa.gov
 ssh username@gpulogin1
 ```
 
-### 2. Installation
+### 2. Installation <a name="installation"></a>
 
-#### Configuring anaconda
+#### a. Configuring anaconda <a name="configuring-anaconda"></a>
+
 You will only need to do this the first time you login, or if you want to create a new environment. 
 The following steps let you configure a symbolic link to your $NOBACKUP space since your $HOME 
 quota is limited. Replace username with your auid.
@@ -50,7 +48,9 @@ module load anaconda
 mkdir /att/nobackup/username/.conda; ln -s /att/nobackup/username/.conda /home/username/.conda;
 chmod 755 /att/nobackup/username/.conda
 ```
-#### Installing anaconda environment
+
+#### b. Installing anaconda environment <a name="installing-conda-environment"></a>
+
 Now we will create an anaconda environment to execute the software included in this project.
 This environment can also be included as a kernel when using Jupyter Notebooks.
 ```
@@ -64,7 +64,8 @@ pip install -r requirements/requirements.txt
 python setup.py install
 ```
 
-#### Common errors when installing anaconda environment
+#### c. Common errors when installing anaconda environment <a name="common-errors"></a>
+
 1. Permission denied when running pip command
 ```
 chmod 775 /att/gpfsfs/briskfs01/ppl/jacaraba/.conda/envs/xrasterlib/bin/pip
@@ -74,9 +75,9 @@ chmod 775 /att/gpfsfs/briskfs01/ppl/jacaraba/.conda/envs/xrasterlib/bin/pip
 find /home/username/.conda/envs/ -type d -exec chmod 755 {} \;
 ```
 
-### 3. Training
+### 3. Training <a name="training"></a>
 
-#### Background
+#### a. Background <a name="training-background"></a>
 
 The CSV file generated for training has the format of rows x bands, which implies that there
 is a column per band, and each row represents a point in the raster. The last column of each
@@ -94,7 +95,7 @@ are being studied in this project depend on the number of bands included in the 
 4 band imagery - ['Blue', 'Green', 'Red', 'NIR1'] or ['Red', 'Green', 'Blue', 'NIR1']
 ```
 
-#### Training Data
+#### b. Training Data <a name="training-data"></a>
 
 A couple of files have been located in ADAPT to ease finding data for training. The files with
 their description are listed below, the path is /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/training.
@@ -107,7 +108,7 @@ This data might be moved to /att/pubrepo/ILAB/projects/Vietnam/cloudmask_data at
 | cloud_training_4band_fdi_si_ndwi.csv      | training data using only 4 bands from imagery and the 3 indices calculated using only 4 bands. The order of the bands goes accordingly to 8 band imagery (B-G-R-NIR).  |
 | cloud_training_4band_rgb_fdi_si_ndwi.csv  | training data using only 4 bands from imagery and the 3 indices calculated using only 4 bands. The order of the bands was fixed to match (R-G-B-NIR).  |
 
-#### Training a Model
+#### c. Training a Model <a name="training-model"></a>
 
 Given a training CSV file, a new model can be generated with the following command.
 ```
@@ -134,7 +135,7 @@ python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models -
 python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models -c /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/training/cloud_training_4band_rgb_fdi_si_ndwi.csv -l -m model_20_log2_4band_rgb_fdi_si_ndwi.pkl
 ```
 
-#### Trained Models
+#### d. Trained Models <a name="trained-models"></a>
 
 
 | Training Data                             | Trained Model                                                                                    | 
@@ -144,9 +145,9 @@ python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models -
 | cloud_training_4band_fdi_si_ndwi.csv      | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl     |
 | cloud_training_4band_rgb_fdi_si_ndwi.csv  | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_rgb_fdi_si_ndwi.pkl |
 
-### 4. Classification
+### 4. Classification <a name="classification"></a>
 
-#### Classification Background
+#### a. Classification Background <a name="classification-background"></a>
 
 Once the models have been trained, is time to classify the rasters. The imagery for this work is located in the following paths. For 8 band imagery
 we can use 8 band models or 4 band models after dropping the unnecessary bands. In this case, we will use the 8 band model for 8 band imagery,
@@ -159,7 +160,7 @@ Location of Vietnam MS data:
 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen
 ```
 
-#### Classification of Rasters
+#### b. Classification of Rasters <a name="classification-rasters"></a>
 
 Given a model, classification can be performed with the following command.
 ```
@@ -220,8 +221,9 @@ connection, your work will keep running at the NCCS.
 - [ ] 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen (WV03)
 - [ ] 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen (WV03)
 
-### Performance Statistics
-rasterRF.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
+### 5. Performance Statistics <a name="performance-statistics"></a>
+
+rfdriver.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
 on our current use cases. GPU system running one V100 GPU, while CPU system running 24 cores. Memory consumption will 
 depend greatly on the window size. GPU provides exponential speed ups for inferences. A window size of 6000 x 6000
 exceeds GPU memory of 32GBs.
@@ -242,7 +244,7 @@ Raster Size: 21GB, 8 bands; dimensions: y: 47751, x: 39324
 | 1000 x 1000      | 4 GB      | ~45.00 min      | ~11.00 min      |
 | 5000 x 5000      | 16 6GB    | ~40.00 min      | ~8.00 min       |
 
-### Things to test at some point
+### 6. Things to test at some point <a name="test-later"></a>
 
 Below are a couple of things that should be tested and implemented at some point.
 1. Apply median filter after cloud mask, and then apply sieve filter: this is supposed to smooth cloud mask borders.
