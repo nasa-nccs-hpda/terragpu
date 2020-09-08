@@ -91,7 +91,7 @@ cloud pixels. The indices calculated at his time are FDI, SI, and NDWI. The orde
 are being studied in this project depend on the number of bands included in the rasters. 
 ```
 8 band imagery - ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge','NIR1', 'NIR2']
-4 band imagery - ['Red', 'Green', 'Blue', 'NIR1']
+4 band imagery - ['Blue', 'Green', 'Red', 'NIR1'] or ['Red', 'Green', 'Blue', 'NIR1']
 ```
 
 #### Training Data
