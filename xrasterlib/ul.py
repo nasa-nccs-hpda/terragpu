@@ -14,7 +14,7 @@ __status__ = "Production"
 # -------------------------------------------------------------------------------
 # class Raster
 #
-# This class represents reads and manipulates raster. Currently support TIF
+# This class represents, reads and manipulates raster. Currently support TIF
 # formatted imagery.
 # -------------------------------------------------------------------------------
 
