@@ -117,7 +117,6 @@ class RF(Raster):
     def predict(self, ws=[5120, 5120]):
         # open rasters and get both data and coordinates
         rast_shape = self.data[0, :, :].shape  # getting the shape of the wider scene
-        print ("rasy shape ", rast_shape)
         wsx, wsy = ws[0], ws[1]  # chunking and doing in memory sliding window predictions
 
         # if the window size is bigger than the image, ignore and predict full image
