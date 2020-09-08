@@ -14,28 +14,35 @@ GPU cluster. Steps should be similar in any other working station or HPC cluster
 training data has been given. There is a script included that modifies the calculated indices if necessary. 
 
 <!--ts-->
-  * [Login to the GPU cluster](#Login to the GPU cluster)
-  * [Installation](#Installation)
+  1. [Login to the GPU cluster](#Login to the GPU cluster)
+  2. [Installation](#Installation)
     * [Configuring anaconda](#Configuring anaconda)
     * [Installing anaconda environment](#Installing anaconda environment)
+    * [Common errors when installing anaconda environment](#Common errors when installing anaconda environment)
+  3. [Training](#Training)
+    * [Training Background](#Training Background)
+    * [Training a model](#Training a model)
+  4. [Classification](#Classification)
+    * [Classification Background](#Classification Background)
+    * [Classification of Rasters](#Classification of Rasters)
 <!--te-->
 
-### Login to the GPU cluster
+### 1. Login to the GPU cluster
 ```
 ssh username@adaptlogin.nccs.nasa.gov
 ssh username@gpulogin1
 ```
 
-### Installation
+### 2. Installation
 
 #### Configuring anaconda
 You will only need to do this the first time you login, or if you want to create a new environment. 
 The following steps let you configure a symbolic link to your $NOBACKUP space since your $HOME 
 quota is limited. Replace username with your auid.
 ```
-ssh username@adaptlogin.nccs.nasa.gov
-module load ml/anaconda3
+module load anaconda
 mkdir /att/nobackup/username/.conda; ln -s /att/nobackup/username/.conda /home/username/.conda;
+chmod 755 /att/nobackup/username/.conda
 ```
 #### Installing anaconda environment
 Now we will create an anaconda environment to execute the software included in this project.
@@ -51,21 +58,57 @@ pip install -r requirements/requirements.txt
 python setup.py install
 ```
 
-### Training
-
-The CSV file generated for training has the format of n x bands, which implies that there
-is a column per band, and each row represents a point in the raster.
-
-Adding additional description of arguments here.
-
-Simple training command. 
+#### Common errors when installing anaconda environment
+1. Permission denied when running pip command
 ```
-python rasterRF.py -w results -c cloud_training.csv -b 1 2 3 4 5 6 7 8 9 10 11
+chmod 775 /att/gpfsfs/briskfs01/ppl/jacaraba/.conda/envs/xrasterlib/bin/pip
+```
+2. Permission denied when installing a particular package (example bokeh)
+```
+find /home/username/.conda/envs/ -type d -exec chmod 755 {} \;
+```
 
+### 3. Training
+
+#### Background
+
+The CSV file generated for training has the format of rows x bands, which implies that there
+is a column per band, and each row represents a point in the raster. The last column of each
+training CSV file includes a binary mask for determining if the point is cloud or cloud free. 
+```
+Example:
+2306,2086,2005,1914,1916,2273,2959,2462,1043,-1897,-2147483648,1
+2310,2097,2002,1921,1936,2288,2953,2484,1017,-1901,-2147483648,0
+```
+Wooten's team has concluded that the use of 3 additional indices improves the classification of 
+cloud pixels. The indices calculated at his time are FDI, SI, and NDWI. The order of the bands that 
+are being studied in this project depend on the number of bands included in the rasters. 
+```
+8 band imagery - ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge','NIR1', 'NIR2']
+4 band imagery - ['Red', 'Green', 'Blue', 'NIR1']
+```
+
+#### Training a model
+
+Given a training CSV file, a new model can be generated with the following command.
+```
 python rfdriver.py -o results -c data/cloud_training.csv
-python rfdriver.py -o results -c data/cloud_training.csv -l
+```
+where -o is the output directory to store the model, and -c is the training csv. If 
+you which to generate a log file with all of the output of the model, you should add 
+the -l option to the command line. If you wish to specify a particular name for the model
+you may train the model with the following command:
+```
 python rfdriver.py -o results -c data/cloud_training.csv -m newmodel.pkl
 ```
+
+### 4. Classification
+
+
+#### Classification Background
+
+#### Classification of Rasters
+
 Prediction
 Assuming default bands are ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge',
                                                            'Near-IR1', 'Near-IR2']
@@ -108,16 +151,7 @@ add it here
             #rfobj.prediction = ndimage.median_filter(rfobj.prediction, size=20)
 
             raster_obj.toraster(rast, raster_obj.prediction, output_name)
-            """
-            
-### Inference
 
-Adding additional description of arguments here.
-
-Simple prediction command.
-```
-python rasterRF.py -w results -m results/Models/model_20_log2.pkl -b 1 2 3 4 5 6 7 8 9 10 11 -i /somewhere/toa_pansharpen.tif
-```
 
 ### Performance Statistics
 rasterRF.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
