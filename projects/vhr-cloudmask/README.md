@@ -14,17 +14,17 @@ GPU cluster. Steps should be similar in any other working station or HPC cluster
 training data has been given. There is a script included that modifies the calculated indices if necessary. 
 
 <!--ts-->
-  1. [Login to the GPU cluster](#Login to the GPU cluster)
-  2. [Installation](#Installation)
-    * [Configuring anaconda](#Configuring anaconda)
-    * [Installing anaconda environment](#Installing anaconda environment)
-    * [Common errors when installing anaconda environment](#Common errors when installing anaconda environment)
-  3. [Training](#Training)
-    * [Training Background](#Training Background)
-    * [Training a model](#Training a model)
-  4. [Classification](#Classification)
-    * [Classification Background](#Classification Background)
-    * [Classification of Rasters](#Classification of Rasters)
+  1. [Login to the GPU cluster](#Login to the GPU cluster)  
+  2. [Installation](#Installation)  
+    * [Configuring anaconda](#Configuring anaconda)  
+    * [Installing anaconda environment](#Installing anaconda environment)  
+    * [Common errors when installing anaconda environment](#Common errors when installing anaconda environment)  
+  3. [Training](#Training)  
+    * [Training Background](#Training Background)  
+    * [Training a model](#Training a model)  
+  4. [Classification](#Classification)  
+    * [Classification Background](#Classification Background)  
+    * [Classification of Rasters](#Classification of Rasters)  
 <!--te-->
 
 ### 1. Login to the GPU cluster
@@ -92,6 +92,7 @@ are being studied in this project depend on the number of bands included in the 
 
 Given a training CSV file, a new model can be generated with the following command.
 ```
+cd projects/vhr-cloudmask
 python rfdriver.py -o results -c data/cloud_training.csv
 ```
 where -o is the output directory to store the model, and -c is the training csv. If 
@@ -100,6 +101,10 @@ the -l option to the command line. If you wish to specify a particular name for 
 you may train the model with the following command:
 ```
 python rfdriver.py -o results -c data/cloud_training.csv -m newmodel.pkl
+```
+To get all of the available options you can execute the command below.
+```
+python rfdriver.py -h
 ```
 
 ### 4. Classification
@@ -199,34 +204,6 @@ Location of Vietnam MS data:
 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/pansharpen
 8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
 
-#### rasterRF.py usage output
-```
-(vhr-cloudmask)$ python rasterRF.py -h
-usage: rasterRF.py [-h] -w WORKDIR [-m MODEL] -b [BANDS [BANDS ...]] [-bn [BAND_NAMES [BAND_NAMES ...]]] [-c TRAINCSV] [-t N_TREES] [-f MAX_FEAT] [-ts TESTSIZE]
-                   [-i [RASTERS [RASTERS ...]]] [-ws WINDOWSIZE WINDOWSIZE]
-
-  -h, --help            show this help message and exit
-  -w WORKDIR, --work-directory WORKDIR
-                        Specify working directory
-  -m MODEL, --model MODEL
-                        Specify model filename that will be saved or evaluated
-  -b [BANDS [BANDS ...]], --bands [BANDS [BANDS ...]]
-                        Specify number of bands.
-  -bn [BAND_NAMES [BAND_NAMES ...]], --band-names [BAND_NAMES [BAND_NAMES ...]]
-                        Specify number of bands.
-  -c TRAINCSV, --csv TRAINCSV
-                        Specify CSV file to train the model.
-  -t N_TREES, --n-trees N_TREES
-                        Specify number of trees for random forest model.
-  -f MAX_FEAT, --max-features MAX_FEAT
-                        Specify random forest max features.
-  -ts TESTSIZE, --test-size TESTSIZE
-                        Size of test data (e.g: .30)
-  -i [RASTERS [RASTERS ...]], --rasters [RASTERS [RASTERS ...]]
-                        Image or pattern to evaluate images.
-  -ws WINDOWSIZE WINDOWSIZE, --window-size WINDOWSIZE WINDOWSIZE
-                        Specify window size to perform sliding predictions.
-```
 #### Installing GDAL on Ubuntu 18.04
 This scriplet has been included for documentation purposes only. This project does not require
 GDAL libraries in order to work.
