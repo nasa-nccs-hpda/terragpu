@@ -67,13 +67,8 @@ Random Forest classification and merging Convolutional Neural Networks from the 
 Each particular project includes its own README with information. When these projects are concluded,
 they will be migrated to their own repository.
 
-Raster processing relies in xarray and rasterio for memory mapping operations.
-
-## Short Term Enhancements
-
-- [ ] Create and publish PIP package
-- [X] Add additional indices
-- [ ] Document Random Forest
+Raster processing relies in xarray and rasterio for memory mapping operations, using Dask as the backend.
+Pytorch is implemented for GPU accelaration of Sckitlearn models.
 
 ## Ongoing Projects
 
