@@ -22,7 +22,7 @@ training data has been given. There is a script included that modifies the calcu
   3. [Training](#Training)  
     * [Training Background](#Training Background)  
     * [Training Data](#Training Data)  
-    * [Training a Model](#Training a Model) 
+    * [Training a Model](#Training a Model)  
     * [Trained Models](#Trained Models)  
   4. [Classification](#Classification)  
     * [Classification Background](#Classification Background)  
