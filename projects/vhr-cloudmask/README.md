@@ -171,21 +171,29 @@ The driver by default assumes that the order and number of bands included in the
 ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']. That said, 8-band imagery can 
 be classified with the following command.
 
-8-band 2m: bands ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
+**8-band 2m**  
+bands: ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']  
+number of rasters: 10  
 ```
 salloc # from gpulogin1, gets a session in a GPU system
 python rfdriver.py -l -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_8band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_8band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/*.tif --sieve
 ```
-8-band 0.5m: bands ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
+
+**8-band 0.5m**  
+bands: ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']  
+number of rasters: 10  
 ```
 salloc # from gpulogin1, gets a session in a GPU system
 python rfdriver.py -l -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_8band05m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_8band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen/*.tif --sieve
 ```
+
 Since 4-band imagery has a different set of bands, you may specify the available bands using the -b option. 
 Below are some examples for classifying 4-band imagery for this project. We split some of the patterns into two 
 calls to speed up classification by using more resources and systems.
 
-4-band 2m: bands ['Blue', 'Green', 'Red', 'NIR1'] 
+**4-band 2m**  
+bands: ['Blue', 'Green', 'Red', 'NIR1']  
+number of rasters: 10
 ```
 # session #1
 salloc # from gpulogin1, gets a session in a GPU system
@@ -213,6 +221,14 @@ allocating GPU memory, so only small windows can be used. Thus it is recommended
 your resources and use a window size of up to 5000 x 5000. This issue will be reported to NCCS User Services
 so they can look into it. I always recommend using screen or tmux sessions so if something happens with your network
 connection, your work will keep running at the NCCS.
+
+| Status    | Description   | Classified Path                                                                  | 
+| :-------- |:--------------|:--------------------------------------------------------------------------------:|
+| Done      | 8-band 2 m    | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_8band2m  |
+| Progress  | 8-band 0.5 m  | |
+| Progress  | 4-band 2 m    | |
+| Progress  | 4-band 0.5 m  | |
+
 
 - [x] 8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band
 - [ ] progress - 8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
