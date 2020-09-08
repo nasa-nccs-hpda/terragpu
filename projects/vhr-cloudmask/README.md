@@ -178,6 +178,10 @@ python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classifi
 ```
 python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_8band05m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_8band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen/*.tif --sieve
 ```
+Since 4-band imagery has a different set of bands, you may specify the available bands using the -b option. 
+Below are some examples for classifying 4-band imagery for this project. We split some of the patterns into two 
+calls to speed up classification by using more resources and systems.
+
 4-band 2m: bands ['Blue', 'Green', 'Red', 'NIR1'] 
 ```
 python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/*.tif -b Blue Green Red NIR1 --sieve
@@ -186,6 +190,10 @@ python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classifi
 ```
 python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/*.tif -b Blue Green Red NIR1 --sieve
 ```
+Note: All of these predictions have been performed using salloc. A script to submit slurm allocations is included
+but not recommended at this time. For some reason there is something odd in the way the ADAPT GPU cluster is 
+allocationg GPU memory, so only small windows can be used. Thus it is recommended to use direct salloc to allocate
+your resources and use a window size of up to 5000 x 5000.
 
 ### Performance Statistics
 rasterRF.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
