@@ -142,10 +142,28 @@ python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models -
 
 ### 4. Classification
 
-
 #### Classification Background
 
+Once the models have been trained, is time to classify the rasters. The imagery for this work is located in the following paths. For 8 band imagery
+we can use 8 band models or 4 band models after dropping the unnecessary bands. In this case, we will use the 8 band model for 8 band imagery,
+and 4 band model for 4 band imagery. This can be discussed further in a later discussion.
+```
+Location of Vietnam MS data:
+4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS
+8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band
+4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/pansharpen
+8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
+```
+
 #### Classification of Rasters
+
+Given a model, classification can be performed with the following command.
+```
+python rfdriver.py -o results -m model.pkl -i data/WV02_20140716_M1BS_103001003328DB00-toa.tif  # predict single raster
+python rfdriver.py -o results -m model.pkl -i data/WV02_*.tif  # uses wildcards to predict all rasters matching pattern
+```
+
+
 
 Prediction
 Assuming default bands are ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'Red Edge',
@@ -155,40 +173,6 @@ Assuming default bands are ['Coastal Blue', 'Blue', 'Green', 'Yellow', 'Red', 'R
 python rfdriver.py -o results -m newmodel.pkl -i /Users/jacaraba/Desktop/cloud-mask-data/WV02_*.tif
 python rfdriver.py -o results -m newmodel.pkl -i /Users/jacaraba/Desktop/cloud-mask-data/WV02_20140716_M1BS_103001003328DB00-toa.tif  
 ```
-else specify bands with 
-add it here
-
-
-        """    
-            # support keelin squares - 4band model
-            #rfobj.data = rfobj.data[:4, :, :]
-            #rfobj.initbands = 4
-            
-            ## support 8 band rasters  - 4 band model
-            #red = rfobj.data[4, :, :]
-            #green = rfobj.data[2, :, :]
-            #rfobj.data = rfobj.data.drop(dim="band", labels=[1, 3, 4, 5, 6, 8], drop=True)
-            #rfobj.data = xr.concat([red, green, rfobj.data], dim="band")  # concat new band
-            #rfobj.data = rfobj.data.transpose('band', 'y', 'x')
-            #rfobj.initbands = 4
-
-            print("Size of raster: ", raster_obj.data.shape, raster_obj.bands)
-            print(raster_obj.data)
-            
-            #rfobj.addindices([indices.dvi, indices.fdi, indices.si], factor=1.0)
-            #rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs1], factor=1.0)
-            raster_obj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs2], factor=1.0)
-            #rfobj.addindices([indices.dvi, indices.fdi, indices.si, indices.cs1, indices.cs2], factor=1.0)
-
-            print("Size of raster: ", rfobj.data.shape)
-
-            raster_obj.predictrf(rastfile=rast, ws=args.windowsize)
-            raster_obj.sieve(raster_obj.prediction, raster_obj.prediction, size=800, mask=None, connectivity=8)
-            output_name = "{}/cm_{}".format(raster_obj.resultsdir, rast.split('/')[-1])  # model name
-
-            #rfobj.prediction = ndimage.median_filter(rfobj.prediction, size=20)
-
-            raster_obj.toraster(rast, raster_obj.prediction, output_name)
 
 
 ### Performance Statistics
@@ -229,13 +213,6 @@ multi-modal satellite imagery using convolutional neural-networks (CNN). Remote 
 cloud height iteration and spectral analysis for Landsat 8 OLI data. ISPRS Journal of Photogrammetry and Remote Sensing, 138, 193-207.
 
 ### Additional Notes
-
-#### Location of the Data
-Location of Vietnam MS data:
-4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS
-8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band
-4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/pansharpen
-8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/user/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
 
 #### Installing GDAL on Ubuntu 18.04
 This scriplet has been included for documentation purposes only. This project does not require
