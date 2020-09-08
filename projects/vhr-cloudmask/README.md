@@ -93,10 +93,8 @@ are being studied in this project depend on the number of bands included in the 
 #### Training Data
 
 A couple of files have been located in ADAPT to ease finding data for training. The files with
-their description are listed below, the path is /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data.
+their description are listed below, the path is /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/training.
 This data might be moved to /att/pubrepo/ILAB/projects/Vietnam/cloudmask_data at some point.
-
-cloud_training.csv
 
 | Filename                                  | Description     | 
 | :---------------------------------------- |:----------------|
@@ -123,20 +121,24 @@ To get all of the available options you can execute the command below.
 ```
 python rfdriver.py -h
 ```
+The following commands were used to train the 4 models available for this project.
+```
+salloc # from gpulogin1, gets a session in a GPU system
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models -c /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/training/cloud_training.csv -l
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models -c /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/training/cloud_training_8band_fdi_si_ndwi.csv -l -m model_20_log2_8band_fdi_si_ndwi.pkl
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models -c /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/training/cloud_training_4band_fdi_si_ndwi.csv -l -m model_20_log2_4band_fdi_si_ndwi.pkl
+python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models -c /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/training/cloud_training_4band_rgb_fdi_si_ndwi.csv -l -m model_20_log2_4band_rgb_fdi_si_ndwi.pkl
+```
 
-#### Trained Models - TODO
+#### Trained Models
 
-A couple of files have been located in ADAPT to ease finding data for training. The files with
-their description are listed below.
 
-cloud_training_8band_fdi_si_ndwi.csv: training data using all 8 bands from imagery and the 3 indices
-calculated using all of the bands.
-
-cloud_training_4band_fdi_si_ndwi.csv: training data using only 4 bands from imagery and the 3 indices
-calculated using only 4 bands. The order of the bands goes accordingly to 8 band imagery (B-G-R-NIR).
-
-cloud_training_4band_rgb_fdi_si_ndwi.csv: training data using only 4 bands from imagery and the 3 indices
-calculated using only 4 bands. The order of the bands was fixed to match (R-G-B-NIR).
+| Training Data                             | Trained Model                                                                                    | 
+| :---------------------------------------- |:-------------------------------------------------------------------------------------------------|
+| cloud_training.csv                        | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2.pkl                       | 
+| cloud_training_8band_fdi_si_ndwi.csv      | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_8band_fdi_si_ndwi.pkl     | 
+| cloud_training_4band_fdi_si_ndwi.csv      | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl     |
+| cloud_training_4band_rgb_fdi_si_ndwi.csv  | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_rgb_fdi_si_ndwi.pkl |
 
 ### 4. Classification
 
@@ -199,17 +201,17 @@ Raster Size: 1.2GB, 8 bands; dimensions: y: 9831, x: 10374
 
 | Window Size (px) | RAM Usage  | CPU (elap time) | GPU (elap time) |
 | :--------------: |:----------:| :-------------: | :-------------: |
-| Full Raster      | ~40 GB     | ~2.55 min       | ~0.72 min       |
-| 1000 x 1000      | ~4 GB      | ~2.40 min       | ~0.64 min       |
-| 5000 x 5000      | ~16 GB     | ~2.29 min       | ~0.49 min       |
+| Full Raster      | 40 GB     | ~2.55 min       | ~0.72 min       |
+| 1000 x 1000      | 4 GB      | ~2.40 min       | ~0.64 min       |
+| 5000 x 5000      | 16 GB     | ~2.29 min       | ~0.49 min       |
 
 Raster Size: 21GB, 8 bands; dimensions: y: 47751, x: 39324
 
 | Window Size (px) | RAM Usage  | CPU (elap time) | GPU (elap time) |
 | :--------------: |:----------:| :-------------: | :-------------: |
-| Full Raster      | ~200 GB    | Out of RAM      | Out of RAM      |
-| 1000 x 1000      | ~4 GB      | ~45.00 min      | ~11.00 min      |
-| 5000 x 5000      | ~16 6GB    | ~40.00 min      | ~8.00 min       |
+| Full Raster      | 200 GB    | Out of RAM      | Out of RAM      |
+| 1000 x 1000      | 4 GB      | ~45.00 min      | ~11.00 min      |
+| 5000 x 5000      | 16 6GB    | ~40.00 min      | ~8.00 min       |
 
 
 ### Authors
