@@ -193,7 +193,8 @@ python rfdriver.py -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classifi
 Note: All of these predictions have been performed using salloc. A script to submit slurm allocations is included
 but not recommended at this time. For some reason there is something odd in the way the ADAPT GPU cluster is 
 allocationg GPU memory, so only small windows can be used. Thus it is recommended to use direct salloc to allocate
-your resources and use a window size of up to 5000 x 5000.
+your resources and use a window size of up to 5000 x 5000. This issue will be reported to NCCS User Services
+so they can look into it.
 
 ### Performance Statistics
 rasterRF.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
