@@ -83,6 +83,7 @@ Pytorch is implemented for GPU accelaration of Sckitlearn models.
 ## Contributors
 
 * Andrew Weis, aweis1998@icloud.com
+* Brian Lee, brianlee52@bren.ucsb.edu
 
 ## References
 
