@@ -166,6 +166,8 @@ def main():
 
             output_name = "{}/cm_{}".format(raster_obj.outdir, rast.split('/')[-1])  # out mask name
             raster_obj.toraster(rast, raster_obj.prediction, output_name)  # save raster with mask
+            raster_obj.prediction = None  # saving memory between each iteration
+
 
     # --------------------------------------------------------------------------------
     # 3c. exit if csv or model are not present or given

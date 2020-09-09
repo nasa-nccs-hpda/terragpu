@@ -1,33 +1,23 @@
-"""
-Refactored: 07/20/2020
-
-Purpose: Read DigiGlobe unique file by parsing XML tags and generating objects.
-         Usage requirements are referenced in README.
-         
-Data Source: This script is intented to be used with DigiGlobe files. There is 
-             no intentions on supporting other types of file formats.
-
-Original Author: Margaret Wooten, SCIENTIFIC PROGRAMMER/ANALYST, Code 610
-Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
-"""
-#-------------------------------------------------------------------------------
-# Import System Libraries
-#-------------------------------------------------------------------------------
-from datetime import datetime           
-import os, subprocess                     
+import os
+import subprocess
 import shutil
+from datetime import datetime
 import xml.etree.ElementTree as ET
-from Raster import Raster
+from xrasterlib.raster import Raster
+
+__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587"
+__email__ = "jordan.a.caraballo-vega@nasa.gov"
+__status__ = "Development"
+
+# -------------------------------------------------------------------------------
+# class RF
+# Read DigiGlobe unique file by parsing XML tags and generating objects.
+# Usage requirements are referenced in README.
+# Refactored: 07/20/2020
+# -------------------------------------------------------------------------------
 
 
-#-------------------------------------------------------------------------------
-# class DgFile
-#
-# This class represents a Digital Globe file.  It is a single NITF file or a
-# GeoTiff with an XML counterpart.  It is unique because of the metadata tags
-# within.
-#-------------------------------------------------------------------------------
-class DGFileRast(Raster):
+class DGFile(Raster):
 
     # ---------------------------------------------------------------------------
     # __init__
@@ -93,3 +83,12 @@ class DGFileRast(Raster):
 
         except:
             return None
+
+
+# -------------------------------------------------------------------------------
+# class DGFile Unit Tests
+# -------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    # Running Unit Tests
+    print("Unit tests below")

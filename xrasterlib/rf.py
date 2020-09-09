@@ -143,3 +143,13 @@ class RF(Raster):
 
         # save raster
         self.prediction = self.prediction.astype(np.int16)  # change type of prediction to int16
+
+
+# -------------------------------------------------------------------------------
+# class RF Unit Tests
+# -------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    # Running Unit Tests
+    print("Unit tests below")
