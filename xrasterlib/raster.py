@@ -184,7 +184,7 @@ class Raster:
         # write to a raster
         with rio.open(output, 'w', **out_meta) as dst:
             dst.write(prediction, 1)
-        logging.info(f'Prediction saved at {output}.')
+        logging.info(f'Prediction saved at {output}')
 
 # -------------------------------------------------------------------------------
 # class Raster Unit Tests
@@ -194,11 +194,11 @@ class Raster:
 if __name__ == "__main__":
 
     # Running Unit Tests
-    # python raster.py \
-    # /Users/jacaraba/Desktop/cloudtest/WV02_20181109_M1BS_1030010086582600-toa.tif
+    logging.basicConfig(level=logging.INFO)
 
     # Local variables
-    filename = sys.argv[1]
+    filename = '/Users/jacaraba/Desktop/cloudtest/' + \
+               'WV02_20181109_M1BS_1030010086582600-toa.tif'
     bands = [
         'CoastalBlue', 'Blue', 'Green', 'Yellow',
         'Red', 'RedEdge', 'NIR1', 'NIR2'
@@ -221,16 +221,18 @@ if __name__ == "__main__":
     # 3. Test adding a band (indices) to raster.data - either way is fine
     if 3 in unit_tests:
         raster = Raster(filename, bands)
-        raster.addindices([indices.fdi, indices.si, indices.ndwi], factor=1.0)
+        raster.addindices([indices.fdi, indices.si, indices.ndwi], 
+                          factor=10000.0)
         assert raster.data.shape[0] == 11, "Number of bands should be 11."
         logging.info(f"Unit Test #3: {raster.data} {raster.bands}")
 
     # 4. Test preprocess function
     if 4 in unit_tests:
         raster = Raster(filename, bands)
-        raster.preprocess(op='>', boundary=0, replace=0)
-        vmin, vmax = raster.data.min().values, raster.data.max().values
+        raster.preprocess(op='>', boundary=0, subs=0)
+        vmin = raster.data.min().values
         assert vmin == 0, "Minimum should be 0."
-        raster.preprocess(op='<', boundary=10000, replace=10000)
+        raster.preprocess(op='<', boundary=10000, subs=10000)
+        vmax = raster.data.max().values
         assert vmax == 10000, "Maximum should be 10000."
         logging.info(f"Unit Test #4: (min, max) ({vmin},{vmax})")

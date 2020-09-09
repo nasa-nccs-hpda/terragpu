@@ -177,8 +177,9 @@ def main():
     # 3c. exit if csv or model are not present or given
     # --------------------------------------------------------------------------------
     else:
-        sys.exit("ERROR: Specify a train csv or model to load, python rfdriver.py -h for more options.")
-    print("Elapsed Time: ", (time() - start_time) / 60.0)  # output program run time in minutes
+        sys.exit("ERROR: Specify a train csv or model to load." +
+                 "Refer to python rfdriver.py -h for more options.")
+    print("Elapsed Time: ", (time() - start_time) / 60.0)  # time in min
 
 
 if __name__ == "__main__":

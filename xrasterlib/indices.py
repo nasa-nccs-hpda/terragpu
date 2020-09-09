@@ -9,7 +9,8 @@ __status__ = "Production"
 # module indices
 # This class calculates remote sensing indices given xarray or numpy objects.
 # Note: Most of our imagery uses the following set of bands.
-# 8 band: ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
+# 8 band: ['CoastalBlue', 'Blue', 'Green', 'Yellow',
+#          'Red', 'RedEdge', 'NIR1', 'NIR2']
 # 4 band: ['Red', 'Green', 'Blue', 'NIR1', 'HOM1', 'HOM2']
 # -------------------------------------------------------------------------------
 
@@ -99,7 +100,7 @@ def si(data, bands, factor=1.0, vtype='int16') -> dask.array:
     """
     # 8 and 4 band imagery:
     # SI := ((factor - Blue) * (factor - Green) * (factor - Red)) ** (1.0 / 3)
-    Blue, Green, Red = bands.index('Blue'), bands.index('Green')
+    Blue, Green = bands.index('Blue'), bands.index('Green')
     Red = bands.index('Red')
     return (((factor - data[Blue, :, :]) * (factor - data[Green, :, :]) *
             (factor - data[Red, :, :])) ** (1.0/3.0)
