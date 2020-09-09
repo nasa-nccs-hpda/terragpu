@@ -7,7 +7,7 @@ from scipy.ndimage import median_filter  # scipy includes median filter
 import rasterio.features as riofeat  # rasterio features include sieve filter
 import xrasterlib.indices as indices  # custom indices calculation module
 
-__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587"
+__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
 __status__ = "Production"
 

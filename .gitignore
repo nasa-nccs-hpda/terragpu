@@ -1,7 +1,10 @@
+# Ignore editor files
+.idea/
+.vscode/
+.DS_Store
+
 # Ignore compiled files
 __pycache__/
-.idea/
-.DS_Store
 xrasterlib.egg-info/
 build/
 dist/

@@ -1,3 +1,4 @@
+
 import os
 import joblib
 from tqdm import tqdm
@@ -11,7 +12,7 @@ import torch  # import torch to verify available devices
 
 from xrasterlib.raster import Raster
 
-__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587"
+__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__  = "jordan.a.caraballo-vega@nasa.gov"
 __status__ = "Production"
 

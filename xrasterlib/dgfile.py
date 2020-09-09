@@ -1,11 +1,8 @@
 import os
-import subprocess
-import shutil
-from datetime import datetime
 import xml.etree.ElementTree as ET
 from xrasterlib.raster import Raster
 
-__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587"
+__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
 __status__ = "Development"
 
