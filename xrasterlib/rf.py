@@ -109,6 +109,7 @@ class RF(Raster):
         self.model_nfeat = self.model.n_features_
         device = 'cpu'  # set cpu as default device
         if torch.cuda.is_available():  # if cuda is available, assign model to GPU
+            torch.cuda.empty_cache()
             device = torch.device('cuda:0')  # assign device
             self.model = convert(self.model, 'pytorch')  # convert model to tensors for GPU
             self.model.to(device)  # assign model to GPU

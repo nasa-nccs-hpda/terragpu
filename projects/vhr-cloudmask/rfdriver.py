@@ -14,6 +14,7 @@ Refactored: Jordan A Caraballo-Vega, Science Data Processing Branch, Code 587
 # --------------------------------------------------------------------------------
 import sys
 import os
+import gc
 import warnings
 from datetime import datetime  # tracking date
 from time import time  # tracking time
@@ -134,6 +135,9 @@ def main():
 
         # 3b3. apply model and get predictions
         for rast in args.rasters:  # iterate over each raster
+
+            gc.collect()  # clean garbage
+            print(f"Starting new prediction...{rast}")
             raster_obj.readraster(rast, args.bands)  # read raster
 
             # preprocess raster to remove anomalous pixels, make boundaries (0, 10000)
