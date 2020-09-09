@@ -43,7 +43,7 @@ def addindices(rastarr, bands, indices, factor=1.0) -> dask.array:
 
 
 # Difference Vegetation Index (DVI), type int16
-def dvi(data, bands, factor=1.0) -> dask.array:
+def dvi(data, bands, factor=1.0, vtype='int16') -> dask.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: list with strings of bands in the raster
@@ -53,11 +53,12 @@ def dvi(data, bands, factor=1.0) -> dask.array:
     # 8 and 4 band imagery: DVI := NIR1 - Red
     NIR1, Red = bands.index('NIR1'), bands.index('Red')
     return ((data[NIR1, :, :] / factor) - (data[Red, :, :] / factor)
-            ).expand_dims(dim="band", axis=0).fillna(0).astype('int16'), "DVI"
+            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "DVI"
 
 
-# Normalized Difference Vegetation Index (NDVI) range from +1.0 to -1.0, type float64
-def ndvi(data, bands, factor=1.0) -> dask.array:
+# Normalized Difference Vegetation Index (NDVI)
+# range from +1.0 to -1.0, type float64
+def ndvi(data, bands, factor=1.0, vtype='float64') -> dask.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -68,40 +69,45 @@ def ndvi(data, bands, factor=1.0) -> dask.array:
     NIR1, Red = bands.index('NIR1'), bands.index('Red')
     return (((data[NIR1, :, :] / factor) - (data[Red, :, :] / factor)) /
             ((data[NIR1, :, :] / factor) + (data[Red, :, :] / factor))
-            ).expand_dims(dim="band", axis=0).fillna(0).astype('float64'), "NDVI"
+            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "NDVI"
 
 
 # Forest Discrimination Index (FDI), type int16
-def fdi(data, bands, factor=1.0) -> dask.array:
+def fdi(data, bands, factor=1.0, vtype='int16') -> dask.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
     :param factor: factor used for toa imagery
     :return: new band with FDI calculated
     """
-    # 8 band imagery: FDI := NIR2 - (RedEdge + Blue), 4 band imagery: FDI := NIR1 - (Red + Blue)
+    # 8 band imagery: FDI := NIR2 - (RedEdge + Blue)
+    # 4 band imagery: FDI := NIR1 - (Red + Blue)
     NIR = bands.index('NIR2') if 'NIR2' in bands else bands.index('NIR1')
-    Red, Blue = bands.index('RedEdge') if 'RedEdge' in bands else bands.index('Red'), bands.index('Blue')
+    Red = bands.index('RedEdge') if 'RedEdge' in bands else bands.index('Red')
+    Blue = bands.index('Blue')
     return (data[NIR, :, :] - (data[Red, :, :] + data[Blue, :, :])
-            ).expand_dims(dim="band", axis=0).fillna(0).astype('int16'), "FDI"
+            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "FDI"
 
 
 # Shadow Index (SI), type int16
-def si(data, bands, factor=1.0) -> dask.array:
+def si(data, bands, factor=1.0, vtype='int16') -> dask.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
     :param factor: factor used for toa imagery
     :return: new band with SI calculated
     """
-    # 8 and 4 band imagery: SI := ((factor - Blue) * (factor - Green) * (factor - Red)) ** (1.0 / 3)
-    Blue, Green, Red = bands.index('Blue'), bands.index('Green'), bands.index('Red')
-    return (((factor - data[Blue, :, :]) * (factor - data[Green, :, :]) * (factor - data[4, :, :])) ** (1.0/3.0)
-            ).expand_dims(dim="band", axis=0).fillna(0).astype('int16'), "SI"
+    # 8 and 4 band imagery:
+    # SI := ((factor - Blue) * (factor - Green) * (factor - Red)) ** (1.0 / 3)
+    Blue, Green, Red = bands.index('Blue'), bands.index('Green')
+    Red = bands.index('Red')
+    return (((factor - data[Blue, :, :]) * (factor - data[Green, :, :]) *
+            (factor - data[Red, :, :])) ** (1.0/3.0)
+            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "SI"
 
 
 # Normalized Difference Water Index (DWI), type int16
-def dwi(data, bands, factor=1.0) -> dask.array:
+def dwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -111,11 +117,11 @@ def dwi(data, bands, factor=1.0) -> dask.array:
     # 8 and 4 band imagery: DWI := factor * (Green - NIR1)
     Green, NIR1 = bands.index('Green'), bands.index('NIR1')
     return (factor * (data[Green, :, :] - data[NIR1, :, :])
-            ).expand_dims(dim="band", axis=0).fillna(0).astype('int16'), "DWI"
+            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "DWI"
 
 
 # Normalized Difference Water Index (NDWI), type int16
-def ndwi(data, bands, factor=1.0) -> dask.array:
+def ndwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -124,12 +130,13 @@ def ndwi(data, bands, factor=1.0) -> dask.array:
     """
     # 8 and 4 band imagery: NDWI := factor * (Green - NIR1) / (Green + NIR1)
     Green, NIR1 = bands.index('Green'), bands.index('NIR1')
-    return (factor * ((data[Green, :, :] - data[NIR1, :, :]) / (data[Green, :, :] + data[NIR1, :, :]))
-            ).expand_dims(dim="band", axis=0).fillna(0).astype('int16'), "NDWI"
+    return (factor * ((data[Green, :, :] - data[NIR1, :, :])
+            / (data[Green, :, :] + data[NIR1, :, :]))
+            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "NDWI"
 
 
 # Shadow Index (SI), type float64
-def cs1(data, bands, factor=1.0) -> dask.array:
+def cs1(data, bands, factor=1.0, vtype='float64') -> dask.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -139,12 +146,13 @@ def cs1(data, bands, factor=1.0) -> dask.array:
     # 8 and 4 band imagery: CS1 := (3. * NIR1) / (Blue + Green + Red)
     NIR1, Blue = bands.index('NIR1'), bands.index('Blue')
     Green, Red = bands.index('Green'), bands.index('Red')
-    return ((3.0 * (data[NIR1, :, :]/factor)) / (data[Blue, :, :] + data[Green, :, :] + data[Red, :, :])
-            ).expand_dims(dim="band", axis=0).fillna(0).astype('float64'), "CS1"
+    return ((3.0 * (data[NIR1, :, :]/factor)) / (data[Blue, :, :]
+            + data[Green, :, :] + data[Red, :, :])
+            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "CS1"
 
 
 # Shadow Index (SI)
-def cs2(data, bands, factor=1.0) -> dask.array:
+def cs2(data, bands, factor=1.0, vtype='int16') -> dask.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -154,5 +162,6 @@ def cs2(data, bands, factor=1.0) -> dask.array:
     # 8 and 4 band imagery: CS2 := (Blue + Green + Red + NIR1) / 4.
     NIR1, Blue = bands.index('NIR1'), bands.index('Blue')
     Green, Red = bands.index('Green'), bands.index('Red')
-    return ((data[Blue, :, :] + data[Green, :, :] + data[Red, :, :] + data[NIR1, :, :]) / 4.0
-            ).expand_dims(dim="band", axis=0).fillna(0).astype('int16'), "CS2"
+    return ((data[Blue, :, :] + data[Green, :, :] + data[Red, :, :]
+            + data[NIR1, :, :]) / 4.0
+            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "CS2"

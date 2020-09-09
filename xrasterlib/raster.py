@@ -1,5 +1,6 @@
 import sys  # system library
 import os  # system library
+import logging  # logging messages
 import operator  # operator library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
@@ -24,7 +25,8 @@ class Raster:
     # ---------------------------------------------------------------------------
     # __init__
     # ---------------------------------------------------------------------------
-    def __init__(self, filename=None, bands=None, logger=None):
+    def __init__(self, filename=None, bands=None, chunks_band=1,
+                 chunks_x=2048, chunks_y=2048, logger=None):
         """
         Default Raster initializer
         ----------
@@ -47,14 +49,22 @@ class Raster:
 
         self.logger = logger
 
-        if filename is not None:  # if filename is provided, read raster into xarray object
+        if filename is not None:  # if filename is provided, read into xarray
 
             if not os.path.isfile(filename):
                 raise RuntimeError('{} does not exist'.format(filename))
-            self.data = xr.open_rasterio(filename, chunks={'band': 1, 'x': 2048, 'y': 2048})
+
+            self.data_chunks = {
+                'band': chunks_band,
+                'x': chunks_x,
+                'y': chunks_y
+            }
+
+            self.data = xr.open_rasterio(filename, chunks=self.data_chunks)
 
             if bands is None:
-                raise RuntimeError('Must specify band names. Refer to documentation for details.')
+                raise RuntimeError('Must specify band names.')
+
             self.bands = bands
 
             self.nodataval = self.data.attrs['nodatavals']
@@ -66,7 +76,8 @@ class Raster:
     # ---------------------------------------------------------------------------
     # input
     # ---------------------------------------------------------------------------
-    def readraster(self, filename, bands):
+    def readraster(self, filename, bands, chunks_band=1,
+                   chunks_x=2048, chunks_y=2048):
         """
         Read raster and append data to existing Raster object
         ----------
@@ -75,14 +86,15 @@ class Raster:
         filename : str
             Raster filename to read from
         """
-        self.data = xr.open_rasterio(filename, chunks={'band': 1, 'x': 2048, 'y': 2048})
+        self.data_chunks = {'band': chunks_band, 'x': chunks_x, 'y': chunks_y}
+        self.data = xr.open_rasterio(filename, chunks=self.data_chunks)
         self.bands = bands
         self.nodataval = self.data.attrs['nodatavals']
 
     # ---------------------------------------------------------------------------
     # preprocessing
     # ---------------------------------------------------------------------------
-    def preprocess(self, op='>', boundary=0, replace=0):
+    def preprocess(self, op='>', boundary=0, subs=0):
         """
         Remove anomalous values from self.data
         ----------
@@ -97,11 +109,11 @@ class Raster:
         ----------
         Example
         ----------
-            raster.preprocess(op='>', boundary=0, replace=0) := get all values that
-            satisfy the condition self.data > boundary. In this case above 0.
+            raster.preprocess(op='>', boundary=0, replace=0) := get all values
+            that satisfy the condition self.data > boundary (above 0).
         """
         ops = {'<': operator.lt, '>': operator.gt}
-        self.data = self.data.where(ops[op](self.data, boundary), other=replace)
+        self.data = self.data.where(ops[op](self.data, boundary), other=subs)
 
     def addindices(self, indices, factor=1.0):
         """
@@ -119,17 +131,19 @@ class Raster:
             nbands += 1  # counter for number of bands
 
             # calculate band (indices)
-            band, bandid = indices_function(self.data, bands=self.bands, factor=factor)
+            band, bandid = indices_function(self.data,
+                                            bands=self.bands, factor=factor)
             self.bands.append(bandid)  # append new band id to list of bands
             band.coords['band'] = [nbands]  # add band indices to raster
-            self.data = xr.concat([self.data, band], dim='band')  # concat new band
+            self.data = xr.concat([self.data, band], dim='band')  # concat band
 
         # update raster metadata, xarray attributes
         self.data.attrs['scales'] = [self.data.attrs['scales'][0]] * nbands
         self.data.attrs['offsets'] = [self.data.attrs['offsets'][0]] * nbands
 
     def dropindices(self, dropindices):
-        assert all(band in self.bands for band in dropindices), "Specified band not in raster."
+        assert all(band in self.bands for band in dropindices), \
+               "Specified band not in raster."
         dropind = [self.bands.index(ind_id)+1 for ind_id in dropindices]
         self.data = self.data.drop(dim="band", labels=dropind, drop=True)
         self.bands = [band for band in self.bands if band not in dropindices]
@@ -157,10 +171,11 @@ class Raster:
         with rio.open(rast) as src:
             meta = src.profile
             nodatavals = src.read_masks(1).astype('int16')
-        print(meta)
+        logging.info(meta)
 
         nodatavals[nodatavals == 0] = self.nodataval[0]
-        prediction[nodatavals == self.nodataval[0]] = nodatavals[nodatavals == self.nodataval[0]]
+        prediction[nodatavals == self.nodataval[0]] = \
+            nodatavals[nodatavals == self.nodataval[0]]
 
         out_meta = meta  # modify profile based on numpy array
         out_meta['count'] = 1  # output is single band
@@ -169,8 +184,7 @@ class Raster:
         # write to a raster
         with rio.open(output, 'w', **out_meta) as dst:
             dst.write(prediction, 1)
-        print(f'Prediction saved at {output}.')
-
+        logging.info(f'Prediction saved at {output}.')
 
 # -------------------------------------------------------------------------------
 # class Raster Unit Tests
@@ -180,44 +194,43 @@ class Raster:
 if __name__ == "__main__":
 
     # Running Unit Tests
-    # python raster.py /Users/jacaraba/Desktop/cloudtest/WV02_20181109_M1BS_1030010086582600-toa.tif
+    # python raster.py \
+    # /Users/jacaraba/Desktop/cloudtest/WV02_20181109_M1BS_1030010086582600-toa.tif
 
     # Local variables
     filename = sys.argv[1]
-    bands = ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
-    unit_tests = [4]
+    bands = [
+        'CoastalBlue', 'Blue', 'Green', 'Yellow',
+        'Red', 'RedEdge', 'NIR1', 'NIR2'
+    ]
+    unit_tests = [1, 2, 3, 4]
 
     # 1. Create raster object
     if 1 in unit_tests:
         raster = Raster(filename, bands)
         assert raster.data.shape[0] == 8, "Number of bands should be 8."
-        print("Unit Test #1: ", raster.data, raster.bands)
+        logging.info(f"Unit Test #1: {raster.data} {raster.bands}")
 
     # 2. Read raster file through method
     if 2 in unit_tests:
         raster = Raster()
         raster.readraster(filename, bands)
         assert raster.data.shape[0] == 8, "Number of bands should be 8."
-        print("Unit Test #2: ", raster.data, raster.bands)
+        logging.info(f"Unit Test #2: {raster.data} {raster.bands}")
 
     # 3. Test adding a band (indices) to raster.data - either way is fine
     if 3 in unit_tests:
         raster = Raster(filename, bands)
-        raster.addindices([indices.fdi, indices.si, indices.ndwi], factor=10000.0)  # call method from Raster
+        raster.addindices([indices.fdi, indices.si, indices.ndwi], factor=1.0)
         assert raster.data.shape[0] == 11, "Number of bands should be 11."
-        # raster.data = raster.addindices(raster.data, [indices.si], factor=10000.0)  # call method from indices
-        print("Unit Test #3: ", raster.data, raster.bands)
+        logging.info(f"Unit Test #3: {raster.data} {raster.bands}")
 
     # 4. Test preprocess function
     if 4 in unit_tests:
         raster = Raster(filename, bands)
         raster.preprocess(op='>', boundary=0, replace=0)
-        assert raster.data.min().values == 0, "Minimum should be 0."
+        vmin, vmax = raster.data.min().values, raster.data.max().values
+        assert vmin == 0, "Minimum should be 0."
         raster.preprocess(op='<', boundary=10000, replace=10000)
-        assert raster.data.max().values == 10000, "Maximum should be 10000."
-        print("Unit Test #4: (min, max)", raster.data.min().values, raster.data.max().values)
-
-
-
-
-
+        assert vmax == 10000, "Maximum should be 10000."
+        logging.info(f"Unit Test #4: (min, max) ({vmin},{vmax})")
