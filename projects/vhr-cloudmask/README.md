@@ -193,7 +193,7 @@ calls to speed up classification by using more resources and systems.
 
 **4-band 2m**  
 bands: ['Blue', 'Green', 'Red', 'NIR1']  
-number of rasters: 10
+number of rasters: 88
 ```
 # session #1
 salloc # from gpulogin1, gets a session in a GPU system
@@ -204,7 +204,9 @@ python rfdriver.py -l -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/class
 salloc # from gpulogin1, gets a session in a GPU system
 python rfdriver.py -l -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/WV03*.tif -b Blue Green Red NIR1 --sieve
 ```
-4-band 0.5m: bands ['Blue', 'Green', 'Red', 'NIR1'] 
+**4-band 0.5m**
+bands: ['Blue', 'Green', 'Red', 'NIR1'] 
+number of rasters: 88
 ```
 # session #1
 salloc # from gpulogin1, gets a session in a GPU system
@@ -225,8 +227,8 @@ connection, your work will keep running at the NCCS.
 | Status    | Description   | Classified Path                                                                  | 
 | :-------- |:--------------|:--------------------------------------------------------------------------------:|
 | Done      | 8-band 2 m    | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_8band2m  |
-|   | 8-band 0.5 m  | |
-|   | 4-band 2 m    | |
+| Done      | 8-band 0.5 m  | /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_8band05m |
+| Progress  | 4-band 2 m    | |
 |   | 4-band 0.5 m  | |
 
 
