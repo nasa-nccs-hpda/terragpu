@@ -1,4 +1,3 @@
-import sys  # system library
 import os  # system library
 import logging  # logging messages
 import operator  # operator library
@@ -221,7 +220,7 @@ if __name__ == "__main__":
     # 3. Test adding a band (indices) to raster.data - either way is fine
     if 3 in unit_tests:
         raster = Raster(filename, bands)
-        raster.addindices([indices.fdi, indices.si, indices.ndwi], 
+        raster.addindices([indices.fdi, indices.si, indices.ndwi],
                           factor=10000.0)
         assert raster.data.shape[0] == 11, "Number of bands should be 11."
         logging.info(f"Unit Test #3: {raster.data} {raster.bands}")
