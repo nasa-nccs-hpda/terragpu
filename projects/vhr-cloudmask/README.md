@@ -231,14 +231,6 @@ connection, your work will keep running at the NCCS.
 | Progress  | 4-band 2 m    | |
 |   | 4-band 0.5 m  | |
 
-
-- [x] 8-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band
-- [ ] progress - 8-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/8-band/pansharpen
-- [ ] 4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS (WV02)
-- [x] 4-band MS @ 2 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS (WV03)
-- [ ] 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen (WV03)
-- [ ] 4-band MS pansharpened to 0.5 m resolution: /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen (WV03)
-
 ### 5. Performance Statistics <a name="performance-statistics"></a>
 
 rfdriver.py has both CPU and GPU options to perform inference. Some performance statistics have been included below based
