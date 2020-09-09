@@ -210,12 +210,12 @@ number of rasters: 88
 ```
 # session #1
 salloc # from gpulogin1, gets a session in a GPU system
-python rfdriver.py -l -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/WV02*.tif -b Blue Green Red NIR1 --sieve
+python rfdriver.py -l -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_4band05m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/WV02*.tif -b Blue Green Red NIR1 --sieve
 ```
 ```
 # session #2
 salloc # from gpulogin1, gets a session in a GPU system
-python rfdriver.py -l -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_4band2m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/WV03*.tif -b Blue Green Red NIR1 --sieve
+python rfdriver.py -l -o /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/classified/classified_4band05m -m /att/gpfsfs/briskfs01/ppl/jacaraba/cloudmask_data/models/model_20_log2_4band_fdi_si_ndwi.pkl -i /att/gpfsfs/briskfs01/ppl/mwooten3/Vietnam_LCLUC/TOA/M1BS/pansharpen/WV03*.tif -b Blue Green Red NIR1 --sieve
 ```
 Note: All of these predictions have been performed using salloc. A script to submit slurm allocations is included
 but not recommended at this time. For some reason there is something odd in the way the ADAPT GPU cluster is 
