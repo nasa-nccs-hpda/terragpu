@@ -151,7 +151,7 @@ def main():
     filtered_shad_centroids = list()
 
     for c in contours:
-        if len(c) > 1000:
+        if len(c) > 20:
             # append new contours based on treshold
             filtered_contours.append(c)
 
