@@ -1,6 +1,7 @@
 
 import os
 import joblib
+import logging
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -52,6 +53,7 @@ class RF(Raster):
         self.y_test = None
 
         # trained model filename
+        # TODO: update this with args.command option (train vs. classify)
         if traincsvfile is None and modelfile is not None \
                 and not os.path.isfile(modelfile):
             raise RuntimeError('{} does not exist'.format(modelfile))
@@ -116,7 +118,8 @@ class RF(Raster):
         try:  # export model to file
             outmodel = self.outdir + '/' + self.modelfile
             joblib.dump(rf, outmodel)
-            print(f'Model has been saved as {outmodel}')
+            # print(f'Model has been saved as {outmodel}')
+            logging.info(f'Model has been saved as {outmodel}')
         except Exception as e:
             print(f'ERROR: {e}')
 

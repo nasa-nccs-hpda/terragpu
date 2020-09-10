@@ -61,8 +61,8 @@ else:
     gui_decorator = gooey.Gooey(
         suppress_gooey_flag=True,
         program_name="Random Forest",
-        program_description="Build and classify raster imagery.",
-        default_size=(600, 720),
+        program_description="Build and classify raster imagery using RF models",
+        default_size=(980, 720),
         navigation="TABBED",
         progress_regex=r"^Progress (\d+)$",
     )
@@ -90,9 +90,9 @@ def getparser(gui):
 
     # if GUI is not available, initialize plain arg parser object
     if gui:
-        parser = gooey.GooeyParser(description="RF driver.")
+        parser = gooey.GooeyParser(description="RF driver")
     else:
-        parser = argparse.ArgumentParser(description="RF driver.")
+        parser = argparse.ArgumentParser(description="RF driver")
 
     # defining subparsers, one for training one for classification
     subs = parser.add_subparsers(dest="command")
@@ -103,7 +103,7 @@ def getparser(gui):
     if gui:
         train.add_argument(
             "-c", "--csv", type=str, required=False, dest='traincsv',
-            default=None, help="Specify CSV file to train the model.",
+            default=None, help="CSV file to train from mask",
             widget="FileChooser",
             gooey_options=dict(
                 wildcard="CSV files (*.csv)|*.csv", full_width=True
@@ -112,43 +112,43 @@ def getparser(gui):
     else:
         train.add_argument(
             "-c", "--csv", type=str, required=False, dest='traincsv',
-            default=None, help="Specify CSV file to train the model."
+            default=None, help="CSV file to train from mask"
         )
     train.add_argument(
-        '-b', '--bands', nargs='*', dest='bands', help='Specify bands.',
+        '-b', '--bands', nargs='*', dest='bands', help="Raster bands ids (shortname)",
         default=['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge',
                  'NIR1', 'NIR2'], required=False, type=str
     )
     train.add_argument(
         "-o", "--out-directory", type=str, required=True,
-        dest='outdir', default="", help="Specify output directory."
+        dest='outdir', default="", help="Output directory artifacts"
     )
     train.add_argument(
         "-m", "--model", type=str, required=False, dest='model',
-        default=None, help="Specify model filename to save or evaluate."
+        default=None, help="Model filename (.pkl)"
     )
     train.add_argument(
         "-t", "--n-trees", type=int, required=False, dest='ntrees',
-        default=20, help="Specify number of trees for random forest model."
+        default=20, help="n trees for RF"
     )
     train.add_argument(
         "-f", "--max-features", type=str, required=False, dest='maxfeat',
-        default='log2', help="Specify random forest max features."
+        default='log2', help="RF max features"
     )
     train.add_argument(
         "-ts", "--test-size", type=float, required=False, dest='testsize',
-        default='0.30', help="Size of test data (e.g: .30)"
+        default='0.30', help="Ratio of test data"
     )
     train.add_argument(
         "-l", "--log", required=False, dest='logbool',
-        action='store_true', help="Set logging."
+        action='store_true', help="Set logging"
     )
 
     # Predict subparser
     if gui:
         classify.add_argument(
             "-m", "--model", type=str, required=False, dest='model',
-            widget="FileChooser", default=None, help="Specify model filename",
+            widget="FileChooser", default=None, help="Model filename (.pkl)",
             gooey_options=dict(
                 wildcard="TIF files (*.pkl)|*.pkl",
                 full_width=True
@@ -156,7 +156,7 @@ def getparser(gui):
         )
         classify.add_argument(
             "-i", "--rasters", type=str, nargs='*', required=False,
-            dest='rasters', default='*.tif', help="Name or pattern to rasters",
+            dest='rasters', default='*.tif', help="Name or pattern to imagery",
             widget="FileChooser", gooey_options=dict(
                 wildcard="TIF files (*.tif)|*.tif", full_width=True
             )
@@ -164,7 +164,7 @@ def getparser(gui):
     else:
         classify.add_argument(
             "-m", "--model", type=str, required=False, dest='model',
-            default=None, help="Specify model filename to save or evaluate."
+            default=None, help="Model filename (.pkl)"
         )
         classify.add_argument(
             "-i", "--rasters", type=str, nargs='*', required=False,
@@ -172,46 +172,48 @@ def getparser(gui):
         )
     classify.add_argument(
         "-o", "--out-directory", type=str, required=True,
-        dest='outdir', default="", help="Specify output directory."
+        dest='outdir', default="", help="Specify output directory"
     )
     classify.add_argument(
-        '-b', '--bands', nargs='*', dest='bands', help='Specify bands.',
-        default=['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge',
-                 'NIR1', 'NIR2'], required=False, type=str
+        '-b', '--bands', nargs='*', dest='bands', required=False, type=str,
+        help='Raster bands ids (shortname)',
+        default=['CoastalBlue', 'Blue', 'Green', 'Yellow',
+                 'Red', 'RedEdge', 'NIR1', 'NIR2']
     )
     classify.add_argument(
         '-d', '--drop-bands', nargs='*', dest='dropbands', required=False,
-        help='Specify bands to remove.', type=str, default=['HOM1', 'HOM2']
+        help='Bands to remove', type=str, default=['HOM1', 'HOM2']
     )
     classify.add_argument(
         "-toaf", "--toa-factor", type=float, required=False, dest='toaf',
-        default=10000.0, help="Specify TOA factor for indices calculation."
+        default=10000.0, help="TOA factor for indices calculation."
     )
     classify.add_argument(
         "-ws", "--window-size", nargs=2, type=int, required=False,
         dest='windowsize', default=[5000, 5000],
-        help="Specify window size to perform sliding predictions."
-    )
-    classify.add_argument(
-        "-ss", "--sieve-size", type=int, required=False, dest='sieve_sz',
-        default=800, help="Specify size for sieve filter."
-    )
-    classify.add_argument(
-        "-ms", "--median-size", type=int, required=False, dest='median_sz',
-        default=20, help="Specify size for median filter."
+        help="Window size to perform sliding predictions"
     )
     classify.add_argument(
         "-ps", "--sieve", required=False, dest='sievebool',
-        action='store_true', help="Apply sieve."
+        action='store_true', help="Apply sieve"
     )
     classify.add_argument(
         "-pm", "--median", required=False, dest='medianbool',
-        action='store_true', help="Apply median."
+        action='store_true', help="Apply median"
     )
     classify.add_argument(
         "-l", "--log", required=False, dest='logbool',
-        action='store_true', help="Set logging."
+        action='store_true', help="Set logging"
     )
+    classify.add_argument(
+        "-ss", "--sieve-size", type=int, required=False, dest='sieve_sz',
+        default=800, help="Size for sieve filter"
+    )
+    classify.add_argument(
+        "-ms", "--median-size", type=int, required=False, dest='median_sz',
+        default=20, help="Size for median filter"
+    )
+
     return parser.parse_args()
 
 
