@@ -30,7 +30,11 @@ seed = 21
 np.random.seed(seed)
 
 # Ignoring true_divide errors since we know they are expected
-warnings.filterwarnings("ignore", "invalid value encountered in true_divide", RuntimeWarning)
+warnings.filterwarnings(
+    "ignore", "invalid value encountered in true_divide", RuntimeWarning
+)
+
+
 # --------------------------------------------------------------------------------
 # methods
 # --------------------------------------------------------------------------------
