@@ -60,8 +60,8 @@ else:
     )
     gui_decorator = gooey.Gooey(
         suppress_gooey_flag=True,
-        program_name="Random Forest Classification",
-        program_description="Classify raster imagery using RF models.",
+        program_name="Random Forest Cloud Mask Classifier",
+        program_description="Train and Classify raster imagery using RF.",
         default_size=(980, 720),
         navigation="TABBED",
         progress_regex=r"^Progress (\d+)$",
@@ -115,7 +115,7 @@ def getparser(gui):
             default=None, help="CSV file to train from mask"
         )
     train.add_argument(
-        '-b', '--bands', nargs='*', dest='bands', 
+        '-b', '--bands', nargs='*', dest='bands',
         help="Raster bands ids (shortname)",
         default=['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge',
                  'NIR1', 'NIR2'], required=False, type=str
