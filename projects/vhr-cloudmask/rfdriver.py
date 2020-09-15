@@ -20,7 +20,7 @@ from datetime import datetime  # tracking date
 from time import time  # tracking time
 import argparse  # system libraries
 import numpy as np  # for arrays modifications
-
+import torch  # use for GPU acceleration
 from xrasterlib.rf import RF
 import xrasterlib.indices as indices
 
@@ -230,7 +230,7 @@ def main():
             )
             raster_obj.toraster(rast, raster_obj.prediction, output_name)
             raster_obj.prediction = None  # unload between each iteration
-
+            torch.cuda.empty_cache()
     # --------------------------------------------------------------------------------
     # 3c. exit if csv or model are not present or given
     # --------------------------------------------------------------------------------

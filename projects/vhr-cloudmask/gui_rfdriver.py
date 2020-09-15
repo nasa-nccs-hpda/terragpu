@@ -24,7 +24,7 @@ from datetime import datetime  # tracking date
 from time import time  # tracking time
 import argparse  # system libraries
 import numpy as np  # for arrays modifications
-
+import torch  # use for GPU acceleration
 from xrasterlib.rf import RF
 import xrasterlib.indices as indices
 
@@ -36,6 +36,7 @@ except ImportError:
 # Fix seed for reproducibility.
 seed = 21
 np.random.seed(seed)
+torch.cuda.empty_cache()
 
 # Ignoring true_divide errors since we know they are expected
 warnings.filterwarnings(
