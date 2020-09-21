@@ -24,9 +24,16 @@ from datetime import datetime  # tracking date
 from time import time  # tracking time
 import argparse  # system libraries
 import numpy as np  # for arrays modifications
+import cupy as cp
 import torch  # use for GPU acceleration
 from xrasterlib.rf import RF
 import xrasterlib.indices as indices
+import dask.array as da
+#from dask_cuda import LocalCUDACluster
+#from dask.distributed import Client
+
+#cluster = LocalCUDACluster()
+#client = Client(cluster)
 
 try:
     import gooey
@@ -272,12 +279,24 @@ def main():
             print(f"Starting new prediction...{rast}")
             raster_obj.readraster(rast, args.bands)  # read raster
 
+            print(raster_obj.data)
+
+            #cp.cuda.Device(1).use()
+            raster_obj.data = raster_obj.data.data.map_blocks(cp.asarray)
+            print(raster_obj.data.shape[0])
+
             # remove anomalous pixels, make boundaries (0, 10000)
+            print("starting preprocess 1")
             raster_obj.preprocess(op='>', boundary=0, subs=0)
+            print("starting preprocess 2")
             raster_obj.preprocess(op='<', boundary=10000, subs=10000)
+            print("done with preprocess")
+
+            """
             assert (raster_obj.data.min().values >= 0 and
                     raster_obj.data.max().values <= 10000), \
                 "min and max should be (0, 10000). Verify preprocess."
+            """
 
             # add additional indices if necessary
             print(f"Size of raster {raster_obj.data.shape[0]} before indices")
@@ -286,6 +305,9 @@ def main():
                     [indices.fdi, indices.si, indices.ndwi], factor=args.toaf
                 )
 
+            print(raster_obj.data)
+
+            """
             # drop unnecessary bands if necessary
             print(f"Size of raster {raster_obj.data.shape[0]} after indices")
             if raster_obj.model_nfeat != raster_obj.data.shape[0]:
@@ -295,7 +317,16 @@ def main():
 
             # TODO: check if order matters between sive and median
 
+            # apply median filter if necessary
+            print("starting median filter")
+            if args.medianbool:
+                raster_obj.prediction = raster_obj.median(
+                    raster_obj.prediction,
+                    ksize=args.median_sz
+                )
+
             # apply sieve filter if necessary
+            print("starting sieve filter")
             if args.sievebool:
                 raster_obj.sieve(
                     raster_obj.prediction,
@@ -304,11 +335,11 @@ def main():
                 )
 
             # apply median filter if necessary
-            if args.medianbool:
-                raster_obj.prediction = raster_obj.median(
-                    raster_obj.prediction,
-                    ksize=args.median_sz
-                )
+            #if args.medianbool:
+            #    raster_obj.prediction = raster_obj.median(
+            #        raster_obj.prediction,
+            #        ksize=args.median_sz
+            #    )
 
             # out mask name, save raster
             output_name = "{}/cm_{}".format(
@@ -316,7 +347,7 @@ def main():
             )
             raster_obj.toraster(rast, raster_obj.prediction, output_name)
             raster_obj.prediction = None  # unload between each iteration
-
+            """
     # --------------------------------------------------------------------------------
     # 3c. exit if csv or model are not present or given
     # --------------------------------------------------------------------------------

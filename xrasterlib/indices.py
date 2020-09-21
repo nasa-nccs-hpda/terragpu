@@ -1,5 +1,6 @@
 import xarray as xr  # read rasters
 import dask  # multi processsing library
+import cupy as cp  # GPU accelerated library
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
@@ -86,9 +87,13 @@ def fdi(data, bands, factor=1.0, vtype='int16') -> dask.array:
     NIR = bands.index('NIR2') if 'NIR2' in bands else bands.index('NIR1')
     Red = bands.index('RedEdge') if 'RedEdge' in bands else bands.index('Red')
     Blue = bands.index('Blue')
-    return (data[NIR, :, :] - (data[Red, :, :] + data[Blue, :, :])
-            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "FDI"
-
+    #return (data[NIR, :, :] - (data[Red, :, :] + data[Blue, :, :])
+    #        ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "FDI"
+    band = (data[NIR, :, :] - (data[Red, :, :] + data[Blue, :, :]))
+    print ("band shape: ", band.shape)
+    band = cp.expand_dims(band, axis=0)
+    print ("band shape after expand: ", band.shape)
+    return band, "FDI"
 
 # Shadow Index (SI), type int16
 def si(data, bands, factor=1.0, vtype='int16') -> dask.array:
@@ -102,10 +107,15 @@ def si(data, bands, factor=1.0, vtype='int16') -> dask.array:
     # SI := ((factor - Blue) * (factor - Green) * (factor - Red)) ** (1.0 / 3)
     Blue, Green = bands.index('Blue'), bands.index('Green')
     Red = bands.index('Red')
-    return (((factor - data[Blue, :, :]) * (factor - data[Green, :, :]) *
+    #return (((factor - data[Blue, :, :]) * (factor - data[Green, :, :]) *
+    #        (factor - data[Red, :, :])) ** (1.0/3.0)
+    #        ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "SI"
+    band = (((factor - data[Blue, :, :]) * (factor - data[Green, :, :]) *
             (factor - data[Red, :, :])) ** (1.0/3.0)
-            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "SI"
-
+            )
+    band = cp.expand_dims(band, axis=0)
+    print ("band shape after expand: ", band.shape, type(band))
+    return band, "SI"
 
 # Normalized Difference Water Index (DWI), type int16
 def dwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
@@ -119,7 +129,10 @@ def dwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
     Green, NIR1 = bands.index('Green'), bands.index('NIR1')
     return (factor * (data[Green, :, :] - data[NIR1, :, :])
             ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "DWI"
-
+    #Green, NIR1 = bands.index('Green'), bands.index('NIR1')
+    #with cp.cuda.Device(1):
+    #        prediction = cp_medfilter(cp.asarray(prediction), size=ksize)
+    #return cp.asnumpy(prediction)
 
 # Normalized Difference Water Index (NDWI), type int16
 def ndwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
@@ -131,10 +144,15 @@ def ndwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
     """
     # 8 and 4 band imagery: NDWI := factor * (Green - NIR1) / (Green + NIR1)
     Green, NIR1 = bands.index('Green'), bands.index('NIR1')
-    return (factor * ((data[Green, :, :] - data[NIR1, :, :])
+    #return (factor * ((data[Green, :, :] - data[NIR1, :, :])
+    #        / (data[Green, :, :] + data[NIR1, :, :]))
+    #        ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "NDWI"
+    band = (factor * ((data[Green, :, :] - data[NIR1, :, :])
             / (data[Green, :, :] + data[NIR1, :, :]))
-            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "NDWI"
-
+            )
+    band = cp.expand_dims(band, axis=0)
+    print ("band shape after expand: ", band.shape, type(band))
+    return band, "NDWI"
 
 # Shadow Index (SI), type float64
 def cs1(data, bands, factor=1.0, vtype='float64') -> dask.array:

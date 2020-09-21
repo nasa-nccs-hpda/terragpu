@@ -10,3 +10,4 @@ hummingbird-ml
 joblib
 toolz
 tqdm
+cupy-cuda102==8.0.0rc1
