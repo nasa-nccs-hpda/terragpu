@@ -20,14 +20,16 @@ import os
 import gc
 import logging
 import warnings
-from datetime import datetime  # tracking date
 from time import time  # tracking time
 import argparse  # system libraries
 import numpy as np  # for arrays modifications
 import cupy as cp
 import torch  # use for GPU acceleration
+
 from xrasterlib.rf import RF
+from xrasterlib.utils import create_logfile
 import xrasterlib.indices as indices
+
 import dask.array as da
 #from dask_cuda import LocalCUDACluster
 #from dask.distributed import Client
@@ -75,23 +77,6 @@ else:
         progress_regex=r"^Progress (\d+)$",
     )
     gui = True
-
-
-def create_logfile(args, logdir='results'):
-    """
-    :param args: argparser object
-    :param logdir: log directory to store log file
-    :return: logfile instance, stdour and stderr being logged to file
-    """
-    logfile = os.path.join(logdir, '{}_log_{}.out'.format(
-        datetime.now().strftime("%Y%m%d-%H%M%S"), args.command)
-    )
-    print('See ', logfile)
-    so = se = open(logfile, 'w')  # open our log file
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w')  # stdout buffering
-    os.dup2(so.fileno(), sys.stdout.fileno())  # redirect to the log file
-    os.dup2(se.fileno(), sys.stderr.fileno())
-    return logfile
 
 
 def getparser(gui):
@@ -159,7 +144,7 @@ def getparser(gui):
             "-m", "--model", type=str, required=False, dest='model',
             widget="FileChooser", default=None, help="Model filename (.pkl)",
             gooey_options=dict(
-                wildcard="TIF files (*.pkl)|*.pkl",
+                wildcard="PKL files (*.pkl)|*.pkl",
                 full_width=True
             ),
         )
@@ -240,7 +225,7 @@ def main():
     # --------------------------------------------------------------------------------
     os.system(f'mkdir -p {args.outdir}')  # create output dir
     if args.logbool:  # if command line option -l was given
-        create_logfile(args, logdir=args.outdir)  # create logfile for std
+        create_logfile(logdir=args.outdir)  # create logfile for std
     print("Command line executed: ", sys.argv)  # saving command into log file
 
     # --------------------------------------------------------------------------------
