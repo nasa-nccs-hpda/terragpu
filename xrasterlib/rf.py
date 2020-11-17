@@ -6,25 +6,19 @@ import numpy as np
 import pandas as pd
 
 from sklearn.model_selection import train_test_split  # train/test data split
+from sklearn.ensemble import RandomForestClassifier as sklRFC
+from sklearn.ensemble import RandomForestRegressor as sklRFR
 from sklearn.metrics import accuracy_score
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-#from hummingbird.ml import convert  # support GPU inference
-#import torch  # import torch to verify available devices
 
 try:
     import cupy as cp
     import cudf as cf
-    from cuml.ensemble import RandomForestClassifier as cuRF
-
-    import dask_cudf
-
+    from cuml.ensemble import RandomForestClassifier as cumlRFC
+    from cuml.ensemble import RandomForestRegressor as cumlRFR
     cp.random.seed(seed=None)
     HAS_CUPY = True
-
 except ImportError:
     HAS_CUPY = False
-    from sklearn.model_selection import train_test_split  # train/test split
-
 
 from xrasterlib.raster import Raster
 
@@ -96,13 +90,21 @@ class RF(Raster):
         :param seed: random state integer for reproducibility
         :return: 4 arrays with train and test data respectively
         """
+        # read data and split into data and labels
         df = pd.read_csv(self.traincsvfile, header=None, sep=',')
-        x, y = df.iloc[:, :-1], df.iloc[:, -1]
-        del df
+        x = df.iloc[:, :-1].astype(np.float32)
+        y = df.iloc[:, -1]
+        # modify type of labels (int or float)
+        if 'int' in str(self.y.dtypes):
+            y = y.astype(np.int8)
+        else:
+            y = y.astype(np.float32)
+        # split data into training and test
         self.x_train, self.x_test, \
             self.y_train, self.y_test = train_test_split(
                 x, y, test_size=testsize, random_state=seed
             )
+        del df, x, y
 
     def train(self):
         # TODO: Consider moving these print statements to logging
@@ -111,33 +113,49 @@ class RF(Raster):
         print(f'Y array is sized:  {self.y_train.shape}')  # shape of y data
         print(f'Training with ntrees={self.ntrees} and maxfeat={self.maxfeat}')
 
-        if 'int' in str(self.y_train.dtypes):  # if labels are integers
-            rf = RandomForestClassifier(
-                n_estimators=self.ntrees,
-                max_features=self.maxfeat,
-                oob_score=True
-            )
-            self.x_train = self.x_train.astype(np.float32)
-            self.y_train = self.y_train.astype(np.int8)
-        else:  # if labels are floats, use random forest regressor
-            rf = RandomForestRegressor(
-                n_estimators=self.ntrees,
-                max_features=self.maxfeat,
-                oob_score=True
-            )
-            self.x_train = self.x_train.astype(np.float32)
-            self.y_train = self.y_train.astype(np.float32)
+        if self.has_gpu:  # run using RAPIDS library
+            # initialize cudf data and log into GPU memory
+            print('Training model via RAPIDS.')
+            self.x_train = cf.DataFrame.from_pandas(self.x_train)
+            self.x_test = cf.DataFrame.from_pandas(self.x_test)
+            self.y_train = cf.Series(self.y_train.values)
 
-        rf.fit(self.x_train, self.y_train)  # fit model to training data
-        print('Score:', rf.oob_score_)
+            # if labels are integers, use RF Classifier
+            if 'int' in str(self.y_train.dtypes):
+                rf_funct = cumlRFC
+            else:  # if labels are floats, use RF Regressor
+                rf_funct = cumlRFR
+
+        # run only using CPU resources and Sklearn
+        else:
+            print('Training model via SKLearn.')
+            # if labels are integers, use RF Classifier
+            if 'int' in str(self.y_train.dtypes):
+                rf_funct = sklRFC
+            else:  # if labels are floats, use RF Regressor
+                rf_funct = sklRFR
+
+        # Initialize model
+        rf_model = rf_funct(
+            n_estimators=self.ntrees,
+            max_features=self.maxfeat
+        )
+
+        # fit model to training data and predict for accuracy score
+        rf_model.fit(self.x_train, self.y_train)
+        score = accuracy_score(
+            self.y_test, rf_model.predict(self.x_test).to_array()
+        )
+        print(f'Training accuracy: {score}')
 
         try:  # export model to file
             outmodel = self.outdir + '/' + self.modelfile
-            joblib.dump(rf, outmodel)
+            joblib.dump(rf_model, outmodel)
             # print(f'Model has been saved as {outmodel}')
             logging.info(f'Model has been saved as {outmodel}')
         except Exception as e:
-            print(f'ERROR: {e}')
+            logging.error(f'ERROR: {e}')
+
     """
     def load(self):
         self.model = joblib.load(self.modelfile)  # loading pkl in parallel
