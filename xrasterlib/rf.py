@@ -105,27 +105,28 @@ class RF(Raster):
             )
 
     def train(self):
-        labels = np.unique(self.y_train)  # now it's the unique values in y
         # TODO: Consider moving these print statements to logging
-        print(f'Training data includes {labels.size} classes.')
+        print(f'Train data includes {np.unique(self.y_train).size} classes.')
         print(f'X matrix is sized: {self.x_train.shape}')  # shape of x data
         print(f'Y array is sized:  {self.y_train.shape}')  # shape of y data
         print(f'Training with ntrees={self.ntrees} and maxfeat={self.maxfeat}')
 
-        if '.' not in labels[0]:  # if labels are integers
+        if 'int' in str(self.y_train.dtypes):  # if labels are integers
             rf = RandomForestClassifier(
                 n_estimators=self.ntrees,
                 max_features=self.maxfeat,
                 oob_score=True
             )
-            self.y_train = self.y_train.astype(np.int)
+            self.x_train = self.x_train.astype(np.float32)
+            self.y_train = self.y_train.astype(np.int8)
         else:  # if labels are floats, use random forest regressor
             rf = RandomForestRegressor(
                 n_estimators=self.ntrees,
                 max_features=self.maxfeat,
                 oob_score=True
             )
-            self.y_train = self.y_train.astype(np.float)
+            self.x_train = self.x_train.astype(np.float32)
+            self.y_train = self.y_train.astype(np.float32)
 
         rf.fit(self.x_train, self.y_train)  # fit model to training data
         print('Score:', rf.oob_score_)
