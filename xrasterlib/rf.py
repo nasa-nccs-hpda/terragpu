@@ -158,7 +158,7 @@ class RF(Raster):
 
     def load(self):
         self.model = joblib.load(self.modelfile)  # loading pkl in parallel
-        self.model_nfeat = self.model.n_features_  # model features
+        # self.model_nfeat = self.model.n_features_  # model features
         print(f'Loaded model {self.modelfile}.')
 
     def predict(self, ws=[5120, 5120]):

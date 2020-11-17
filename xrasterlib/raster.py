@@ -121,12 +121,17 @@ class Raster:
             raster.preprocess(op='>', boundary=0, replace=0) := get all values
             that satisfy the condition self.data > boundary (above 0).
         """
+        """
         ops = {'<': operator.lt, '>': operator.gt}
         #with cp.cuda.Device(1):
         #data = (cp.asarray(data[NIR, :, :])
         #self.data = self.data.where(ops[op](self.data, boundary), other=subs)
         #self.data = self.data.where(ops[op](cp.asarray(self.data), boundary), other=subs)
         self.data = da.where(ops[op](self.data, boundary), self.data, subs).compute()
+        """
+        ops = {'<': operator.lt, '>': operator.gt}
+        self.data = self.data.where(ops[op](self.data, boundary), other=subs)
+
 
     def addindices(self, indices, factor=1.0):
         """
@@ -138,6 +143,7 @@ class Raster:
             Function reference to calculate indices
         factor : float
             Atmospheric factor for indices calculation
+        """
         """
         nbands = len(self.bands)  # get initial number of bands
         print("entering indices")
@@ -161,6 +167,21 @@ class Raster:
         # update raster metadata, xarray attributes
         #self.data.attrs['scales'] = [self.data.attrs['scales'][0]] * nbands
         #self.data.attrs['offsets'] = [self.data.attrs['offsets'][0]] * nbands
+        """
+        nbands = len(self.bands)  # get initial number of bands
+        for indices_function in indices:  # iterate over each new band
+            nbands += 1  # counter for number of bands
+
+            # calculate band (indices)
+            band, bandid = indices_function(self.data,
+                                            bands=self.bands, factor=factor)
+            self.bands.append(bandid)  # append new band id to list of bands
+            band.coords['band'] = [nbands]  # add band indices to raster
+            self.data = xr.concat([self.data, band], dim='band')  # concat band
+
+        # update raster metadata, xarray attributes
+        self.data.attrs['scales'] = [self.data.attrs['scales'][0]] * nbands
+        self.data.attrs['offsets'] = [self.data.attrs['offsets'][0]] * nbands
 
     def dropindices(self, dropindices):
         assert all(band in self.bands for band in dropindices), \
