@@ -7,8 +7,8 @@ import pandas as pd
 
 from sklearn.model_selection import train_test_split  # train/test data split
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from hummingbird.ml import convert  # support GPU inference
-import torch  # import torch to verify available devices
+#from hummingbird.ml import convert  # support GPU inference
+#import torch  # import torch to verify available devices
 
 try:
     import cupy
@@ -139,7 +139,7 @@ class RF(Raster):
             logging.info(f'Model has been saved as {outmodel}')
         except Exception as e:
             print(f'ERROR: {e}')
-
+    """
     def load(self):
         self.model = joblib.load(self.modelfile)  # loading pkl in parallel
         self.model_nfeat = self.model.n_features_  # model features
@@ -150,7 +150,8 @@ class RF(Raster):
             self.model = convert(self.model, 'pytorch')  # model to tensors
             self.model.to(device)  # assign model to GPU
         print(f'Loaded model {self.modelfile} into {device}.')
-
+    """
+    
     def predict(self, ws=[5120, 5120]):
         # open rasters and get both data and coordinates
         rast_shape = self.data[0, :, :].shape  # shape of the wider scene
