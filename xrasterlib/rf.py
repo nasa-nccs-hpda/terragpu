@@ -6,19 +6,17 @@ import numpy as np
 import pandas as pd
 
 from sklearn.model_selection import train_test_split  # train/test data split
+from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 #from hummingbird.ml import convert  # support GPU inference
 #import torch  # import torch to verify available devices
 
 try:
-    import cupy
-    import cudf
+    import cupy as cp
+    import cudf as cf
     from cuml.ensemble import RandomForestClassifier as cuRF
 
     import dask_cudf
-
-    from cuml.metrics import accuracy_score
-    from cuml.preprocessing.model_selection import train_test_split
 
     cp.random.seed(seed=None)
     HAS_CUPY = True
@@ -98,7 +96,7 @@ class RF(Raster):
         :param seed: random state integer for reproducibility
         :return: 4 arrays with train and test data respectively
         """
-        df = cudf.read_csv(self.traincsvfile, header=None, sep=',')
+        df = pd.read_csv(self.traincsvfile, header=None, sep=',')
         x, y = df.iloc[:, :-1], df.iloc[:, -1]
         del df
         self.x_train, self.x_test, \
@@ -151,7 +149,7 @@ class RF(Raster):
             self.model.to(device)  # assign model to GPU
         print(f'Loaded model {self.modelfile} into {device}.')
     """
-    
+
     def predict(self, ws=[5120, 5120]):
         # open rasters and get both data and coordinates
         rast_shape = self.data[0, :, :].shape  # shape of the wider scene
