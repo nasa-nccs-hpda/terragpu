@@ -121,7 +121,7 @@ class RF(Raster):
             self.y_train = cf.Series(self.y_train.values)
 
             # if labels are integers, use RF Classifier
-            if 'int' in str(self.y_train.dtypes):
+            if 'int' in str(self.y_test.dtypes):
                 rf_funct = cumlRFC
             else:  # if labels are floats, use RF Regressor
                 rf_funct = cumlRFR
@@ -130,7 +130,7 @@ class RF(Raster):
         else:
             print('Training model via SKLearn.')
             # if labels are integers, use RF Classifier
-            if 'int' in str(self.y_train.dtypes):
+            if 'int' in str(self.y_test.dtypes):
                 rf_funct = sklRFC
             else:  # if labels are floats, use RF Regressor
                 rf_funct = sklRFR
