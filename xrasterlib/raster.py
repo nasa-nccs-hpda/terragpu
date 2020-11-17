@@ -4,11 +4,16 @@ import operator  # operator library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
 from scipy.ndimage import median_filter  # scipy includes median filter
-from cupyx.scipy.ndimage import median_filter as cp_medfilter  # cupy scipy modules
-import cupy as cp
 import dask.array as da
 import rasterio.features as riofeat  # rasterio features include sieve filter
 import xrasterlib.indices as indices  # custom indices calculation module
+
+try:
+    from cupyx.scipy.ndimage import median_filter as cp_medfilter
+    import cupy as cp
+    HAS_GPU = True
+except ImportError:
+    HAS_GPU = False
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
@@ -50,6 +55,8 @@ class Raster:
         """
 
         self.logger = logger
+
+        self.has_gpu = HAS_GPU
 
         if filename is not None:  # if filename is provided, read into xarray
 
@@ -174,9 +181,11 @@ class Raster:
         with cp.cuda.Device(1):
             prediction = cp_medfilter(cp.asarray(prediction), size=ksize)
         return cp.asnumpy(prediction)
+
     # ---------------------------------------------------------------------------
     # output
     # ---------------------------------------------------------------------------
+
     def toraster(self, rast, prediction, output='rfmask.tif'):
         """
         :param rast: raster name to get metadata from

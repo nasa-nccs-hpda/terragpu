@@ -7,10 +7,26 @@ import pandas as pd
 
 from sklearn.model_selection import train_test_split  # train/test data split
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-
-
 from hummingbird.ml import convert  # support GPU inference
 import torch  # import torch to verify available devices
+
+try:
+    import cupy
+    import cudf
+    from cuml.ensemble import RandomForestClassifier as cuRF
+
+    import dask_cudf
+
+    from cuml.metrics import accuracy_score
+    from cuml.preprocessing.model_selection import train_test_split
+
+    cp.random.seed(seed=None)
+    HAS_CUPY = True
+
+except ImportError:
+    HAS_CUPY = False
+    from sklearn.model_selection import train_test_split  # train/test split
+
 
 from xrasterlib.raster import Raster
 
@@ -82,9 +98,9 @@ class RF(Raster):
         :param seed: random state integer for reproducibility
         :return: 4 arrays with train and test data respectively
         """
-        df = (pd.read_csv(self.traincsvfile, header=None, sep=',')).values
-        x = df.T[0:-1].T.astype(str)
-        y = df.T[-1].astype(str)
+        df = cudf.read_csv(self.traincsvfile, header=None, sep=',')
+        x, y = df.iloc[:, :-1], df.iloc[:, -1]
+        del df
         self.x_train, self.x_test, \
             self.y_train, self.y_test = train_test_split(
                 x, y, test_size=testsize, random_state=seed
