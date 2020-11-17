@@ -95,7 +95,7 @@ class RF(Raster):
         x = df.iloc[:, :-1].astype(np.float32)
         y = df.iloc[:, -1]
         # modify type of labels (int or float)
-        if 'int' in str(self.y.dtypes):
+        if 'int' in str(y.dtypes):
             y = y.astype(np.int8)
         else:
             y = y.astype(np.float32)
