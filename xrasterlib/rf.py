@@ -156,18 +156,10 @@ class RF(Raster):
         except Exception as e:
             logging.error(f'ERROR: {e}')
 
-    """
     def load(self):
         self.model = joblib.load(self.modelfile)  # loading pkl in parallel
         self.model_nfeat = self.model.n_features_  # model features
-        device = 'cpu'  # set cpu as default device
-        if torch.cuda.is_available():  # if cuda is available, load to GPU
-            torch.cuda.empty_cache()  # empy cache if residuals present
-            device = torch.device('cuda:0')  # assign device
-            self.model = convert(self.model, 'pytorch')  # model to tensors
-            self.model.to(device)  # assign model to GPU
-        print(f'Loaded model {self.modelfile} into {device}.')
-    """
+        print(f'Loaded model {self.modelfile}.')
 
     def predict(self, ws=[5120, 5120]):
         # open rasters and get both data and coordinates
