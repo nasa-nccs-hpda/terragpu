@@ -1,6 +1,10 @@
 import xarray as xr  # read rasters
 import dask  # multi processsing library
-import cupy as cp  # GPU accelerated library
+
+# try:
+#    import cupy as cp  # GPU accelerated library
+# except ImportError:
+#    pass
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"

@@ -190,7 +190,7 @@ class RF(Raster):
                 self.prediction[x0:x1, y0:y1] = \
                     self.model.predict(window).reshape((x1 - x0, y1 - y0))
         # save raster
-        self.prediction = self.prediction.astype(np.int16)  # type to int16
+        self.prediction = self.prediction.astype(np.int8)  # type to int16
 
 
 # -------------------------------------------------------------------------------

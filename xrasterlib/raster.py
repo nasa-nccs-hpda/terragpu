@@ -3,8 +3,8 @@ import logging  # logging messages
 import operator  # operator library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
-from scipy.ndimage import median_filter  # scipy includes median filter
-import dask.array as da
+# from scipy.ndimage import median_filter  # scipy includes median filter
+# import dask.array as da
 import rasterio.features as riofeat  # rasterio features include sieve filter
 import xrasterlib.indices as indices  # custom indices calculation module
 
@@ -126,12 +126,15 @@ class Raster:
         #with cp.cuda.Device(1):
         #data = (cp.asarray(data[NIR, :, :])
         #self.data = self.data.where(ops[op](self.data, boundary), other=subs)
-        #self.data = self.data.where(ops[op](cp.asarray(self.data), boundary), other=subs)
-        self.data = da.where(ops[op](self.data, boundary), self.data, subs).compute()
+        #self.data = self.data.where(
+        # ops[op](cp.asarray(self.data), boundary), other=subs
+        # )
+        # self.data = da.where(
+        #    ops[op](self.data, boundary), self.data, subs
+        # ).compute()
         """
         ops = {'<': operator.lt, '>': operator.gt}
         self.data = self.data.where(ops[op](self.data, boundary), other=subs)
-
 
     def addindices(self, indices, factor=1.0):
         """
@@ -153,13 +156,15 @@ class Raster:
             # calculate band (indices)
             band, bandid = indices_function(self.data,
                                             bands=self.bands, factor=factor)
-            #band, bandid = da.map_blocks(indices_function, self.data, self.bands, dtype='int16')
+            #band, bandid = da.map_blocks(
+            # indices_function, self.data, self.bands, dtype='int16'
+            # )
             #print (band, bandid)
 
             print("calculated indices")
             self.bands.append(bandid)  # append new band id to list of bands
             #band.coords['band'] = [nbands]  # add band indices to raster
-            #self.data = xr.concat([self.data, band], dim='band')  # concat band
+            #self.data = xr.concat([self.data, band], dim='band')
             self.data = cp.concatenate((self.data, band), axis=0)
             print("concatenated indices", self.data.shape)
         self.data = cp.nan_to_num(self.data)

@@ -2,7 +2,8 @@ import sys
 import os
 from datetime import datetime  # tracking date
 from cuml.dask.common import utils as dask_utils
-from dask.distributed import Client, wait
+from dask.distributed import Client
+# from dask.distributed import wait
 from dask_cuda import LocalCUDACluster
 import dask_cudf
 

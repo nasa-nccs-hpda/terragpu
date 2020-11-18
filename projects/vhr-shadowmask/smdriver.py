@@ -111,15 +111,15 @@ def main():
     # 2. Instantiate Raster object
     # --------------------------------------------------------------------------------
     # specify data files
-    outdir = "/Users/jacaraba/Desktop/cloudtest"
+    outdir = "/Users/jacaraba/Desktop/CLOUD/cloudtest"
 
     # Test #1
     #raster = '/Users/jacaraba/Desktop/cloudtest/WV02_20181109_M1BS_1030010086582600-toa.tif'
     #cloudmask = '/Users/jacaraba/Desktop/cloudtest/cm_WV02_20181109_M1BS_1030010086582600-toa.tif'
 
     # Test #2
-    raster = '/Users/jacaraba/Desktop/cloudtest/WV03_20180804_M1BS_104001003F25AA00-toa.tif'
-    cloudmask = '/Users/jacaraba/Desktop/cloudtest/cm_WV03_20180804_M1BS_104001003F25AA00-toa.tif'
+    raster = '/Users/jacaraba/Desktop/CLOUD/cloudtest/WV03_20180804_M1BS_104001003F25AA00-toa.tif'
+    cloudmask = '/Users/jacaraba/Desktop/CLOUD/cloudtest/cm_WV03_20180804_M1BS_104001003F25AA00-toa.tif'
     bands = ['CoastalBlue', 'Blue', 'Green', 'Yellow', 'Red', 'RedEdge', 'NIR1', 'NIR2']
 
     raster_obj = DGFile(raster)
@@ -155,7 +155,7 @@ def main():
     filtered_shad_centroids = list()
 
     for c in contours:
-        if len(c) > 20:
+        if len(c) > 100:
             # append new contours based on treshold
             filtered_contours.append(c)
 
@@ -200,24 +200,26 @@ def main():
                 #conts = cv2.circle(conts, (int(cX), int(cY)), 20, (255, 255, 0), -1)  # cloud centroid
                 #conts = cv2.circle(conts, (int(x_shd), int(y_shd)), 20, (0, 0, 255), -1)  # shadow centroids
                 conts = cv2.drawContours(conts, [c + [int(x_shd)-cX, int(y_shd)-cY]], -1, (0, 0, 255), cv2.FILLED)  # shadow contours
+
+                # IMPORTANT: Check if contour is part of CLOUD SHADOW
+                # 1. get real values inside contour
+                # 2. Calculate indices to see if it is cloud
+                # 3. get average and check if it is shadow or not, draw contour then
+
+
             filtered_shad_centroids.append(shad_centroids)
 
-    cv2.imwrite("/Users/jacaraba/Desktop/cloudtest/position_WV03_20180804_M1BS_104001003F25AA00-toa.png", conts)
+    cv2.imwrite("/Users/jacaraba/Desktop/CLOUD/cloudtest/testing-now1.png", conts)
     #cv2.imwrite("/Users/jacaraba/Desktop/cloudtest/position_WV02_20181109_M1BS_1030010086582600-toa.png", conts)
-
     print (type(conts), conts.shape)
 
+    # converting mask into raster
     from skimage import color
     conts = color.rgb2gray(conts).astype('int16')
     conts[conts > 0] = 1
-
     print (type(conts), conts.shape)
-
-
-    raster_obj.toraster(raster, conts, "/Users/jacaraba/Desktop/cloudtest/mask_WV03_20180804_M1BS_104001003F25AA00-toa.tif")  # save raster with mask
+    raster_obj.toraster(raster, conts, "/Users/jacaraba/Desktop/CLOUD/cloudtest/testing-now2.tif")  # save raster with mask
     #raster_obj.toraster(raster, conts, "/Users/jacaraba/Desktop/cloudtest/mask_WV02_20181109_M1BS_1030010086582600-toa.tif")  # save raster with mask
-
-
     #conts = np.zeros((thresh.shape[0], thresh.shape[1], 3))
     #conts = cv2.drawContours(conts, filtered_contours, -1, (0, 255, 0), 3)
     #cv2.imwrite("/Users/jacaraba/Desktop/cloudtest/filt_contours_WV03_20180804_M1BS_104001003F25AA00-toa.png", conts)
@@ -266,7 +268,6 @@ def main():
         conts = cv2.circle(conts, (int(x_shd), int(y_shd)), 30, (0,0,255), -1)
     cv2.imwrite("/Users/jacaraba/Desktop/cloudtest/drawContCirc.png", conts)
     """
-
 
     print("Elapsed Time: ", (time() - start_time) / 60.0)  # output program run time in minutes
 
