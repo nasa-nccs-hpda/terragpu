@@ -3,9 +3,17 @@ import logging  # logging messages
 import operator  # operator library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
-from scipy.ndimage import median_filter  # scipy includes median filter
+# from scipy.ndimage import median_filter  # scipy includes median filter
+# import dask.array as da
 import rasterio.features as riofeat  # rasterio features include sieve filter
 import xrasterlib.indices as indices  # custom indices calculation module
+
+try:
+    from cupyx.scipy.ndimage import median_filter as cp_medfilter
+    import cupy as cp
+    HAS_GPU = True
+except ImportError:
+    HAS_GPU = False
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
@@ -47,6 +55,8 @@ class Raster:
         """
 
         self.logger = logger
+
+        self.has_gpu = HAS_GPU
 
         if filename is not None:  # if filename is provided, read into xarray
 
@@ -111,6 +121,18 @@ class Raster:
             raster.preprocess(op='>', boundary=0, replace=0) := get all values
             that satisfy the condition self.data > boundary (above 0).
         """
+        """
+        ops = {'<': operator.lt, '>': operator.gt}
+        #with cp.cuda.Device(1):
+        #data = (cp.asarray(data[NIR, :, :])
+        #self.data = self.data.where(ops[op](self.data, boundary), other=subs)
+        #self.data = self.data.where(
+        # ops[op](cp.asarray(self.data), boundary), other=subs
+        # )
+        # self.data = da.where(
+        #    ops[op](self.data, boundary), self.data, subs
+        # ).compute()
+        """
         ops = {'<': operator.lt, '>': operator.gt}
         self.data = self.data.where(ops[op](self.data, boundary), other=subs)
 
@@ -124,6 +146,32 @@ class Raster:
             Function reference to calculate indices
         factor : float
             Atmospheric factor for indices calculation
+        """
+        """
+        nbands = len(self.bands)  # get initial number of bands
+        print("entering indices")
+        for indices_function in indices:  # iterate over each new band
+            nbands += 1  # counter for number of bands
+
+            # calculate band (indices)
+            band, bandid = indices_function(self.data,
+                                            bands=self.bands, factor=factor)
+            #band, bandid = da.map_blocks(
+            # indices_function, self.data, self.bands, dtype='int16'
+            # )
+            #print (band, bandid)
+
+            print("calculated indices")
+            self.bands.append(bandid)  # append new band id to list of bands
+            #band.coords['band'] = [nbands]  # add band indices to raster
+            #self.data = xr.concat([self.data, band], dim='band')
+            self.data = cp.concatenate((self.data, band), axis=0)
+            print("concatenated indices", self.data.shape)
+        self.data = cp.nan_to_num(self.data)
+        print ("type of data after indices ", type(self.data))
+        # update raster metadata, xarray attributes
+        #self.data.attrs['scales'] = [self.data.attrs['scales'][0]] * nbands
+        #self.data.attrs['offsets'] = [self.data.attrs['offsets'][0]] * nbands
         """
         nbands = len(self.bands)  # get initial number of bands
         for indices_function in indices:  # iterate over each new band
@@ -154,11 +202,16 @@ class Raster:
         riofeat.sieve(prediction, size, out, mask, connectivity)
 
     def median(self, prediction, ksize=20):
-        return median_filter(prediction, size=ksize)
+        # method for CPU
+        # return median_filter(prediction, size=ksize)
+        with cp.cuda.Device(1):
+            prediction = cp_medfilter(cp.asarray(prediction), size=ksize)
+        return cp.asnumpy(prediction)
 
     # ---------------------------------------------------------------------------
     # output
     # ---------------------------------------------------------------------------
+
     def toraster(self, rast, prediction, output='rfmask.tif'):
         """
         :param rast: raster name to get metadata from

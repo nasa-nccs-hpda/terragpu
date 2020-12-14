@@ -2,7 +2,7 @@
 .idea/
 .vscode/
 .DS_Store
-*workspace
+*-workspace
 
 # Ignore compiled files
 __pycache__/
