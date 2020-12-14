@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='xrasterlib',
-    version='0.0.1',
+    version='0.0.3',
     description='Methods for remote sensing satellite imagery processing',
     author='Jordan A. Caraballo-Vega',
     author_email='jordan.a.caraballo-vega@nasa.gov',
