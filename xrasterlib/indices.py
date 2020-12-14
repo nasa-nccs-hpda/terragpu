@@ -26,12 +26,12 @@ __status__ = "Production"
 
 def addindices(rastarr, bands, indices, factor=1.0) -> dask.array:
     """
-     :param rastarr:
-     :param indices:
-     :param bands:
-     :param factor:
-     :return:
-     """
+    :param rastarr: xarray or numpy array object in the form (c, h, w)
+    :param bands: list with strings of bands in the raster
+    :param indices: indices to calculate and append to the raster
+    :param factor: factor used for toa imagery
+    :return: raster with updated bands list
+    """
     nbands = len(bands)  # get initial number of bands
     for indices_function in indices:  # iterate over each new band
         nbands += 1  # counter for number of bands
