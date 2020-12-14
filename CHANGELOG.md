@@ -21,3 +21,20 @@ Any security or bug findings should be documented as CVE or BUG respectively.
 
 ### Approved
 Jordan A. Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
+
+## [0.0.3] - 2020-09-05
+
+### Added
+- Deep Learning modules.
+- New indices based on Wooten calculation.
+- Random Forest General driver, GPU acceleration.
+
+### Changed
+- Added deeprsensing features.
+- More xarray native functions for speed.
+
+### Removed
+- Projects, added Examples directory.
+
+### Approved
+Jordan A. Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
