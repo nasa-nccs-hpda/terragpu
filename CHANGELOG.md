@@ -22,7 +22,7 @@ Any security or bug findings should be documented as CVE or BUG respectively.
 ### Approved
 Jordan A. Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
 
-## [0.0.3] - 2020-09-05
+## [0.0.3] - 2020-12-14
 
 ### Added
 - Deep Learning modules.
