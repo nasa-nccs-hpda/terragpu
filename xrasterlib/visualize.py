@@ -526,4 +526,3 @@ if __name__ == "__main__":
             outimg='validation.png', con_mat_df=con_mat_df,
             title='unet_vietnam_binary_Adadelta_48000_64_0.0001_64_35-0.25'
             )
-

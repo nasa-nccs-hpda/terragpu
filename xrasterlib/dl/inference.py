@@ -2,9 +2,9 @@ import logging
 import math
 import numpy as np
 
-from deeprsensing.preprocessing import normalize
-from deeprsensing.preprocessing import globalStandardization
-from deeprsensing.preprocessing import localStandardization
+from xrasterlib.dl.processing import normalize
+from xrasterlib.dl.processing import globalStandardization
+from xrasterlib.dl.processing import localStandardization
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
@@ -287,4 +287,3 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # Add unit tests here
-
