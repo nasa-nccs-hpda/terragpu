@@ -293,7 +293,7 @@ def get_rand_patches_aug_augcond(img, mask, n_patches=16000, sz=256,
 
 # ------------------------ Artifact Removal Functions ----------------------- #
 
-def _2d_spline(window_size=128, power=2) -> np.arrray:
+def _2d_spline(window_size=128, power=2) -> np.array:
     """
     Window method for boundaries/edge artifacts smoothing.
     :param window_size: size of window/tile to smooth
