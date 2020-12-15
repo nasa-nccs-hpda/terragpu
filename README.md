@@ -4,7 +4,7 @@ Python library to process and classify remote sensing imagery
 
 <img src="images/nccslogo.png" height="150" width="300">
 
-### Objectives
+## Objectives
 
 - Library to process remote sensing imagery using memory efficient libraries.
 - Machine Learning and Deep Learning image classification.
@@ -12,13 +12,11 @@ Python library to process and classify remote sensing imagery
 
 ### Installation
 
-The following library is intended to be used to accelerate the development
-of data science products for remote sensing satellite imagery. xrasterlib can 
-be installed by itself, but instructions for installing the full environments 
-are listed below so projects, examples, and notebooks can be run.
+The following library is intended to be used to accelerate the development of data science products for remote sensing satellite imagery. xrasterlib can be installed by itself, but instructions for installing the full environments are listed below so projects, examples, and notebooks can be run.
 
 #### Build Conda Environment - Single Step (GPU support)
-```
+
+``` bash
 git clone https://github.com/jordancaraballo/xrasterlib.git
 cd xrasterlib; conda env create -f requirements/environment.yml;
 conda activate xrasterlib
@@ -26,7 +24,8 @@ python setup.py install
 ```
 
 #### Build Conda Environment - Multi Step
-```
+
+``` bash
 git clone https://github.com/jordancaraballo/xrasterlib.git
 cd xrasterlib; conda create --name xrasterlib;
 conda activate xrasterlib
@@ -37,27 +36,31 @@ python setup.py install
 ```
 
 #### Pip only
-```
+
+``` bash
 git clone https://github.com/jordancaraballo/xrasterlib.git
 pip install -r requirements/requirements.txt
 python setup.py install
 ```
+
 Note: PIP installations do not include CUDA libraries for GPU support. Make sure
 NVIDIA libraries are installed locally in the system if not using conda.
 
 ## Getting Started
 
-```
+``` bash
 ├── archives              <- Legacy code stored to historical reference
 ├── docs                  <- Default documentation for working with this project
 ├── images                <- Store project images
 ├── notebooks             <- Jupyter notebooks
-├── projects              <- Current projects utilizing the library
+├── examples              <- Examples for utilizing the library
 ├── requirements          <- Requirements for installing the dependencies
+├── scripts               <- Utility scripts for analysis
 ├── xrasterlib            <- Library source code
 ├── README.md             <- The top-level README for developers using this project
 ├── CHANGELOG.md          <- Releases documentation
-└── LICENSE
+├── LICENSE               <- License documentation
+└── setup.py              <- Script to install library
 ```
 
 ## Background
@@ -77,18 +80,18 @@ Pytorch is implemented for GPU accelaration of Sckitlearn models.
 
 ## Authors
 
-* Jordan Alexis Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
-* Margaret Wooten, margaret.wooten@nasa.gov
+- Jordan Alexis Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
+- Margaret Wooten, margaret.wooten@nasa.gov
 
 ## Contributors
 
-* Andrew Weis, aweis1998@icloud.com
-* Brian Lee, brianlee52@bren.ucsb.edu
+- Andrew Weis, aweis1998@icloud.com
+- Brian Lee, brianlee52@bren.ucsb.edu
 
 ## References
 
-[1] Chollet, François; et all, Keras, (2015), GitHub repository, https://github.com/keras-team/keras. Accessed 13 February 2020.
+[1] Chollet, François; et all, Keras, (2015), GitHub repository, <https://github.com/keras-team/keras>. Accessed 13 February 2020.
 
-[2] Paszke, Adam; Gross, Sam; Chintala, Soumith; Chanan, Gregory; et all, PyTorch, (2016), GitHub repository, https://github.com/pytorch/pytorch. Accessed 13 February 2020.
+[2] Paszke, Adam; Gross, Sam; Chintala, Soumith; Chanan, Gregory; et all, PyTorch, (2016), GitHub repository, <https://github.com/pytorch/pytorch>. Accessed 13 February 2020.
 
-[3] Google Brain Team; et all, TensorFlow, (2015), GitHub repository, https://github.com/tensorflow/tensorflow. Accessed 13 February 2020.
+[3] Google Brain Team; et all, TensorFlow, (2015), GitHub repository, <https://github.com/tensorflow/tensorflow>. Accessed 13 February 2020.
