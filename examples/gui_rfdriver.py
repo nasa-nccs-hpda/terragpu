@@ -26,7 +26,7 @@ import numpy as np  # for arrays modifications
 import cupy as cp
 import torch  # use for GPU acceleration
 
-from xrasterlib.rf import RF
+from xrasterlib.ml.rf import RF
 from xrasterlib.utils import create_logfile
 import xrasterlib.indices as indices
 
