@@ -316,7 +316,7 @@ def _2d_spline(window_size=128, power=2) -> np.array:
     return wind
 
 
-def _hann_matrix(window_size=128, power=2) -> np.arrray:
+def _hann_matrix(window_size=128, power=2) -> np.array:
     logging.info("Placeholder for next release.")
 
 
