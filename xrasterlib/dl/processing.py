@@ -216,8 +216,8 @@ def get_rand_patches_aug_augcond(img, mask, n_patches=16000, sz=256,
     if nodata_ascloud:
         # if no-data present, change to final class
         mask = mask.values  # return numpy array
-        mask[mask > nclasses] = nclasses  # some no-data are 255 or other big
-        mask[mask < 0] = nclasses  # some no-data are -128 or smaller negative
+        mask[mask > nclasses] = -999  # some no-data are 255 or other big
+        mask[mask < 0] = -999  # some no-data are -128 or smaller negative
 
     patches = []  # list to store data patches
     labels = []  # list to store label patches
@@ -231,20 +231,20 @@ def get_rand_patches_aug_augcond(img, mask, n_patches=16000, sz=256,
         if method == 'augcond':
             # while loop to regenerate random ints if tile has only one class
             while len(np.unique(mask[xc:(xc + sz), yc:(yc + sz)])) == 1 or \
-                    6 in mask[xc:(xc + sz), yc:(yc + sz)] or \
-                    6 in mask[(xc + sz - over):(xc + sz + sz - over),
-                              (yc + sz - over):(yc + sz + sz - over)] or \
-                    6 in mask[(xc + sz - over):(xc + sz + sz - over),
-                              yc:(yc + sz)]:
+                    -999 in mask[xc:(xc + sz), yc:(yc + sz)] or \
+                    -999 in mask[(xc + sz - over):(xc + sz + sz - over),
+                                 (yc + sz - over):(yc + sz + sz - over)] or \
+                    -999 in mask[(xc + sz - over):(xc + sz + sz - over),
+                                 yc:(yc + sz)]:
                 xc = random.randint(0, img.shape[0] - sz - sz)
                 yc = random.randint(0, img.shape[1] - sz - sz)
         elif method == 'aug':
             # while loop to regenerate random ints if tile has only one class
-            while 6 in mask[xc:(xc + sz), yc:(yc + sz)] or \
-                  6 in mask[(xc + sz - over):(xc + sz + sz - over),
-                            (yc + sz - over):(yc + sz + sz - over)] or \
-                  6 in mask[(xc + sz - over):(xc + sz + sz - over),
-                            yc:(yc + sz)]:
+            while -999 in mask[xc:(xc + sz), yc:(yc + sz)] or \
+                  -999 in mask[(xc + sz - over):(xc + sz + sz - over),
+                               (yc + sz - over):(yc + sz + sz - over)] or \
+                  -999 in mask[(xc + sz - over):(xc + sz + sz - over),
+                               yc:(yc + sz)]:
                 xc = random.randint(0, img.shape[0] - sz - sz)
                 yc = random.randint(0, img.shape[1] - sz - sz)
 
@@ -357,4 +357,3 @@ if __name__ == "__main__":
                                         )
     assert standardized.max() > 1.75, "Unexpected max value."
     logging.info(f"UT #5 PASS: {standardized.mean()}, {standardized.std()}")
-
