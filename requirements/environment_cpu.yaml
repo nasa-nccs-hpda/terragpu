@@ -5,21 +5,28 @@ channels:
   - conda-forge
   - defaults
   - anaconda
+  - rapidsai
+  - nvidia
 
 dependencies:
-  - cudatoolkit=10.2
-  - cudnn
+  - python=3.7
+  - webcolors
+  - Pillow
   - pip
   - pip:
-    - numpy
-    - pandas
-    - scikit-learn
+    - tensorflow
+    - opencv-python
+    - scikit-image
+    - tifffile
+    - seaborn
+    - scipy
+    - Pillow
+    - imagecodecs
     - rasterio
     - xarray
+    - scikit-learn
     - dask[complete]
-    - opencv-python
     - imutils
-    - hummingbird-ml
     - joblib
     - toolz
     - tqdm
