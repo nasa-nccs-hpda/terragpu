@@ -51,18 +51,19 @@ quiet = 0
 
 
 # =============================================================================
-def raster_copy( s_fh, s_xoff, s_yoff, s_xsize, s_ysize, s_band_n,
-                 t_fh, t_xoff, t_yoff, t_xsize, t_ysize, t_band_n,
-                 nodata=None ):
+def raster_copy(s_fh, s_xoff, s_yoff, s_xsize, s_ysize, s_band_n,
+                t_fh, t_xoff, t_yoff, t_xsize, t_ysize, t_band_n,
+                nodata=None
+                ):
 
     if nodata is not None:
         return raster_copy_with_nodata(
             s_fh, s_xoff, s_yoff, s_xsize, s_ysize, s_band_n,
             t_fh, t_xoff, t_yoff, t_xsize, t_ysize, t_band_n,
-            nodata )
+            nodata)
 
     if verbose != 0:
-        print('Copy %d,%d,%d,%d to %d,%d,%d,%d.' \
+        print('Copy %d,%d,%d,%d to %d,%d,%d,%d.'
               % (s_xoff, s_yoff, s_xsize, s_ysize,
              t_xoff, t_yoff, t_xsize, t_ysize ))
 
