@@ -194,7 +194,7 @@ def get_rand_patches_rand_cond(img, mask, n_patches=16000, sz=160, nclasses=6,
 
 def get_rand_patches_aug_augcond(img, mask, n_patches=16000, sz=256,
                                  nclasses=6, over=50, nodata_ascloud=True,
-                                 method='augcond'
+                                 nodata=-9999, method='augcond'
                                  ) -> np.array:
     """
     Generate training data.
@@ -213,11 +213,12 @@ def get_rand_patches_aug_augcond(img, mask, n_patches=16000, sz=256,
                   tile, after data augmentation.
     :return: two numpy array with data and labels.
     """
+    mask = mask.values  # return numpy array
+
     if nodata_ascloud:
         # if no-data present, change to final class
-        mask = mask.values  # return numpy array
-        mask[mask > nclasses] = -999  # some no-data are 255 or other big
-        mask[mask < 0] = -999  # some no-data are -128 or smaller negative
+        mask[mask > nclasses] = nodata  # some no-data are 255 or other big
+        mask[mask < 0] = nodata  # some no-data are -128 or smaller negative
 
     patches = []  # list to store data patches
     labels = []  # list to store label patches
@@ -231,20 +232,20 @@ def get_rand_patches_aug_augcond(img, mask, n_patches=16000, sz=256,
         if method == 'augcond':
             # while loop to regenerate random ints if tile has only one class
             while len(np.unique(mask[xc:(xc + sz), yc:(yc + sz)])) == 1 or \
-                    -999 in mask[xc:(xc + sz), yc:(yc + sz)] or \
-                    -999 in mask[(xc + sz - over):(xc + sz + sz - over),
-                                 (yc + sz - over):(yc + sz + sz - over)] or \
-                    -999 in mask[(xc + sz - over):(xc + sz + sz - over),
-                                 yc:(yc + sz)]:
+                    nodata in mask[xc:(xc + sz), yc:(yc + sz)] or \
+                    nodata in mask[(xc + sz - over):(xc + sz + sz - over),
+                                   (yc + sz - over):(yc + sz + sz - over)] or \
+                    nodata in mask[(xc + sz - over):(xc + sz + sz - over),
+                                   yc:(yc + sz)]:
                 xc = random.randint(0, img.shape[0] - sz - sz)
                 yc = random.randint(0, img.shape[1] - sz - sz)
         elif method == 'aug':
             # while loop to regenerate random ints if tile has only one class
-            while -999 in mask[xc:(xc + sz), yc:(yc + sz)] or \
-                  -999 in mask[(xc + sz - over):(xc + sz + sz - over),
-                               (yc + sz - over):(yc + sz + sz - over)] or \
-                  -999 in mask[(xc + sz - over):(xc + sz + sz - over),
-                               yc:(yc + sz)]:
+            while nodata in mask[xc:(xc + sz), yc:(yc + sz)] or \
+                  nodata in mask[(xc + sz - over):(xc + sz + sz - over),
+                                 (yc + sz - over):(yc + sz + sz - over)] or \
+                  nodata in mask[(xc + sz - over):(xc + sz + sz - over),
+                                 yc:(yc + sz)]:
                 xc = random.randint(0, img.shape[0] - sz - sz)
                 yc = random.randint(0, img.shape[1] - sz - sz)
 
