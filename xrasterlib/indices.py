@@ -1,5 +1,5 @@
 import xarray as xr  # read rasters
-import dask  # multi processsing library
+import numpy as np
 
 # try:
 #    import cupy as cp  # GPU accelerated library
@@ -24,7 +24,7 @@ __status__ = "Production"
 # -------------------------------------------------------------------------------
 
 
-def addindices(rastarr, bands, indices, factor=1.0) -> dask.array:
+def addindices(rastarr, bands, indices, factor=1.0) -> np.array:
     """
     :param rastarr: xarray or numpy array object in the form (c, h, w)
     :param bands: list with strings of bands in the raster
@@ -49,7 +49,7 @@ def addindices(rastarr, bands, indices, factor=1.0) -> dask.array:
 
 
 # Difference Vegetation Index (DVI), type int16
-def dvi(data, bands, factor=1.0, vtype='int16') -> dask.array:
+def dvi(data, bands, factor=1.0, vtype='int16') -> np.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: list with strings of bands in the raster
@@ -64,7 +64,7 @@ def dvi(data, bands, factor=1.0, vtype='int16') -> dask.array:
 
 # Normalized Difference Vegetation Index (NDVI)
 # range from +1.0 to -1.0, type float64
-def ndvi(data, bands, factor=1.0, vtype='float64') -> dask.array:
+def ndvi(data, bands, factor=1.0, vtype='float64') -> np.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -79,7 +79,7 @@ def ndvi(data, bands, factor=1.0, vtype='float64') -> dask.array:
 
 
 # Forest Discrimination Index (FDI), type int16
-def fdi(data, bands, factor=1.0, vtype='int16') -> dask.array:
+def fdi(data, bands, factor=1.0, vtype='int16') -> np.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -96,7 +96,7 @@ def fdi(data, bands, factor=1.0, vtype='int16') -> dask.array:
 
 
 # Shadow Index (SI), type int16
-def si(data, bands, factor=1.0, vtype='int16') -> dask.array:
+def si(data, bands, factor=1.0, vtype='int16') -> np.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -113,7 +113,7 @@ def si(data, bands, factor=1.0, vtype='int16') -> dask.array:
 
 
 # Normalized Difference Water Index (DWI), type int16
-def dwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
+def dwi(data, bands, factor=1.0, vtype='int16') -> np.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -127,7 +127,7 @@ def dwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
 
 
 # Normalized Difference Water Index (NDWI), type int16
-def ndwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
+def ndwi(data, bands, factor=1.0, vtype='int16') -> np.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -142,7 +142,7 @@ def ndwi(data, bands, factor=1.0, vtype='int16') -> dask.array:
 
 
 # Shadow Index (SI), type float64
-def cs1(data, bands, factor=1.0, vtype='float64') -> dask.array:
+def cs1(data, bands, factor=1.0, vtype='float64') -> np.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
@@ -158,7 +158,7 @@ def cs1(data, bands, factor=1.0, vtype='float64') -> dask.array:
 
 
 # Shadow Index (SI)
-def cs2(data, bands, factor=1.0, vtype='int16') -> dask.array:
+def cs2(data, bands, factor=1.0, vtype='int16') -> np.array:
     """
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster

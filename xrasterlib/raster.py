@@ -1,9 +1,10 @@
 import os  # system library
 import logging  # logging messages
 import operator  # operator library
+import numpy as np  # array manipulation library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
-# from scipy.ndimage import median_filter  # scipy includes median filter
+from scipy.ndimage import median_filter  # scipy includes median filter
 # import dask.array as da
 import rasterio.features as riofeat  # rasterio features include sieve filter
 import xrasterlib.indices as indices  # custom indices calculation module
@@ -32,26 +33,33 @@ class Raster:
     # ---------------------------------------------------------------------------
     # __init__
     # ---------------------------------------------------------------------------
-    def __init__(self, filename=None, bands=None, chunks_band=1,
-                 chunks_x=2048, chunks_y=2048, logger=None):
+    def __init__(self, filename: str = None, bands: list = None,
+                 chunks_band: int = 1, chunks_x: int = 2048,
+                 chunks_y: int = 2048, logger=None):
         """
         Default Raster initializer
         ----------
         Parameters
         ----------
-        filename : str
-            Raster filename to read from
-        bands : list of str
-            Band names - Red Green Blue etc.
+        :params filename: raster filename to read from
+        :params bands: list of bands to append to object - Red Green Blue etc.
+        :params chunks_band: integer to map object to memory, z
+        :params chunks_x: integer to map object to memory, x
+        :params chunks_y: integer to map object to memory, y
+        :params logger: log file
         ----------
         Attributes
         ----------
-        self.data : xarray, rasterio type
-            Raster data stored in xarray type
-        self.bands : list of str
-            Band names - Red Green Blue etc.
-        self.nodataval : int
-            Default no-data value used in the
+        self.logger: str - filename to store logs
+        self.has_gpu: bool - global value to determine if GPU is available
+        self.data_chunks: dict - dictionary to feed xarray rasterio object
+        self.data: xarray, rasterio type - raster data stored in xarray type
+        self.bands: list of str - band names - Red Green Blue etc.
+        self.nodataval: int - default no-data value used in the
+        ----------
+        Example
+            Raster(filename, bands)
+        ----------
         """
 
         self.logger = logger
@@ -85,15 +93,19 @@ class Raster:
     # ---------------------------------------------------------------------------
     # input
     # ---------------------------------------------------------------------------
-    def readraster(self, filename, bands, chunks_band=1,
-                   chunks_x=2048, chunks_y=2048):
+    def readraster(self, filename: str, bands: list, chunks_band: int = 1,
+                   chunks_x: int = 2048, chunks_y: int = 2048):
         """
         Read raster and append data to existing Raster object
+        :params filename: raster filename to read from
+        :params bands: list of bands to append to object - Red Green Blue etc.
+        :params chunks_band: integer to map object to memory, z
+        :params chunks_x: integer to map object to memory, x
+        :params chunks_y: integer to map object to memory, y
         ----------
-        Parameters
+        Example
+            raster.readraster(filename, bands)
         ----------
-        filename : str
-            Raster filename to read from
         """
         self.data_chunks = {'band': chunks_band, 'x': chunks_x, 'y': chunks_y}
         self.data = xr.open_rasterio(filename, chunks=self.data_chunks)
@@ -103,83 +115,37 @@ class Raster:
     # ---------------------------------------------------------------------------
     # preprocessing
     # ---------------------------------------------------------------------------
-    def preprocess(self, op='>', boundary=0, subs=0):
+    def preprocess(self, op: str = '>', boundary: int = 0, subs: int = 0):
         """
         Remove anomalous values from self.data
-        ----------
-        Parameters
-        ----------
-        op : str with operator, currently <, and >
-            string with operator value
-        boundary : int
-            boundary for classifying as anomalous
-        replace : int, float
-            Value to replace with
+        :params op: str with operator, currently <, and >
+        :params boundary: boundary for classifying as anomalous
+        :params subs: value to replace withint, float
         ----------
         Example
-        ----------
             raster.preprocess(op='>', boundary=0, replace=0) := get all values
             that satisfy the condition self.data > boundary (above 0).
-        """
-        """
-        ops = {'<': operator.lt, '>': operator.gt}
-        #with cp.cuda.Device(1):
-        #data = (cp.asarray(data[NIR, :, :])
-        #self.data = self.data.where(ops[op](self.data, boundary), other=subs)
-        #self.data = self.data.where(
-        # ops[op](cp.asarray(self.data), boundary), other=subs
-        # )
-        # self.data = da.where(
-        #    ops[op](self.data, boundary), self.data, subs
-        # ).compute()
+        ----------
         """
         ops = {'<': operator.lt, '>': operator.gt}
         self.data = self.data.where(ops[op](self.data, boundary), other=subs)
 
-    def addindices(self, indices, factor=1.0):
+    def addindices(self, indices: list, factor: float = 1.0):
         """
         Add multiple indices to existing Raster object self.data.
+        :params indices: list of indices functions
+        :params factor: atmospheric factor for indices calculation
         ----------
-        Parameters
+        Example
+            raster.addindices([indices.fdi, indices.si], factor=10000.0)
         ----------
-        indices : list of functions
-            Function reference to calculate indices
-        factor : float
-            Atmospheric factor for indices calculation
-        """
-        """
-        nbands = len(self.bands)  # get initial number of bands
-        print("entering indices")
-        for indices_function in indices:  # iterate over each new band
-            nbands += 1  # counter for number of bands
-
-            # calculate band (indices)
-            band, bandid = indices_function(self.data,
-                                            bands=self.bands, factor=factor)
-            #band, bandid = da.map_blocks(
-            # indices_function, self.data, self.bands, dtype='int16'
-            # )
-            #print (band, bandid)
-
-            print("calculated indices")
-            self.bands.append(bandid)  # append new band id to list of bands
-            #band.coords['band'] = [nbands]  # add band indices to raster
-            #self.data = xr.concat([self.data, band], dim='band')
-            self.data = cp.concatenate((self.data, band), axis=0)
-            print("concatenated indices", self.data.shape)
-        self.data = cp.nan_to_num(self.data)
-        print ("type of data after indices ", type(self.data))
-        # update raster metadata, xarray attributes
-        #self.data.attrs['scales'] = [self.data.attrs['scales'][0]] * nbands
-        #self.data.attrs['offsets'] = [self.data.attrs['offsets'][0]] * nbands
         """
         nbands = len(self.bands)  # get initial number of bands
         for indices_function in indices:  # iterate over each new band
             nbands += 1  # counter for number of bands
-
             # calculate band (indices)
-            band, bandid = indices_function(self.data,
-                                            bands=self.bands, factor=factor)
+            band, bandid = \
+                indices_function(self.data, bands=self.bands, factor=factor)
             self.bands.append(bandid)  # append new band id to list of bands
             band.coords['band'] = [nbands]  # add band indices to raster
             self.data = xr.concat([self.data, band], dim='band')  # concat band
@@ -189,6 +155,14 @@ class Raster:
         self.data.attrs['offsets'] = [self.data.attrs['offsets'][0]] * nbands
 
     def dropindices(self, dropindices):
+        """
+        Add multiple indices to existing Raster object self.data.
+        :params dropindices: list of indices functions
+        ----------
+        Example
+            raster.dropindices(band_ids)
+        ----------
+        """
         assert all(band in self.bands for band in dropindices), \
                "Specified band not in raster."
         dropind = [self.bands.index(ind_id)+1 for ind_id in dropindices]
@@ -198,31 +172,62 @@ class Raster:
     # ---------------------------------------------------------------------------
     # post processing
     # ---------------------------------------------------------------------------
-    def sieve(self, prediction, out, size=350, mask=None, connectivity=8):
+    def sieve(self, prediction: np.array, out: np.array,
+              size: int = 350, mask: str = None, connectivity: int = 8):
+        """
+        :param prediction: numpy array with prediction output
+        :param out: numpy array with prediction output to store on
+        :param size: size of sieve
+        :param mask: file to save at
+        :param connectivity: size of sieve
+        :return: None, numpy array
+        ----------
+        Example
+            raster.sieve(raster.prediction, raster.prediction, size=sieve_sz)
+        ----------
+        """
         riofeat.sieve(prediction, size, out, mask, connectivity)
 
-    def median(self, prediction, ksize=20):
-        # method for CPU
-        # return median_filter(prediction, size=ksize)
-        with cp.cuda.Device(1):
-            prediction = cp_medfilter(cp.asarray(prediction), size=ksize)
-        return cp.asnumpy(prediction)
+    def median(self, prediction: np.array, ksize: int = 20) -> np.array:
+        """
+        Apply median filter for postprocessing
+        :param prediction: numpy array with prediction output
+        :param ksize: size of kernel for median filter
+        :return: numpy array
+        ----------
+        Example
+            raster.median(raster.prediction, ksize=args.median_sz)
+        ----------
+        """
+        if self.has_gpu:  # method for GPU
+            with cp.cuda.Device(1):
+                prediction = cp_medfilter(cp.asarray(prediction), size=ksize)
+            return cp.asnumpy(prediction)
+        else:  # method for CPU
+            return median_filter(prediction, size=ksize)
 
     # ---------------------------------------------------------------------------
     # output
     # ---------------------------------------------------------------------------
 
-    def toraster(self, rast, prediction, output='rfmask.tif'):
+    def toraster(self, rast: str, prediction: np.array,
+                 dtype: str = 'int16', output: str = 'rfmask.tif'):
         """
+        Save tif file from numpy to disk.
         :param rast: raster name to get metadata from
         :param prediction: numpy array with prediction output
+        :param dtype type to store mask on
         :param output: raster name to save on
-        :return: tif file saved to disk
+        :return: None, tif file saved to disk
+        ----------
+        Example
+            raster.toraster(filename, raster_obj.prediction, outname)
+        ----------
         """
         # get meta features from raster
         with rio.open(rast) as src:
             meta = src.profile
-            nodatavals = src.read_masks(1).astype('int16')
+            nodatavals = src.read_masks(1).astype(dtype)
         logging.info(meta)
 
         nodatavals[nodatavals == 0] = self.nodataval[0]
@@ -231,7 +236,7 @@ class Raster:
 
         out_meta = meta  # modify profile based on numpy array
         out_meta['count'] = 1  # output is single band
-        out_meta['dtype'] = 'int16'  # data type is float64
+        out_meta['dtype'] = dtype  # data type is float64
 
         # write to a raster
         with rio.open(output, 'w', **out_meta) as dst:
@@ -249,7 +254,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # Local variables
-    filename = '/Users/jacaraba/Desktop/cloudtest/' + \
+    filename = '/Users/jacaraba/Desktop/CLOUD/cloudtest/' + \
                'WV02_20181109_M1BS_1030010086582600-toa.tif'
     bands = [
         'CoastalBlue', 'Blue', 'Green', 'Yellow',
