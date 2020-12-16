@@ -81,7 +81,7 @@ def unet_dropout(nclass=19, input_size=(256, 256, 6), weight_file=None,
         actv = 'sigmoid'
 
     conv10 = Conv2D(nclass, (1, 1), activation=actv)(c9)
-    model = Model(inputs=inputs, outputs=conv10, name="UNet with Dropout")
+    model = Model(inputs=inputs, outputs=conv10, name="UNetDropout")
 
     if weight_file:
         model.load_weights(weight_file)
@@ -151,7 +151,7 @@ def unet_batchnorm(nclass=19, input_size=(256, 256, 6), weight_file=None,
         actv = 'sigmoid'
 
     c10 = Conv2D(nclass, (1, 1), activation=actv, kernel_regularizer=kr)(c9)
-    model = Model(inputs=inputs, outputs=c10, name="UNet with Batch Norm")
+    model = Model(inputs=inputs, outputs=c10, name="UNetBatchNorm")
 
     if weight_file:
         model.load_weights(weight_file)
