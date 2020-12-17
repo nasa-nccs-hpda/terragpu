@@ -107,7 +107,7 @@ class CNN(Raster):
     # ---------------------------------------------------------------------------
     # input
     # ---------------------------------------------------------------------------
-    def gen_data(self):
+    # def gen_data(self):
 
     def nploader(self, fname):
         return np.load(fname, allow_pickle=True)
