@@ -33,7 +33,7 @@ class GC_Callback(tf.keras.callbacks.Callback):
         gc.collect()
 
 
-def gen_callbacks(model_name='model_for_rsensing.h5', logs_dir='logs',
+def get_callbacks(model_name='model_for_rsensing.h5', logs_dir='logs',
                   callbacks=['TensorBoard', 'ModelCheckpoint'], verb=2,
                   hist_freq=5, bestonly=True, patience_earlystop=20,
                   patience_plateu=5, monitor='val_loss', factor_plateu=0.2,
@@ -113,5 +113,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # Add unit tests here:
-    callbacks = gen_callbacks()  # testing callbacks
-
+    callbacks = get_callbacks()  # testing callbacks

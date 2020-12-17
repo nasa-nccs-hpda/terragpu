@@ -16,9 +16,9 @@ try:
     from cuml.ensemble import RandomForestClassifier as cumlRFC
     from cuml.ensemble import RandomForestRegressor as cumlRFR
     cp.random.seed(seed=None)
-    HAS_CUPY = True
+    HAS_GPU = True
 except ImportError:
-    HAS_CUPY = False
+    HAS_GPU = False
 
 from xrasterlib.raster import Raster
 
