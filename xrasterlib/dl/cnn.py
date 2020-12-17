@@ -58,6 +58,10 @@ class CNN(Raster):
         self.cfg_train = self.cfg['Train']
         self.cfg_pred = self.cfg['Predict']
 
+        # Data Preparation Variables
+        self.datainfo = pd.read_csv(self.cfg_prep['datafile'])
+
+
         # training and test data variables, initialize them as empty
         self.x_train = None
         self.x_test = None
@@ -90,6 +94,9 @@ class CNN(Raster):
         self.get_optimizer()
         self.get_model()
 
+        # Maybe, need to initilize model with None, and scope has to be on
+        # the driver file.
+
         # store prediction if required
         self.prediction = None
 
@@ -100,6 +107,8 @@ class CNN(Raster):
     # ---------------------------------------------------------------------------
     # input
     # ---------------------------------------------------------------------------
+    def gen_data(self):
+
     def nploader(self, fname):
         return np.load(fname, allow_pickle=True)
 
@@ -222,7 +231,6 @@ if __name__ == "__main__":
         logging.info(f"Unit Test #1: {cnn_obj.loss} {cnn_obj.metrics}")
         logging.info(f"Unit Test #1: {cnn_obj.callbacks} {cnn_obj.optimizer}")
         logging.info(f"Unit Test #1: {cnn_obj.model}")
-
 
     #    raster = Raster(filename, bands)
     #    assert raster.data.shape[0] == 8, "Number of bands should be 8."
