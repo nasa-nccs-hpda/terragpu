@@ -39,17 +39,17 @@ if __name__ == "__main__":
     #    Verify retrieval of MEANSATAZ value
     if 1 in UNIT_TESTS:
         raster_obj = DGFile(TIF_FILENAME)
-        assert raster_obj.MEANSATAZ == 74.85, \
-            f"Mean SAT AZ should be 74.85, got {raster_obj.MEANSATAZ}"
-        logging.info(f"UT #1 PASS: {raster_obj.MEANSATAZ}")
+        assert raster_obj.mean_sataz == 74.85, \
+            f"Mean SAT AZ should be 74.85, got {raster_obj.mean_sataz}"
+        logging.info(f"UT #1 PASS: {raster_obj.mean_sataz}")
 
     # 2. Create raster object with different metadata filename
     #    Verify retrieval of MEANSUNAZ value
     if 2 in UNIT_TESTS:
         raster_obj = DGFile(TIF_FILENAME, xml_filename=XML_FILENAME)
-        assert raster_obj.MEANSUNAZ == 146.95, \
-            f"Mean SUN AZ should be 146.95, got {raster_obj.MEANSUNAZ}"
-        logging.info(f"UT #2 PASS: {raster_obj.MEANSUNAZ}")
+        assert raster_obj.mean_sunaz == 146.95, \
+            f"Mean SUN AZ should be 146.95, got {raster_obj.mean_sunaz}"
+        logging.info(f"UT #2 PASS: {raster_obj.mean_sunaz}")
 
     # 3. Create raster object with different metadata filename
     if 3 in UNIT_TESTS:

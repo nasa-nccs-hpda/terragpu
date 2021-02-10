@@ -22,10 +22,32 @@ class DGFile(Raster):
     # ---------------------------------------------------------------------------
     def __init__(self, filename, xml_filename=None, logger=None):
         """
+        Default DGFile initializer
+        ----------
+        Parameters
+        ----------
         :param filename: string refering to NITF or TIF filename
         :param filename: string refering to XML filename
-        :param logger: logger value
-        :return: DGFile object
+        :param logger: log file
+        ----------
+        Attributes
+        ----------
+        self.extension: string for raster filename extension (.nitf or .tif)
+        self.xml_filename: string with XML filename
+        self.imd_tag: XML object with IMD tag from XML file
+        self.bandNameList: list of band names
+        self.footprintsGml: footprints from XML file
+        self.mean_sunaz: mean sun azimuth angle
+        self.mean_sunel: mean sun elevation angle
+        self.mean_sataz: mean satellite azimuth angle
+        self.mean_satel: mean satellite elevation angle
+        self.mean_intrack_viewangle: mean in track view angle
+        self.mean_crosstrack_viewangle: mean cross track view angle
+        self.mean_offnadir_viewangle: mean off nadir view angle
+        ----------
+        Example
+            DGFile(filename)
+        ----------
         """
         # Initialize super class
         super().__init__()
@@ -65,21 +87,21 @@ class DGFile(Raster):
 
         self.footprintsGml = None
 
-        self.MEANSUNAZ = self.get_xml_tag(xml_tag='MEANSUNAZ')
+        self.mean_sunaz = self.get_xml_tag(xml_tag='MEANSUNAZ')
 
-        self.MEANSUNEL = self.get_xml_tag(xml_tag='MEANSUNEL')
+        self.mean_sunel = self.get_xml_tag(xml_tag='MEANSUNEL')
 
-        self.MEANSATAZ = self.get_xml_tag(xml_tag='MEANSATAZ')
+        self.mean_sataz = self.get_xml_tag(xml_tag='MEANSATAZ')
 
-        self.MEANSATEL = self.get_xml_tag(xml_tag='MEANSATEL')
+        self.mean_satel = self.get_xml_tag(xml_tag='MEANSATEL')
 
-        self.MEANINTRACKVIEWANGLE = \
+        self.mean_intrack_viewangle = \
             self.get_xml_tag(xml_tag='MEANINTRACKVIEWANGLE')
 
-        self.MEANCROSSTRACKVIEWANGLE = \
+        self.mean_crosstrack_viewangle = \
             self.get_xml_tag(xml_tag='MEANCROSSTRACKVIEWANGLE')
 
-        self.MEANOFFNADIRVIEWANGLE = \
+        self.mean_offnadir_viewangle = \
             self.get_xml_tag(xml_tag='MEANOFFNADIRVIEWANGLE')
 
     # ---------------------------------------------------------------------------
