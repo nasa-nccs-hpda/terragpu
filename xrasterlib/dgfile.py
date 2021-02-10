@@ -21,7 +21,12 @@ class DGFile(Raster):
     # __init__
     # ---------------------------------------------------------------------------
     def __init__(self, filename, xml_filename=None, logger=None):
-
+        """
+        :param filename: string refering to NITF or TIF filename
+        :param filename: string refering to XML filename
+        :param logger: logger value
+        :return: DGFile object
+        """
         # Initialize super class
         super().__init__()
 
@@ -91,7 +96,7 @@ class DGFile(Raster):
             return float(value.text)
         else:
             warnings.warn('Unable to locate {}, return None.'.format(xml_tag))
-            return value
+            return None
 
 
 # -------------------------------------------------------------------------------
