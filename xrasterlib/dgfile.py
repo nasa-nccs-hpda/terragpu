@@ -112,6 +112,10 @@ class DGFile(Raster):
         """
         :param xml_tag: string refering to XML tag
         :return: float value from XML tag
+        ----------
+        Example
+            raster.get_xml_tag(xml_tag='MEANOFFNADIRVIEWANGLE')
+        ----------
         """
         value = self.imd_tag.find('IMAGE').find(xml_tag)
         if value is not None:

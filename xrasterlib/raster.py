@@ -5,9 +5,7 @@ import numpy as np  # array manipulation library
 import xarray as xr  # array manipulation library, rasterio built-in
 import rasterio as rio  # geospatial library
 from scipy.ndimage import median_filter  # scipy includes median filter
-# import dask.array as da
 import rasterio.features as riofeat  # rasterio features include sieve filter
-import xrasterlib.indices as indices  # custom indices calculation module
 
 try:
     from cupyx.scipy.ndimage import median_filter as cp_medfilter
@@ -251,45 +249,4 @@ class Raster:
 if __name__ == "__main__":
 
     # Running Unit Tests
-    logging.basicConfig(level=logging.INFO)
-
-    # Local variables
-    filename = '/Users/jacaraba/Desktop/CLOUD/cloudtest/' + \
-               'WV02_20181109_M1BS_1030010086582600-toa.tif'
-    bands = [
-        'CoastalBlue', 'Blue', 'Green', 'Yellow',
-        'Red', 'RedEdge', 'NIR1', 'NIR2'
-    ]
-    unit_tests = [1, 2, 3, 4]
-
-    # 1. Create raster object
-    if 1 in unit_tests:
-        raster = Raster(filename, bands)
-        assert raster.data.shape[0] == 8, "Number of bands should be 8."
-        logging.info(f"Unit Test #1: {raster.data} {raster.bands}")
-
-    # 2. Read raster file through method
-    if 2 in unit_tests:
-        raster = Raster()
-        raster.readraster(filename, bands)
-        assert raster.data.shape[0] == 8, "Number of bands should be 8."
-        logging.info(f"Unit Test #2: {raster.data} {raster.bands}")
-
-    # 3. Test adding a band (indices) to raster.data - either way is fine
-    if 3 in unit_tests:
-        raster = Raster(filename, bands)
-        raster.addindices([indices.fdi, indices.si, indices.ndwi],
-                          factor=10000.0)
-        assert raster.data.shape[0] == 11, "Number of bands should be 11."
-        logging.info(f"Unit Test #3: {raster.data} {raster.bands}")
-
-    # 4. Test preprocess function
-    if 4 in unit_tests:
-        raster = Raster(filename, bands)
-        raster.preprocess(op='>', boundary=0, subs=0)
-        vmin = raster.data.min().values
-        assert vmin == 0, "Minimum should be 0."
-        raster.preprocess(op='<', boundary=10000, subs=10000)
-        vmax = raster.data.max().values
-        assert vmax == 10000, "Maximum should be 10000."
-        logging.info(f"Unit Test #4: (min, max) ({vmin},{vmax})")
+    print("Unit tests located under xrasterlib/tests/raster.py")
