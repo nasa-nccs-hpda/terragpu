@@ -1,10 +1,11 @@
 import xarray as xr  # read rasters
 import numpy as np
 
-# try:
-#    import cupy as cp  # GPU accelerated library
-# except ImportError:
-#    pass
+try:
+    import cupy as cp
+    HAS_GPU = True
+except ImportError:
+    HAS_GPU = False
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
@@ -79,8 +80,9 @@ def ndvi(data, bands, factor=1.0, vtype='float64') -> np.array:
 
 
 # Forest Discrimination Index (FDI), type int16
-def fdi(data, bands, factor=1.0, vtype='int16') -> np.array:
+def fdi(data, bands, factor=1.0, vtype='int16', device='CPU') -> np.array:
     """
+    GPU Support
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
     :param factor: factor used for toa imagery
@@ -89,15 +91,23 @@ def fdi(data, bands, factor=1.0, vtype='int16') -> np.array:
     # 8 band imagery: FDI := NIR2 - (RedEdge + Blue)
     # 4 band imagery: FDI := NIR1 - (Red + Blue)
     NIR = bands.index('NIR2') if 'NIR2' in bands else bands.index('NIR1')
-    Red = bands.index('RedEdge') if 'RedEdge' in bands else bands.index('Red')
-    Blue = bands.index('Blue')
-    return (data[NIR, :, :] - (data[Red, :, :] + data[Blue, :, :])
-            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "FDI"
+    RED = bands.index('RedEdge') if 'RedEdge' in bands else bands.index('Red')
+    BLUE = bands.index('Blue')
+
+    fdi = data[NIR, :, :] - (data[RED, :, :] + data[BLUE, :, :])
+    if device == 'CPU':
+        fdi = fdi.expand_dims(dim="band", axis=0).fillna(0).astype(vtype)
+    elif device == 'GPU':
+        fdi = cp.nan_to_num(cp.expand_dims(fdi, 0))
+    else:
+        raise RuntimeError("{} device not supported".format(device))
+    return fdi, "FDI"
 
 
 # Shadow Index (SI), type int16
-def si(data, bands, factor=1.0, vtype='int16') -> np.array:
+def si(data, bands, factor=1.0, vtype='int16', device='CPU') -> np.array:
     """
+    GPU Support
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
     :param factor: factor used for toa imagery
@@ -105,11 +115,19 @@ def si(data, bands, factor=1.0, vtype='int16') -> np.array:
     """
     # 8 and 4 band imagery:
     # SI := ((factor - Blue) * (factor - Green) * (factor - Red)) ** (1.0 / 3)
-    Blue, Green = bands.index('Blue'), bands.index('Green')
-    Red = bands.index('Red')
-    return (((factor - data[Blue, :, :]) * (factor - data[Green, :, :]) *
-            (factor - data[Red, :, :])) ** (1.0/3.0)
-            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "SI"
+    BLUE, GREEN = bands.index('Blue'), bands.index('Green')
+    RED = bands.index('Red')
+
+    si = ((factor - data[BLUE, :, :]) * (factor - data[GREEN, :, :]) *
+          (factor - data[RED, :, :])) ** (1.0/3.0)
+
+    if device == 'CPU':
+        si = si.expand_dims(dim="band", axis=0).fillna(0).astype(vtype)
+    elif device == 'GPU':
+        si = cp.nan_to_num(cp.expand_dims(si, 0))
+    else:
+        raise RuntimeError("{} device not supported".format(device))
+    return si, "SI"
 
 
 # Normalized Difference Water Index (DWI), type int16
@@ -127,18 +145,27 @@ def dwi(data, bands, factor=1.0, vtype='int16') -> np.array:
 
 
 # Normalized Difference Water Index (NDWI), type int16
-def ndwi(data, bands, factor=1.0, vtype='int16') -> np.array:
+def ndwi(data, bands, factor=1.0, vtype='int16', device='CPU') -> np.array:
     """
+    GPU Support
     :param data: xarray or numpy array object in the form (c, h, w)
     :param bands: number of the original bands of the raster
     :param factor: factor used for toa imagery
     :return: new band with SI calculated
     """
     # 8 and 4 band imagery: NDWI := factor * (Green - NIR1) / (Green + NIR1)
-    Green, NIR1 = bands.index('Green'), bands.index('NIR1')
-    return (factor * ((data[Green, :, :] - data[NIR1, :, :])
-            / (data[Green, :, :] + data[NIR1, :, :]))
-            ).expand_dims(dim="band", axis=0).fillna(0).astype(vtype), "NDWI"
+    GREEN, NIR1 = bands.index('Green'), bands.index('NIR1')
+
+    ndwi = factor * ((data[GREEN, :, :] - data[NIR1, :, :])
+                     / (data[GREEN, :, :] + data[NIR1, :, :]))
+
+    if device == 'CPU':
+        ndwi = ndwi.expand_dims(dim="band", axis=0).fillna(0).astype(vtype)
+    elif device == 'GPU':
+        ndwi = cp.nan_to_num(cp.expand_dims(ndwi, 0))
+    else:
+        raise RuntimeError("{} device not supported".format(device))
+    return ndwi, "NDWI"
 
 
 # Shadow Index (SI), type float64
