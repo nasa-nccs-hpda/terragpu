@@ -5,6 +5,9 @@
 *-workspace
 .ipynb_checkpoints/
 
+# Ignore runtime directories
+dask-worker-space/
+
 # Ignore compiled files
 __pycache__/
 xrasterlib.egg-info/
@@ -12,6 +15,7 @@ build/
 dist/
 
 # Ignore data products
+data/
 *.tif
 *.pkl
 *.xml
