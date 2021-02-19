@@ -12,7 +12,6 @@ dependencies:
   - rapids-blazing=0.17
   - python=3.7
   - cudatoolkit=10.1
-  - webcolors
   - Pillow
   - pip
   - pip:
@@ -25,3 +24,8 @@ dependencies:
     - Pillow
     - imagecodecs
     - rasterio
+    - webcolors
+    - tqdm
+    - pdoc3
+    - flake8
+    - coverage

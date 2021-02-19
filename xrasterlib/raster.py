@@ -36,32 +36,28 @@ class Raster:
                  chunks_y: int = 2048, logger=None):
         """
         Default Raster initializer
-        ----------
-        Parameters
-        ----------
-        :params filename: raster filename to read from
-        :params bands: list of bands to append to object - Red Green Blue etc.
-        :params chunks_band: integer to map object to memory, z
-        :params chunks_x: integer to map object to memory, x
-        :params chunks_y: integer to map object to memory, y
-        :params logger: log file
-        ----------
-        Attributes
-        ----------
-        self.logger: str - filename to store logs
-        self.has_gpu: bool - global value to determine if GPU is available
-        self.data_chunks: dict - dictionary to feed xarray rasterio object
-        self.data: xarray, rasterio type - raster data stored in xarray type
-        self.bands: list of str - band names - Red Green Blue etc.
-        self.nodataval: int - default no-data value used in the
+        Args:
+            filename (str): raster filename to read from
+            bands (str list): list of bands to append to object, e.g ['Red']
+            chunks_band (int): integer to map object to memory, z
+            chunks_x (int): integer to map object to memory, x
+            chunks_y (int): integer to map object to memory, y
+            logger (str): log file
+        Attributes:
+            logger (str): filename to store logs
+            has_gpu (bool): global value to determine if GPU is available
+            data_chunks (dict): dictionary to feed xarray rasterio object
+            data (rasterio xarray): raster data stored in xarray type
+            bands (list of str): band names (e.g Red Green Blue)
+            nodataval (int): default no-data value used in the
+        Return:
+            raster (raster object): raster object to manipulate rasters
         ----------
         Example
-            Raster(filename, bands)
         ----------
+            Raster(filename, bands)
         """
-
         self.logger = logger
-
         self.has_gpu = HAS_GPU
 
         if filename is not None:  # if filename is provided, read into xarray
@@ -89,21 +85,24 @@ class Raster:
     # ---------------------------------------------------------------------------
 
     # ---------------------------------------------------------------------------
-    # input
+    # input methods
     # ---------------------------------------------------------------------------
     def readraster(self, filename: str, bands: list, chunks_band: int = 1,
                    chunks_x: int = 2048, chunks_y: int = 2048):
         """
         Read raster and append data to existing Raster object
-        :params filename: raster filename to read from
-        :params bands: list of bands to append to object - Red Green Blue etc.
-        :params chunks_band: integer to map object to memory, z
-        :params chunks_x: integer to map object to memory, x
-        :params chunks_y: integer to map object to memory, y
+        Args:
+            filename (str): raster filename to read from
+            bands (str list): list of bands to append to object, e.g ['Red']
+            chunks_band (int): integer to map object to memory, z
+            chunks_x (int): integer to map object to memory, x
+            chunks_y (int): integer to map object to memory, y
+        Return:
+            raster (raster object): raster object to manipulate rasters
         ----------
         Example
-            raster.readraster(filename, bands)
         ----------
+            raster.readraster(filename, bands)
         """
         self.data_chunks = {'band': chunks_band, 'x': chunks_x, 'y': chunks_y}
         self.data = xr.open_rasterio(filename, chunks=self.data_chunks)
@@ -113,30 +112,66 @@ class Raster:
     # ---------------------------------------------------------------------------
     # preprocessing
     # ---------------------------------------------------------------------------
-    def preprocess(self, op: str = '>', boundary: int = 0, subs: int = 0):
+    def set_minimum(self, minimum=0):
         """
-        Remove anomalous values from self.data
-        :params op: str with operator, currently <, and >
-        :params boundary: boundary for classifying as anomalous
-        :params subs: value to replace withint, float
+        Remove lower boundary anomalous values from self.data
+        Args:
+            minimum (int): minimum allowed reflectance value in the dataset
+        Return:
+            raster object with boundaries fixed to lower boundary value
         ----------
         Example
+        ----------
+            raster.set_minimum(minimum=0) := get all values
+            that satisfy the condition self.data > boundary (above 0).
+        """
+        self.data = self.data.where(self.data > minimum, other=minimum)
+
+    def set_maximum(self, maximum=10000):
+        """
+        Remove upper boundary anomalous values from self.data
+        Args:
+            maximum (int): maximum allowed reflectance value in the dataset
+        Return:
+            raster object with boundaries fixed to maximum boundary value
+        ----------
+        Example
+        ----------
+            raster.set_maximum(maximum=10000) := get all values
+            that satisfy the condition self.data > boundary (above 10000).
+        """
+        self.data = self.data.where(self.data < maximum, other=maximum)
+
+    def preprocess(self, op: str = '>', boundary: int = 0, subs: int = 0):
+        """
+        (Deprecated) Remove anomalous values from self.data
+        Args:
+            op (str): operator string, currently <, and >
+            boundary (int): boundary value for classifying as anomalous
+            subs (int): value to replace with (int or float)
+        Return:
+            raster object with boundaries preprocessed
+        ----------
+        Example
+        ----------
             raster.preprocess(op='>', boundary=0, replace=0) := get all values
             that satisfy the condition self.data > boundary (above 0).
-        ----------
         """
         ops = {'<': operator.lt, '>': operator.gt}
         self.data = self.data.where(ops[op](self.data, boundary), other=subs)
 
     def addindices(self, indices: list, factor: float = 1.0):
         """
-        Add multiple indices to existing Raster object self.data.
-        :params indices: list of indices functions
-        :params factor: atmospheric factor for indices calculation
+        Add multiple indices to existing Raster object self.data
+        Args:
+            indices (int list): list of indices functions
+            factor (int or float): atmospheric factor for indices calculation
+        Return:
+            raster object with new bands appended to self.data
         ----------
         Example
-            raster.addindices([indices.fdi, indices.si], factor=10000.0)
         ----------
+            raster.addindices([indices.fdi, indices.si], factor=10000.0)
         """
         nbands = len(self.bands)  # get initial number of bands
         for indices_function in indices:  # iterate over each new band
@@ -154,12 +189,15 @@ class Raster:
 
     def dropindices(self, dropindices):
         """
-        Add multiple indices to existing Raster object self.data.
-        :params dropindices: list of indices functions
+        Drop multiple indices to existing Raster object self.data.
+        Args:
+            dropindices (int list): list of indices to drop
+        Return:
+            raster object with dropped bands on self.data
         ----------
         Example
-            raster.dropindices(band_ids)
         ----------
+            raster.dropindices(band_ids)
         """
         assert all(band in self.bands for band in dropindices), \
                "Specified band not in raster."
@@ -168,34 +206,39 @@ class Raster:
         self.bands = [band for band in self.bands if band not in dropindices]
 
     # ---------------------------------------------------------------------------
-    # post processing
+    # post processing methods
     # ---------------------------------------------------------------------------
     def sieve(self, prediction: np.array, out: np.array,
               size: int = 350, mask: str = None, connectivity: int = 8):
         """
-        :param prediction: numpy array with prediction output
-        :param out: numpy array with prediction output to store on
-        :param size: size of sieve
-        :param mask: file to save at
-        :param connectivity: size of sieve
-        :return: None, numpy array
+        Apply sieve filter to array object on single band (binary array)
+        Args:
+            prediction (array): numpy array with prediction output
+            out (array): numpy array with prediction output to store on
+            size (int): size of sieve
+            mask (str): file to save at
+            connectivity (int): size of sieve
+        Return:
+            raster object with sieve filtered output
         ----------
         Example
-            raster.sieve(raster.prediction, raster.prediction, size=sieve_sz)
         ----------
+            raster.sieve(raster.prediction, raster.prediction, size=sieve_sz)
         """
         riofeat.sieve(prediction, size, out, mask, connectivity)
 
     def median(self, prediction: np.array, ksize: int = 20) -> np.array:
         """
         Apply median filter for postprocessing
-        :param prediction: numpy array with prediction output
-        :param ksize: size of kernel for median filter
-        :return: numpy array
+        Args:
+            prediction (array): numpy array with prediction output
+            ksize (int): size of kernel for median filter
+        Return:
+            raster object with median filtered output
         ----------
         Example
-            raster.median(raster.prediction, ksize=args.median_sz)
         ----------
+            raster.median(raster.prediction, ksize=args.median_sz)
         """
         if self.has_gpu:  # method for GPU
             with cp.cuda.Device(1):
@@ -205,9 +248,8 @@ class Raster:
             return median_filter(prediction, size=ksize)
 
     # ---------------------------------------------------------------------------
-    # output
+    # output methods
     # ---------------------------------------------------------------------------
-
     def toraster(self, rast: str, prediction: np.array,
                  dtype: str = 'int16', output: str = 'rfmask.tif'):
         """

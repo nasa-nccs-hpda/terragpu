@@ -4,6 +4,7 @@
 .DS_Store
 *-workspace
 .ipynb_checkpoints/
+.coverage
 
 # Ignore runtime directories
 dask-worker-space/

@@ -22,13 +22,12 @@ except ImportError:
     HAS_CUPY = False
 
 from xrasterlib.raster import Raster
-from xrasterlib.utils import read_config
 
-from xrasterlib.dl.loss import tanimoto_dual_loss
-from xrasterlib.dl.loss import dice_coef
-from xrasterlib.dl.loss import dice_coef_bin
-from xrasterlib.dl.loss import focal_loss_cat, focal_loss_bin
-from xrasterlib.dl.loss import ce_dl_bin, jaccard_distance_loss
+from xrasterlib.deep_learning.loss import tanimoto_dual_loss
+from xrasterlib.deep_learning.loss import dice_coef
+from xrasterlib.deep_learning.loss import dice_coef_bin
+from xrasterlib.deep_learning.loss import focal_loss_cat, focal_loss_bin
+from xrasterlib.deep_learning.loss import ce_dl_bin, jaccard_distance_loss
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
@@ -51,8 +50,11 @@ class CNN(Raster):
 
         # assert of configuration file was not given
         assert config is not None, "Config file must be provided."
-        self.cfg = read_config(config)
 
+        self.config = config  # configuration class
+        self.prediction = None  # Store prediction array
+
+        """
         self.cfg_data = self.cfg['Data']
         self.cfg_prep = self.cfg['Preprocess']
         self.cfg_train = self.cfg['Train']
@@ -93,12 +95,9 @@ class CNN(Raster):
         self.get_callbacks()
         self.get_optimizer()
         self.get_model()
-
+        """
         # Maybe, need to initilize model with None, and scope has to be on
         # the driver file.
-
-        # store prediction if required
-        self.prediction = None
 
     # ---------------------------------------------------------------------------
     # methods

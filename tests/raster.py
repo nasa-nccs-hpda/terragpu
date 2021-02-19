@@ -1,10 +1,11 @@
 import logging  # logging messages
+import unittest
 from xrasterlib.raster import Raster
 import xrasterlib.indices as indices  # custom indices calculation module
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
-__status__ = "Development"
+__status__ = "Test"
 
 # -------------------------------------------------------------------------------
 # tests for class Raster
@@ -12,13 +13,8 @@ __status__ = "Development"
 # formatted imagery.
 # -------------------------------------------------------------------------------
 
-logging.basicConfig(level=logging.INFO)
 
-# -------------------------------------------------------------------------------
-# Input:
-# WV02_20181109_M1BS_1030010086582600-toa.tif
-# WV02_20181109_M1BS_1030010086582600-toa.xml
-# -------------------------------------------------------------------------------
+logging.basicConfig(level=logging.INFO)
 
 # TIF filename, XML filename, and BANDS ids
 TIF_FILENAME = '../data/WV02_20181109_M1BS_1030010086582600-toa.tif'
@@ -30,39 +26,58 @@ BANDS = [
 # Unit tests to run
 UNIT_TESTS = [1, 2, 3, 4]
 
-# -------------------------------------------------------------------------------
-# class Raster Unit Tests
-# -------------------------------------------------------------------------------
-if __name__ == "__main__":
 
-    # 1. Create raster object
-    if 1 in UNIT_TESTS:
-        raster = Raster(TIF_FILENAME, BANDS)
-        assert raster.data.shape[0] == 8, "Number of bands should be 8."
-        logging.info(f"Unit Test #1: {raster.data} {raster.bands}")
+# -------------------------------------------------------------------------------
+# Input:
+# WV02_20181109_M1BS_1030010086582600-toa.tif
+# WV02_20181109_M1BS_1030010086582600-toa.xml
+# -------------------------------------------------------------------------------
 
-    # 2. Read raster file through method
-    if 2 in UNIT_TESTS:
+class TestRasterMethods(unittest.TestCase):
+
+    # ---------------------------------------------------------------------------
+    # class Raster Unit Tests
+    # ---------------------------------------------------------------------------
+    # 1. Create Raster object, number of bands should be 8, CPU
+    def test_raster_init(self):
+        raster = Raster(filename=TIF_FILENAME, bands=BANDS)
+        self.assertEqual(raster.data.shape[0], 8)
+
+    # 2. Read raster file through method, number of bands should be 8, CPU
+    def test_raster_readraster(self):
         raster = Raster()
-        raster.readraster(TIF_FILENAME, BANDS)
-        assert raster.data.shape[0] == 8, "Number of bands should be 8."
-        logging.info(f"Unit Test #2: {raster.data} {raster.bands}")
+        raster.readraster(filename=TIF_FILENAME, bands=BANDS)
+        self.assertEqual(raster.data.shape[0], 8)
 
     # 3. Test adding a band (indices) to raster.data - either way is fine
-    if 3 in UNIT_TESTS:
-        raster = Raster(TIF_FILENAME, BANDS)
-        raster.addindices([indices.fdi, indices.si, indices.ndwi],
-                          factor=10000.0)
-        assert raster.data.shape[0] == 11, "Number of bands should be 11."
-        logging.info(f"Unit Test #3: {raster.data} {raster.bands}")
+    #    number of bands should be 11, CPU
+    def test_raster_addindices(self):
+        raster = Raster(filename=TIF_FILENAME, bands=BANDS)
+        raster.addindices(
+            [indices.fdi, indices.si, indices.ndwi], factor=10000.0
+        )
+        self.assertEqual(raster.data.shape[0], 11)
 
-    # 4. Test preprocess function
-    if 4 in UNIT_TESTS:
-        raster = Raster(TIF_FILENAME, BANDS)
-        raster.preprocess(op='>', boundary=0, subs=0)
+    # Deprecated since 0.0.3
+    # Test preprocess function, CPU
+    # def test_raster_preprocess(self):
+    #    raster = Raster(filename=TIF_FILENAME, bands=BANDS)
+    #    raster.preprocess(op='>', boundary=0, subs=0)
+    #    raster.preprocess(op='<', boundary=10000, subs=10000)
+    #    vmin = raster.data.min().values
+    #    vmax = raster.data.max().values
+    #    self.assertEqual([vmin, vmax], [0, 10000])
+
+    # 4. Test minimum function, CPU
+    #    min should be 0, max should be 10000
+    def test_raster_set_min_max(self):
+        raster = Raster(filename=TIF_FILENAME, bands=BANDS)
+        raster.set_minimum(minimum=0)
+        raster.set_maximum(maximum=10000)
         vmin = raster.data.min().values
-        assert vmin == 0, "Minimum should be 0."
-        raster.preprocess(op='<', boundary=10000, subs=10000)
         vmax = raster.data.max().values
-        assert vmax == 10000, "Maximum should be 10000."
-        logging.info(f"Unit Test #4: (min, max) ({vmin},{vmax})")
+        self.assertEqual([vmin, vmax], [0, 10000])
+
+
+if __name__ == '__main__':
+    unittest.main()

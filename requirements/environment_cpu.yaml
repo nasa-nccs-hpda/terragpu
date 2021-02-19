@@ -10,7 +10,6 @@ channels:
 
 dependencies:
   - python=3.7
-  - webcolors
   - Pillow
   - pip
   - pip:
@@ -29,4 +28,8 @@ dependencies:
     - imutils
     - joblib
     - toolz
+    - webcolors
     - tqdm
+    - pdoc3
+    - flake8
+    - coverage

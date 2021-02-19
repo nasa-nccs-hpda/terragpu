@@ -1,6 +1,6 @@
 import logging  # logging messages
 import unittest
-from xrasterlib.dgfile import DGFile
+from xrasterlib.deep_learning.network import unet
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"
@@ -33,7 +33,7 @@ UNIT_TESTS = [1, 2, 3, 4]
 # WV02_20181109_M1BS_1030010086582600-toa.xml
 # -------------------------------------------------------------------------------
 
-class TestDGFileMethods(unittest.TestCase):
+class TestNetworkMethods(unittest.TestCase):
 
     # ---------------------------------------------------------------------------
     # class Raster Unit Tests
@@ -60,3 +60,25 @@ class TestDGFileMethods(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+    # Can add different images sizes - for now: (256,256,6)
+    simple_unet = unet_dropout()
+    simple_unet.summary()
+
+    # Batch Normalization UNet
+    simple_unet = unet_batchnorm()
+    simple_unet.summary()
+
+
+
+    def unet_batchnorm(nclass=19, input_size=(256, 256, 6), weight_file=None,
+                   kr=l2(0.0001), maps=[64, 128, 256, 512, 1024]
+                   ):
+
+
+def unet_dropout(
+    nclass=19, input_size=(256, 256, 6), weight_file=None,
+    maps=[64, 128, 256, 512, 1024]
+):

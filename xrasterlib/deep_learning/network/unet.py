@@ -24,9 +24,10 @@ __status__ = "Production"
 
 # --------------------------- Convolution Functions ----------------------- #
 
-def unet_dropout(nclass=19, input_size=(256, 256, 6), weight_file=None,
-                 maps=[64, 128, 256, 512, 1024]
-                 ):
+def unet_dropout(
+    nclass=19, input_size=(256, 256, 6), weight_file=None,
+    maps=[64, 128, 256, 512, 1024]
+):
     """
     UNet network using dropout features.
     """
