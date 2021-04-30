@@ -269,6 +269,7 @@ class Raster:
             meta = src.profile
             nodatavals = src.read_masks(1).astype(dtype)
         logging.info(meta)
+        print("Unique nodatavals", np.unique(nodatavals), self.nodataval[0])
 
         nodatavals[nodatavals == 0] = self.nodataval[0]
         prediction[nodatavals == self.nodataval[0]] = \
@@ -276,7 +277,7 @@ class Raster:
 
         out_meta = meta  # modify profile based on numpy array
         out_meta['count'] = 1  # output is single band
-        out_meta['dtype'] = dtype  # data type is float64
+        out_meta['dtype'] = dtype  # data type modification
 
         # write to a raster
         with rio.open(output, 'w', **out_meta) as dst:
