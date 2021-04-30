@@ -269,7 +269,6 @@ class Raster:
             meta = src.profile
             nodatavals = src.read_masks(1).astype(dtype)
         logging.info(meta)
-        print("Unique nodatavals", np.unique(nodatavals), self.nodataval[0])
 
         nodatavals[nodatavals == 0] = self.nodataval[0]
         prediction[nodatavals == self.nodataval[0]] = \
