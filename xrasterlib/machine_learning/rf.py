@@ -143,9 +143,15 @@ class RF(Raster):
 
         # fit model to training data and predict for accuracy score
         rf_model.fit(self.x_train, self.y_train)
-        score = accuracy_score(
-            self.y_test, rf_model.predict(self.x_test).to_array()
-        )
+        
+        if self.has_gpu:
+            score = accuracy_score(
+                self.y_test, rf_model.predict(self.x_test).to_array()
+            )
+        else:
+            score = accuracy_score(
+                self.y_test, rf_model.predict(self.x_test)
+            )
         print(f'Training accuracy: {score}')
 
         try:  # export model to file
