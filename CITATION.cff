@@ -3,8 +3,10 @@
 
 cff-version: 1.2.0
 title: TerraGPU
-abstract: TBD
-date-released: 2021-10-01
+abstract: >-
+  Python library to process and classify remote sensing imagery
+  by means of GPUs and AI/ML
+date-released: 2020-07-01
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -17,8 +19,8 @@ authors:
     affiliation: NASA GSFC
     orcid: 'https://orcid.org/0000-0001-9125-5591'
 version: 21.11
-doi: TBD
-license: "Apache-2.0""
+doi: "TBD"
+license: "Apache-2.0"
 url: "TBD"
 repository-code: "TBD"
 keywords:

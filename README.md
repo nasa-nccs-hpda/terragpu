@@ -1,6 +1,6 @@
 # terragpu
 
-Python library to process and classify remote sensing imagery
+Python library to process and classify remote sensing imagery by means of GPUs and AI/ML
 
 <img src="images/nccslogo.png" height="150" width="300">
 

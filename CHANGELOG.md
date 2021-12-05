@@ -3,9 +3,9 @@
 All notable changes to this project will be documented in this file. Any security or bug findings
 should be documented as CVE or BUG respectively.
 
-## Status: [Unreleased]
+## Status: [Released]
 
-## [0.0.4] - 2021-02-19
+## [2021.02] - 2021-02-19
 
 ### Added
 
@@ -19,7 +19,7 @@ should be documented as CVE or BUG respectively.
 
 Jordan A. Caraballo-Vega, jordan.a.caraballo-vega@nasa.gov
 
-## [0.0.3] - 2020-12-14
+## [2020.12] - 2020-12-14
 
 ### Added
 
