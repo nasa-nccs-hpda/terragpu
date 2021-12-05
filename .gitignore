@@ -11,7 +11,7 @@ dask-worker-space/
 
 # Ignore compiled files
 __pycache__/
-xrasterlib.egg-info/
+*.egg-info/
 build/
 dist/
 
@@ -25,7 +25,6 @@ data/
 # Ignore debugging and testing logs
 results/
 Results/
-Models/
 Logs/
 
 # EOF

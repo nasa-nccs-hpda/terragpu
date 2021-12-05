@@ -1,0 +1,29 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: TerraGPU
+abstract: TBD
+date-released: 2021-10-01
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - family-names: Caraballo-Vega
+    name-particle: A
+    given-names: Jordan
+    email: jordan.a.caraballo-vega@nasa.gov
+    affiliation: NASA GSFC
+    orcid: 'https://orcid.org/0000-0001-9125-5591'
+version: 21.11
+doi: TBD
+license: "Apache-2.0""
+url: "TBD"
+repository-code: "TBD"
+keywords:
+  - gpus
+  - earth science
+  - machine learning
+  - deep learning
+  - artificial intelligence

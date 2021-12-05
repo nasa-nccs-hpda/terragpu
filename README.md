@@ -1,4 +1,4 @@
-# xrasterlib
+# terragpu
 
 Python library to process and classify remote sensing imagery
 
@@ -8,40 +8,12 @@ Python library to process and classify remote sensing imagery
 
 - Library to process remote sensing imagery using memory efficient libraries.
 - Machine Learning and Deep Learning image classification.
-- Provide GPU accelaration for the evaluation of sckit models.
+- Agnostic built-in GPU accelaration.
+- Example notebooks for quick AI/ML start with your own data.
 
 ### Installation
 
-The following library is intended to be used to accelerate the development of data science products for remote sensing satellite imagery. xrasterlib can be installed by itself, but instructions for installing the full environments are listed below so projects, examples, and notebooks can be run.
-
-#### Build Conda Environment - Single Step (GPU support)
-
-``` bash
-git clone https://github.com/jordancaraballo/xrasterlib.git
-cd xrasterlib; conda env create -f requirements/environment.yml;
-conda activate xrasterlib
-python setup.py install
-```
-
-#### Build Conda Environment - Multi Step
-
-``` bash
-git clone https://github.com/jordancaraballo/xrasterlib.git
-cd xrasterlib; conda create --name xrasterlib;
-conda activate xrasterlib
-conda install -c anaconda pip 
-conda install -c anaconda cudatoolkit=10.1 cudnn # if GPU available
-pip install --upgrade -r requirements/requirements.txt
-python setup.py install
-```
-
-#### Pip only
-
-``` bash
-git clone https://github.com/jordancaraballo/xrasterlib.git
-pip install -r requirements/requirements.txt
-python setup.py install
-```
+The following library is intended to be used to accelerate the development of data science products for remote sensing satellite imagery. terragpu can be installed by itself, but instructions for installing the full environments are listed under the requirements directory so projects, examples, and notebooks can be run.
 
 Note: PIP installations do not include CUDA libraries for GPU support. Make sure
 NVIDIA libraries are installed locally in the system if not using conda.
@@ -56,7 +28,7 @@ NVIDIA libraries are installed locally in the system if not using conda.
 ├── examples              <- Examples for utilizing the library
 ├── requirements          <- Requirements for installing the dependencies
 ├── scripts               <- Utility scripts for analysis
-├── xrasterlib            <- Library source code
+├── terragpu              <- Library source code
 ├── README.md             <- The top-level README for developers using this project
 ├── CHANGELOG.md          <- Releases documentation
 ├── LICENSE               <- License documentation
@@ -67,16 +39,11 @@ NVIDIA libraries are installed locally in the system if not using conda.
 
 Library to process and classify remote sensing imagery. This is work in progress currently supporting
 Random Forest classification and merging Convolutional Neural Networks from the deep-rsensing project.
-Each particular project includes its own README with information. When these projects are concluded,
-they will be migrated to their own repository.
+Each particular project includes its own README with information.
 
 Raster processing relies in xarray and rasterio for memory mapping operations, using Dask as the backend.
-Pytorch is implemented for GPU accelaration of Sckitlearn models.
-
-## Ongoing Projects
-
-- projects/cloudmask  - cloud masking of VHR imagery using Random Forest
-- projects/shadowmask - shadow masking of VHR imagery using geometry properties.
+PyTorch is implemented for GPU accelaration of Sckitlearn models. GPU acceleration is provided
+by the NVIDIA RAPIDS environment and we are in the development phase to support AMD GPUs.
 
 ## Authors
 
@@ -88,10 +55,28 @@ Pytorch is implemented for GPU accelaration of Sckitlearn models.
 - Andrew Weis, aweis1998@icloud.com
 - Brian Lee, brianlee52@bren.ucsb.edu
 
+## Installation
+See the build [guide](requirements/README.md).
+
+## Contributing
+
+Please see our [guide for contributing to terragpu](CONTRIBUTING.md).
+
 ## References
 
-[1] Chollet, François; et all, Keras, (2015), GitHub repository, <https://github.com/keras-team/keras>. Accessed 13 February 2020.
+Tutorials will be published under [Medium](https://medium.com/@jordan.caraballo/) for additional support
+and development, including how to use the library or any upcoming releases.
+
+Please consider citing this when using terragpu in a project. You can use the citation BibTeX:
+
+```bibtex
+TBD
+```
+
+## References
+
+[1] Raschka, S., Patterson, J., & Nolet, C. (2020). Machine learning in python: Main developments and technology trends in data science, machine learning, and artificial intelligence. Information, 11(4), 193.
 
 [2] Paszke, Adam; Gross, Sam; Chintala, Soumith; Chanan, Gregory; et all, PyTorch, (2016), GitHub repository, <https://github.com/pytorch/pytorch>. Accessed 13 February 2020.
 
-[3] Google Brain Team; et all, TensorFlow, (2015), GitHub repository, <https://github.com/tensorflow/tensorflow>. Accessed 13 February 2020.
+[3] Caraballo-Vega, J., Carroll, M., Li, J., & Duffy, D. (2021, December). Towards Scalable & GPU Accelerated Earth Science Imagery Processing: An AI/ML Case Study. In AGU Fall Meeting 2021. AGU.

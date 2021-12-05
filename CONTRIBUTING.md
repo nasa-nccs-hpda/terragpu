@@ -100,8 +100,8 @@ This repository follows semi-automatic documentation generation. The following
 is an example of how to generate documentation for a single module.
 
 ```bash
-conda activate xrasterlib
-pdoc --html xrasterlib/raster.py --force
+conda activate terragpu
+pdoc --html terragpu/raster.py --force
 ```
 
 ### Linting

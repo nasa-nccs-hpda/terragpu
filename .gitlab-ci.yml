@@ -1,0 +1,52 @@
+# This file is a template, and might need editing before it works on your project.
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.nccs.nasa.gov/gitlab-instance-administrators-19fca306/gitlab-self-monitoring/-/blob/master/templates/Docker-Build.gitlab-ci.yml
+
+# Use this template to build Docker containers.
+# You should add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+# The template should work without modifications but you can customize the template settings if needed:
+#
+#  CONTAINER_NAME: "$CI_PROJECT_NAME-container"
+#  CONFIGURATION_LOCATION: "$CI_PROJECT_DIR/Dockerfile"
+#  CONTAINER_VERSION: "latest"
+#
+# Requirements:
+# - A `build` stage to be present in the pipeline.
+# - You must define the image to be built in the CONTAINER_NAME variable.
+# - You must define the location of the Dockerfile in the CONFIGURATION_LOCATION variable.
+#   By default it used the main tree of the repository.
+# - Container version to be built in the CONTAINER_VERSION variable. Default is `latest`.
+# - For auto-remediation, a readable Dockerfile in the root of the project or as defined by the
+#   DOCKERFILE_PATH variable.
+#
+# Configure container building with CI/CD variables (https://docs.gitlab.com/ee/ci/variables/index.html).
+# List of available variables: above in the project.
+
+variables:
+  CONTAINER_NAME: "terragpu" # container name, e.g. mycontainer
+  CONFIGURATION_LOCATION: "$CI_PROJECT_DIR/requirements/Dockerfile" # container configuration, e.g. packages/Dockerfile
+  CONTAINER_VERSION: "latest" # container version, e.g. 1.0.0
+
+build_docker_container:
+  stage: build
+  tags:
+    - build
+    - push
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  allow_failure: false
+  dependencies: []
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CONFIGURATION_LOCATION
+      --destination $CI_REGISTRY/$CI_PROJECT_PATH/$CONTAINER_NAME:$CONTAINER_VERSION
+  only:
+    changes:
+    - requirements/*
+
+
