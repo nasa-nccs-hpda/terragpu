@@ -26,10 +26,10 @@ RUN apt-get -y update \
     && pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html \
     && pip install pytorch-toolbelt tifffile rasterio opencv-python webcolors Pillow seaborn Sphinx sphinx-rtd-theme \
         rioxarray xgboost pytorch-lightning lightning-bolts omegaconf jsonargparse[signatures] \
-        geopandas \
-    #git clone https://github.com/jordancaraballo/senegal_lcluc.git /app && \
-    #python /app/setup.py install
-    #pip install from URL
+        geopandas pytest \
+    # git clone https://github.com/jordancaraballo/senegal_lcluc.git /app && \
+    # python /app/setup.py install
+    # pip install from URL
     && pip cache purge \
     && apt-get -y autoremove \
     && rm -rf /var/cache/apt

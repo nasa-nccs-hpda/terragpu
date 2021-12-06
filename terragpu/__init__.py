@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from .engine import ConfigureDask
+from .engine import configure_dask
 from .ai.deep_learning.models import maskrcnn_model
 from .ai.deep_learning.models import unet_model
 from .ai.deep_learning.models.unet_model import UNetSegmentation

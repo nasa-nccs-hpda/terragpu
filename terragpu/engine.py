@@ -2,7 +2,10 @@ import os
 import logging
 import numpy as np
 import pandas as pd
+import xarray as xr
 from types import ModuleType
+from dask_cuda import LocalCUDACluster
+from dask.distributed import Client
 
 _warn_array_module_once = False
 _warn_df_module_once = False
@@ -58,9 +61,29 @@ def df_module(xf=None):
     raise ValueError(f'DF_MODULE={xf} not known')
 
 
-class ConfigureDask():
-    # configure dask here multi-gpu or single nodes
-    # dask cuda here
+def tif_module(xtif=None):
+    """
+    Find the dataframe module to use, for example **pandas** or **cudf**.
+    """
+    xtif = xtif or os.environ.get("TIF_MODULE", "xarray")
 
-    def distribute():
-        raise NotImplementedError
+    if isinstance(xtif, ModuleType):
+        return xtif
+    if xtif == "xarray":
+        return xr
+    if xtif == "cucim":
+        try:
+            import cucim
+            return cucim
+        except ModuleNotFoundError as e:
+            global _warn_df_module_once
+            if not _warn_df_module_once:
+                # logging.warning(f'Using pandas ({e}).')
+                _warn_df_module_once = True
+            return xr
+    raise ValueError(f'TIF_MODULE={xtif} not known')
+
+def configure_dask():
+    cluster = LocalCUDACluster()
+    client = Client(cluster)
+    return
