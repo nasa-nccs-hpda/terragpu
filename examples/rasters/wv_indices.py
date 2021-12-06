@@ -1,6 +1,6 @@
 from terragpu import io
 from terragpu import engine
-from terragpu.raster import Raster
+from terragpu.array.raster import Raster
 from terragpu.indices.wv_indices import add_indices
 
 def main(filename, bands):
