@@ -83,7 +83,10 @@ def tif_module(xtif=None):
             return xr
     raise ValueError(f'TIF_MODULE={xtif} not known')
 
-def configure_dask():
-    cluster = LocalCUDACluster()
+def configure_dask(local_directory: str = None):
+    if local_directory is not None:
+        cluster = LocalCUDACluster(local_directory=local_directory)
+    else:
+        cluster = LocalCUDACluster()
     client = Client(cluster)
     return

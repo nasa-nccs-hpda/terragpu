@@ -1,28 +1,19 @@
-import os  # system library
-import logging  # logging messages
-import operator  # operator library
-import numpy as np  # array manipulation library
-import xarray as xr  # array manipulation library, rasterio built-in
-import rasterio as rio  # geospatial library
-from scipy.ndimage import median_filter  # scipy includes median filter
-import rasterio.features as riofeat  # rasterio features include sieve filter
+import os
+from terragpu import io
 
-try:
-    from cupyx.scipy.ndimage import median_filter as cp_medfilter
-    import cupy as cp
-    HAS_GPU = True
-except ImportError:
-    HAS_GPU = False
-
-__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
-__email__ = "jordan.a.caraballo-vega@nasa.gov"
-__status__ = "Production"
+# import logging  # logging messages
+# import operator  # operator library
+# import numpy as np  # array manipulation library
+# import xarray as xr  # array manipulation library, rasterio built-in
+# import rasterio as rio  # geospatial library
+# from scipy.ndimage import median_filter  # scipy includes median filter
+# import rasterio.features as riofeat  # rasterio features include sieve filter
 
 # -------------------------------------------------------------------------------
 # class Raster
 #
-# This class represents, reads and manipulates raster. Currently support TIF
-# formatted imagery.
+# This class represents, reads and manipulates rasters. Currently supports TIF
+# formatted imagery only.
 # -------------------------------------------------------------------------------
 
 
@@ -31,7 +22,7 @@ class Raster:
     # ---------------------------------------------------------------------------
     # __init__
     # ---------------------------------------------------------------------------
-    def __init__(self, filename: str = None, bands: list = None,
+    def __init__(self, filename: str, bands: list = None,
                  chunks_band: int = 1, chunks_x: int = 2048,
                  chunks_y: int = 2048, logger=None):
         """
@@ -57,28 +48,21 @@ class Raster:
         ----------
             Raster(filename, bands)
         """
-        self.logger = logger
-        self.has_gpu = HAS_GPU
+        # Raster filename
+        self.filename = filename
+        
+        # Raster bands to manipulate, useful for calculating indices
+        self.bands = bands
 
-        if filename is not None:  # if filename is provided, read into xarray
+        # Raster data chunks for Dask display
+        self.data_chunks = {
+            'band': chunks_band,
+            'x': chunks_x,
+            'y': chunks_y
+        }
 
-            if not os.path.isfile(filename):
-                raise RuntimeError('{} does not exist'.format(filename))
+        self.raster = io.imread(filename)
 
-            self.data_chunks = {
-                'band': chunks_band,
-                'x': chunks_x,
-                'y': chunks_y
-            }
-
-            self.data = xr.open_rasterio(filename, chunks=self.data_chunks)
-
-            if bands is None:
-                raise RuntimeError('Must specify band names.')
-
-            self.bands = bands
-
-            self.nodataval = self.data.attrs['nodatavals']
 
     # ---------------------------------------------------------------------------
     # methods
@@ -87,9 +71,10 @@ class Raster:
     # ---------------------------------------------------------------------------
     # input methods
     # ---------------------------------------------------------------------------
+    """
     def readraster(self, filename: str, bands: list, chunks_band: int = 1,
                    chunks_x: int = 2048, chunks_y: int = 2048):
-        """
+        
         Read raster and append data to existing Raster object
         Args:
             filename (str): raster filename to read from
@@ -103,7 +88,7 @@ class Raster:
         Example
         ----------
             raster.readraster(filename, bands)
-        """
+        
         self.data_chunks = {'band': chunks_band, 'x': chunks_x, 'y': chunks_y}
         self.data = xr.open_rasterio(filename, chunks=self.data_chunks)
         self.bands = bands
@@ -113,7 +98,7 @@ class Raster:
     # preprocessing
     # ---------------------------------------------------------------------------
     def set_minimum(self, minimum=0):
-        """
+        
         Remove lower boundary anomalous values from self.data
         Args:
             minimum (int): minimum allowed reflectance value in the dataset
@@ -124,11 +109,11 @@ class Raster:
         ----------
             raster.set_minimum(minimum=0) := get all values
             that satisfy the condition self.data > boundary (above 0).
-        """
+        
         self.data = self.data.where(self.data > minimum, other=minimum)
 
     def set_maximum(self, maximum=10000):
-        """
+        
         Remove upper boundary anomalous values from self.data
         Args:
             maximum (int): maximum allowed reflectance value in the dataset
@@ -139,11 +124,11 @@ class Raster:
         ----------
             raster.set_maximum(maximum=10000) := get all values
             that satisfy the condition self.data > boundary (above 10000).
-        """
+        
         self.data = self.data.where(self.data < maximum, other=maximum)
 
     def preprocess(self, op: str = '>', boundary: int = 0, subs: int = 0):
-        """
+        
         (Deprecated) Remove anomalous values from self.data
         Args:
             op (str): operator string, currently <, and >
@@ -156,12 +141,12 @@ class Raster:
         ----------
             raster.preprocess(op='>', boundary=0, replace=0) := get all values
             that satisfy the condition self.data > boundary (above 0).
-        """
+        
         ops = {'<': operator.lt, '>': operator.gt}
         self.data = self.data.where(ops[op](self.data, boundary), other=subs)
 
     def addindices(self, indices: list, factor: float = 1.0):
-        """
+        
         Add multiple indices to existing Raster object self.data
         Args:
             indices (int list): list of indices functions
@@ -172,7 +157,7 @@ class Raster:
         Example
         ----------
             raster.addindices([indices.fdi, indices.si], factor=10000.0)
-        """
+        
         nbands = len(self.bands)  # get initial number of bands
         for indices_function in indices:  # iterate over each new band
             nbands += 1  # counter for number of bands
@@ -188,7 +173,7 @@ class Raster:
         self.data.attrs['offsets'] = [self.data.attrs['offsets'][0]] * nbands
 
     def dropindices(self, dropindices):
-        """
+        
         Drop multiple indices to existing Raster object self.data.
         Args:
             dropindices (int list): list of indices to drop
@@ -198,7 +183,7 @@ class Raster:
         Example
         ----------
             raster.dropindices(band_ids)
-        """
+        
         assert all(band in self.bands for band in dropindices), \
                "Specified band not in raster."
         dropind = [self.bands.index(ind_id)+1 for ind_id in dropindices]
@@ -210,7 +195,7 @@ class Raster:
     # ---------------------------------------------------------------------------
     def sieve(self, prediction: np.array, out: np.array,
               size: int = 350, mask: str = None, connectivity: int = 8):
-        """
+        
         Apply sieve filter to array object on single band (binary array)
         Args:
             prediction (array): numpy array with prediction output
@@ -224,11 +209,11 @@ class Raster:
         Example
         ----------
             raster.sieve(raster.prediction, raster.prediction, size=sieve_sz)
-        """
+       
         riofeat.sieve(prediction, size, out, mask, connectivity)
 
     def median(self, prediction: np.array, ksize: int = 20) -> np.array:
-        """
+        
         Apply median filter for postprocessing
         Args:
             prediction (array): numpy array with prediction output
@@ -239,7 +224,7 @@ class Raster:
         Example
         ----------
             raster.median(raster.prediction, ksize=args.median_sz)
-        """
+        
         if self.has_gpu:  # method for GPU
             with cp.cuda.Device(1):
                 prediction = cp_medfilter(cp.asarray(prediction), size=ksize)
@@ -252,7 +237,7 @@ class Raster:
     # ---------------------------------------------------------------------------
     def toraster(self, rast: str, prediction: np.array,
                  dtype: str = 'int16', output: str = 'rfmask.tif'):
-        """
+        
         Save tif file from numpy to disk.
         :param rast: raster name to get metadata from
         :param prediction: numpy array with prediction output
@@ -263,7 +248,7 @@ class Raster:
         Example
             raster.toraster(filename, raster_obj.prediction, outname)
         ----------
-        """
+        
         # get meta features from raster
         with rio.open(rast) as src:
             meta = src.profile
@@ -282,6 +267,7 @@ class Raster:
         with rio.open(output, 'w', **out_meta) as dst:
             dst.write(prediction, 1)
         logging.info(f'Prediction saved at {output}')
+    """
 
 # -------------------------------------------------------------------------------
 # class Raster Unit Tests
