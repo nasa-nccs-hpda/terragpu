@@ -14,8 +14,8 @@ from terragpu.engine import array_module, df_module
 
 import terragpu.ai.preprocessing as preprocessing
 
-xp = array_module('cupy')
-xf = df_module('cudf')
+xp = array_module()
+xf = df_module()
 
 
 class PLSegmentationDataset(Dataset):

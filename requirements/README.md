@@ -43,7 +43,7 @@ python setup.py install
 As an example, you can shell into the container:
 
 ```bash
-singularity shell terragpu
+singularity shell --nv terragpu
 ```
 
 Then activate the Anaconda environment:

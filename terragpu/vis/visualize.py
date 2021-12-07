@@ -17,9 +17,6 @@ import seaborn as sns
 from webcolors import name_to_rgb
 from deeprsensing.metrics import iou_val, acc_val, prec_val, recall_val
 
-__author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
-__email__ = "jordan.a.caraballo-vega@nasa.gov"
-__status__ = "Production"
 
 # ---------------------------------------------------------------------------
 # module visualize

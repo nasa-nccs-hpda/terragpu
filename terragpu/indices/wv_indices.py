@@ -6,7 +6,7 @@ __all__ = [
     "si", "get_indices", "add_indices"
 ]
 
-CHUNKS = {'band': 1, 'x': 2048, 'y': 2048}
+CHUNKS = {'band': 1, 'x': 1024, 'y': 1024}
 
 # ---------------------------------------------------------------------------
 # Methods
@@ -23,8 +23,8 @@ def cs1(raster):
         (3. * raster['band_data'][nir1, :, :]) /
         (raster['band_data'][blue, :, :] + raster['band_data'][green, :, :] \
             + raster['band_data'][red, :, :])
-    ).compute()
-    return index.expand_dims(dim="band", axis=0).fillna(0).chunk(chunks=CHUNKS)
+    ).persist()
+    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
 
 
 def cs2(raster):
@@ -39,8 +39,8 @@ def cs2(raster):
         (raster['band_data'][blue, :, :] + raster['band_data'][green, :, :] \
             + raster['band_data'][red, :, :] + raster['band_data'][nir1, :, :])
         / 4.0
-    ).compute()
-    return index.expand_dims(dim="band", axis=0).fillna(0).chunk(chunks=CHUNKS)
+    ).persist()
+    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
 
 
 def dvi(raster):
@@ -53,7 +53,7 @@ def dvi(raster):
         raster.attrs['band_names'], ['nir1', 'red'])
     index = (
         raster['band_data'][nir1, :, :] - raster['band_data'][red, :, :]
-    ).compute()
+    ).persist()
     return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
 
 
@@ -67,7 +67,7 @@ def dwi(raster):
         raster.attrs['band_names'], ['nir1', 'green'])
     index = (
         raster['band_data'][green, :, :] - raster['band_data'][nir1, :, :]
-    ).compute()
+    ).persist()
     return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
 
 
@@ -87,7 +87,7 @@ def fdi(raster):
     index = (
         raster['band_data'][nir, :, :] - \
             (raster['band_data'][red, :, :] + raster['band_data'][blue, :, :])
-    ).compute()
+    ).persist()
     return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
 
 
@@ -102,8 +102,8 @@ def ndvi(raster):
     index = (
         (raster['band_data'][nir1, :, :] - raster['band_data'][red, :, :]) /
         (raster['band_data'][nir1, :, :] + raster['band_data'][red, :, :])
-    ).compute()
-    return index.expand_dims(dim="band", axis=0).fillna(0).chunk(chunks=CHUNKS)
+    ).persist()
+    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
 
 
 def ndwi(raster):
@@ -118,8 +118,8 @@ def ndwi(raster):
     index = (
         (raster['band_data'][green, :, :] - raster['band_data'][nir1, :, :]) /
         (raster['band_data'][green, :, :] + raster['band_data'][nir1, :, :])
-    ).compute()
-    return index.expand_dims(dim="band", axis=0).fillna(0).chunk(chunks=CHUNKS)
+    ).persist()
+    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
 
 
 def si(raster):
@@ -133,8 +133,8 @@ def si(raster):
     index = (
         (raster['band_data'][blue, :, :] - raster['band_data'][green, :, :] /
             raster['band_data'][red, :, :]) ** (1.0/3.0)
-    ).compute()
-    return index.expand_dims(dim="band", axis=0).fillna(0).chunk(chunks=CHUNKS)
+    ).persist()
+    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
 
 
 indices_registry = {
@@ -163,6 +163,7 @@ def add_indices(raster, indices):
     :param factor: factor used for toa imagery
     :return: raster with updated bands list
     """
+    futures = [raster]
     nbands = len(raster.attrs['band_names'])  # get initial number of bands
     indices = [b.lower() for b in indices]  # lowercase indices list
     for index_id in indices:  # iterate over each new band
@@ -172,12 +173,13 @@ def add_indices(raster, indices):
         nbands += 1  # Counter for number of bands
 
         # Calculate band (indices)
-        new_index = indices_function(raster)  # calculate the new index
-        new_index.coords['band'] = [nbands]  # add band indices to raster
-        new_index = new_index.to_dataset()  # move from array to dataset
+        new_index = indices_function(raster)
 
+        # Add band indices to raster, add future object
+        new_index.coords['band'] = [nbands]
+        futures.append(new_index.to_dataset())
+        
         # Set metadata
         raster.attrs['band_names'].append(index_id)
-        raster = xr.concat([raster, new_index], dim='band')
-
-    return raster.chunk(chunks=CHUNKS)
+    
+    return xr.concat(futures, dim='band').chunk(chunks=CHUNKS)

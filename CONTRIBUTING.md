@@ -156,3 +156,10 @@ in any of the sections, they are removed from the description.
 ### Approved
 Approver Name, Email
 ```
+
+### Example Using Container in ADAPT
+
+```bash
+module load singularity
+singularity shell -B /att,/lscratch/jacaraba,/lscratch/jacaraba/singularity_tmp:/tmp,/adapt/nobackup/projects/ilab --nv terragpu/
+```

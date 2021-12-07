@@ -6,6 +6,7 @@ import xarray as xr
 from types import ModuleType
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
+from dask.utils import parse_bytes
 
 _warn_array_module_once = False
 _warn_df_module_once = False
@@ -19,7 +20,7 @@ def array_module(xp=None):
     """
     Find the array module to use, for example **numpy** or **cupy**.
     """
-    xp = xp or os.environ.get("ARRAY_MODULE", "numpy")
+    xp = xp or os.environ.get("ARRAY_MODULE", "cupy")
 
     if isinstance(xp, ModuleType):
         return xp
@@ -42,7 +43,7 @@ def df_module(xf=None):
     """
     Find the dataframe module to use, for example **pandas** or **cudf**.
     """
-    xf = xf or os.environ.get("DF_MODULE", "pandas")
+    xf = xf or os.environ.get("DF_MODULE", "cudf")
 
     if isinstance(xf, ModuleType):
         return xf
@@ -86,7 +87,9 @@ def tif_module(xtif=None):
 def configure_dask(local_directory: str = None):
     if local_directory is not None:
         cluster = LocalCUDACluster(local_directory=local_directory)
+        # rmm_pool_size=parse_bytes("29GB"))
     else:
         cluster = LocalCUDACluster()
+        # rmm_pool_size=parse_bytes("29GB"))
     client = Client(cluster)
-    return
+    return client

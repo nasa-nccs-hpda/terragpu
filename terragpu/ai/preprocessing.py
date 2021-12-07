@@ -10,8 +10,8 @@ from sklearn import feature_extraction
 
 from terragpu.engine import array_module, df_module
 
-xp = array_module('cupy')
-xf = df_module('cudf')
+xp = array_module()
+xf = df_module()
 
 import numpy as np
 
