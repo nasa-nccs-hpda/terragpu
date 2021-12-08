@@ -2,6 +2,8 @@
 
 Python library to process and classify remote sensing imagery by means of GPUs and AI/ML
 
+[![DOI](https://zenodo.org/badge/295528915.svg)](https://zenodo.org/badge/latestdoi/295528915)
+
 <img src="images/nccslogo.png" height="150" width="300">
 
 ## Objectives
