@@ -81,7 +81,7 @@ Please consider citing this when using terragpu in a project. You can use the ci
   license = {Apache-2.0},
   month = {7},
   title = {{TerraGPU}},
-  url = {TBD},
+  url = {https://github.com/nasa-cisto-ai/terragpu},
   version = {2021.11},
   year = {2020}
 }
