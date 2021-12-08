@@ -21,8 +21,8 @@ authors:
 version: 2021.11
 doi: "10.5281/zenodo.5765917"
 license: "Apache-2.0"
-url: "TBD"
-repository-code: "TBD"
+url: "https://github.com/nasa-cisto-ai/terragpu"
+repository-code: "https://github.com/nasa-cisto-ai/terragpu"
 keywords:
   - gpus
   - earth science
