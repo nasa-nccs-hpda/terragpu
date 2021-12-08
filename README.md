@@ -3,6 +3,8 @@
 Python library to process and classify remote sensing imagery by means of GPUs and AI/ML
 
 [![DOI](https://zenodo.org/badge/295528915.svg)](https://zenodo.org/badge/latestdoi/295528915)
+![Pipeline Status](https://github.com/nasa-cisto-ai/terragpu/actions/workflows/main.yml/badge.svg)
+
 
 <img src="images/nccslogo.png" height="150" width="300">
 
