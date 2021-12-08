@@ -72,7 +72,17 @@ and development, including how to use the library or any upcoming releases.
 Please consider citing this when using terragpu in a project. You can use the citation BibTeX:
 
 ```bibtex
-TBD
+@software{
+  A_Caraballo-Vega_TerraGPU_2020,
+  author = {A Caraballo-Vega, Jordan},
+  doi = {10.5281/zenodo.5765917},
+  license = {Apache-2.0},
+  month = {7},
+  title = {{TerraGPU}},
+  url = {TBD},
+  version = {2021.11},
+  year = {2020}
+}
 ```
 
 ## References
