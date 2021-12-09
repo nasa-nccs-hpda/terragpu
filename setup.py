@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='terragpu',
-    version='21.11',
+    version='2021.11',
     description='Accelerating AI/ML in remote sensing satellite imagery',
     author='Jordan A. Caraballo-Vega',
     author_email='jordan.a.caraballo-vega@nasa.gov',

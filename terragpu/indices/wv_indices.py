@@ -1,4 +1,7 @@
 import xarray as xr
+import dask
+
+from terragpu import engine
 from terragpu.array.utils import _get_band_locations
 
 __all__ = [
@@ -6,7 +9,12 @@ __all__ = [
     "si", "get_indices", "add_indices"
 ]
 
-CHUNKS = {'band': 1, 'x': 1024, 'y': 1024}
+# ignore warning = RuntimeWarning: invalid value encountered in power
+
+xp = engine.array_module()
+xf = engine.df_module()
+
+CHUNKS = {'band': 'auto', 'x': 'auto', 'y': 'auto'}
 
 # ---------------------------------------------------------------------------
 # Methods
@@ -19,13 +27,19 @@ def cs1(raster):
     """
     nir1, red, blue, green = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'red', 'blue', 'green'])
+    #index = dask.array.true_divide(
+    #    dask.array.multiply(raster.band_data[nir1, :, :].persist(), 3.0).persist(),
+    #    dask.array.add(
+    #        raster.band_data[blue, :, :].persist(),
+    #        dask.array.add(raster.band_data[green, :, :].persist(), raster.band_data[red, :, :].persist()).persist()
+    #    ).persist()
+    #).persist()
     index = (
-        (3. * raster['band_data'][nir1, :, :]) /
-        (raster['band_data'][blue, :, :] + raster['band_data'][green, :, :] \
-            + raster['band_data'][red, :, :])
-    ).persist()
-    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
-
+        (3. * raster.band_data[nir1, :, :]) /
+        (raster.band_data[blue, :, :] + raster.band_data[green, :, :] \
+            + raster.band_data[red, :, :])
+    )
+    return index.expand_dims(dim="band", axis=0)
 
 def cs2(raster):
     """
@@ -35,13 +49,18 @@ def cs2(raster):
     """
     nir1, red, blue, green = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'red', 'blue', 'green'])
+    #index = dask.array.true_divide(
+    #    dask.array.add(
+    #        dask.array.add(raster.band_data[blue, :, :].persist(), raster.band_data[green, :, :].persist()).persist(),
+    #        dask.array.add(raster.band_data[red, :, :].persist(), raster.band_data[nir1, :, :].persist()).persist()
+    #    ).persist(), 4.0
+    #).persist()
     index = (
-        (raster['band_data'][blue, :, :] + raster['band_data'][green, :, :] \
-            + raster['band_data'][red, :, :] + raster['band_data'][nir1, :, :])
+        (raster.band_data[blue, :, :] + raster.band_data[green, :, :] \
+            + raster.band_data[red, :, :] + raster.band_data[nir1, :, :])
         / 4.0
-    ).persist()
-    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
-
+    )
+    return index.expand_dims(dim="band", axis=0)
 
 def dvi(raster):
     """
@@ -51,24 +70,29 @@ def dvi(raster):
     """
     nir1, red = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'red'])
+    #index = dask.array.subtract(
+    #    raster.band_data[nir1, :, :].persist(), raster.band_data[red, :, :].persist()
+    #).persist()
     index = (
-        raster['band_data'][nir1, :, :] - raster['band_data'][red, :, :]
-    ).persist()
-    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
-
+        raster.band_data[nir1, :, :] - raster.band_data[red, :, :]
+    )
+    return index.expand_dims(dim="band", axis=0)
 
 def dwi(raster):
     """
-    Difference Water Index (DWI), DWI := factor * (Green - NIR1)
+    Difference Water Index (DWI), DWI := Green - NIR1
     :param raster: xarray or numpy array object in the form (c, h, w)
     :return: new band with DWI calculated
     """
     nir1, green = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'green'])
+    #index = dask.array.subtract(
+    #    raster.band_data[green, :, :].persist(), raster.band_data[nir1, :, :].persist()
+    #).persist()
     index = (
-        raster['band_data'][green, :, :] - raster['band_data'][nir1, :, :]
-    ).persist()
-    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
+        raster.band_data[green, :, :] - raster.band_data[nir1, :, :]
+    )
+    return index.expand_dims(dim="band", axis=0)
 
 
 def fdi(raster):
@@ -85,10 +109,10 @@ def fdi(raster):
     blue, nir, red = _get_band_locations(
         raster.attrs['band_names'], bands)
     index = (
-        raster['band_data'][nir, :, :] - \
-            (raster['band_data'][red, :, :] + raster['band_data'][blue, :, :])
-    ).persist()
-    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
+        raster.band_data[nir, :, :] - \
+            (raster.band_data[red, :, :] + raster.band_data[blue, :, :])
+    )
+    return index.expand_dims(dim="band", axis=0)
 
 
 def ndvi(raster):
@@ -100,10 +124,10 @@ def ndvi(raster):
     nir1, red = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'red'])
     index = (
-        (raster['band_data'][nir1, :, :] - raster['band_data'][red, :, :]) /
-        (raster['band_data'][nir1, :, :] + raster['band_data'][red, :, :])
+        (raster.band_data[nir1, :, :] - raster.band_data[red, :, :]) /
+        (raster.band_data[nir1, :, :] + raster.band_data[red, :, :])
     ).persist()
-    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
+    return index.expand_dims(dim="band", axis=0)
 
 
 def ndwi(raster):
@@ -116,10 +140,10 @@ def ndwi(raster):
     nir1, green = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'green'])
     index = (
-        (raster['band_data'][green, :, :] - raster['band_data'][nir1, :, :]) /
-        (raster['band_data'][green, :, :] + raster['band_data'][nir1, :, :])
-    ).persist()
-    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
+        (raster.band_data[green, :, :] - raster.band_data[nir1, :, :]) /
+        (raster.band_data[green, :, :] + raster.band_data[nir1, :, :])
+    )#.persist()
+    return index.expand_dims(dim="band", axis=0)
 
 
 def si(raster):
@@ -131,10 +155,10 @@ def si(raster):
     red, blue, green = _get_band_locations(
         raster.attrs['band_names'], ['red', 'blue', 'green'])
     index = (
-        (raster['band_data'][blue, :, :] - raster['band_data'][green, :, :] /
-            raster['band_data'][red, :, :]) ** (1.0/3.0)
-    ).persist()
-    return index.expand_dims(dim="band", axis=0).chunk(chunks=CHUNKS)
+        (raster.band_data[blue, :, :] - raster.band_data[green, :, :] /
+            raster.band_data[red, :, :]) ** (1.0/3.0)
+    )#.persist()
+    return index.expand_dims(dim="band", axis=0)
 
 
 indices_registry = {
@@ -163,7 +187,6 @@ def add_indices(raster, indices):
     :param factor: factor used for toa imagery
     :return: raster with updated bands list
     """
-    futures = [raster]
     nbands = len(raster.attrs['band_names'])  # get initial number of bands
     indices = [b.lower() for b in indices]  # lowercase indices list
     for index_id in indices:  # iterate over each new band
@@ -177,9 +200,9 @@ def add_indices(raster, indices):
 
         # Add band indices to raster, add future object
         new_index.coords['band'] = [nbands]
-        futures.append(new_index.to_dataset())
+        raster = xr.concat([raster, new_index.to_dataset()], dim='band')
         
         # Set metadata
         raster.attrs['band_names'].append(index_id)
     
-    return xr.concat(futures, dim='band').chunk(chunks=CHUNKS)
+    return raster#.persist()

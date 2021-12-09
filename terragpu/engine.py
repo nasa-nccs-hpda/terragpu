@@ -5,8 +5,7 @@ import pandas as pd
 import xarray as xr
 from types import ModuleType
 from dask_cuda import LocalCUDACluster
-from dask.distributed import Client
-from dask.utils import parse_bytes
+from dask.distributed import Client, LocalCluster
 
 _warn_array_module_once = False
 _warn_df_module_once = False
@@ -84,12 +83,20 @@ def tif_module(xtif=None):
             return xr
     raise ValueError(f'TIF_MODULE={xtif} not known')
 
-def configure_dask(local_directory: str = None):
-    if local_directory is not None:
-        cluster = LocalCUDACluster(local_directory=local_directory)
-        # rmm_pool_size=parse_bytes("29GB"))
+def configure_dask(
+    local_directory: str = None, n_workers: int = None,
+    device: str = 'gpu'):
+    """
+    Configure dask local cluster
+    """
+    if device == 'gpu':
+        cluster = LocalCUDACluster(
+            local_directory=local_directory,
+            device_memory_limit=0.8,
+            n_workers=n_workers
+        )
     else:
-        cluster = LocalCUDACluster()
-        # rmm_pool_size=parse_bytes("29GB"))
-    client = Client(cluster)
-    return client
+        cluster = LocalCluster(
+            n_workers=n_workers
+        )
+    return Client(cluster)
