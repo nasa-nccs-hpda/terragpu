@@ -1,11 +1,11 @@
 name: CI to Docker Hub 
 
-on: push
+# on: push
 
-# on:
-#  push:
-#    tags:
-#      - "v*.*.*"
+on:
+  push:
+    tags:
+      - "*.*"
 
 jobs:
 

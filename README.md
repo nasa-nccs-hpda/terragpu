@@ -2,6 +2,10 @@
 
 Python library to process and classify remote sensing imagery by means of GPUs and AI/ML
 
+[![DOI](https://zenodo.org/badge/295528915.svg)](https://zenodo.org/badge/latestdoi/295528915)
+![Pipeline Status](https://github.com/nasa-cisto-ai/terragpu/actions/workflows/main.yml/badge.svg)
+
+
 <img src="images/nccslogo.png" height="150" width="300">
 
 ## Objectives
@@ -70,7 +74,17 @@ and development, including how to use the library or any upcoming releases.
 Please consider citing this when using terragpu in a project. You can use the citation BibTeX:
 
 ```bibtex
-TBD
+@software{
+  A_Caraballo-Vega_TerraGPU_2020,
+  author = {A Caraballo-Vega, Jordan},
+  doi = {10.5281/zenodo.5765917},
+  license = {Apache-2.0},
+  month = {7},
+  title = {{TerraGPU}},
+  url = {https://github.com/nasa-cisto-ai/terragpu},
+  version = {2021.11},
+  year = {2020}
+}
 ```
 
 ## References
