@@ -27,9 +27,7 @@ RUN apt-get -y update \
     && pip install pytorch-toolbelt tifffile rasterio opencv-python webcolors Pillow seaborn Sphinx sphinx-rtd-theme \
         rioxarray xgboost pytorch-lightning lightning-bolts omegaconf jsonargparse[signatures] \
         geopandas pytest xarray==0.20.1 \
-    # git clone https://github.com/jordancaraballo/senegal_lcluc.git /app && \
-    # python /app/setup.py install
-    # pip install from URL
+    && pip install git+https://github.com/nasa-cisto-ai/terragpu.git \
     && pip cache purge \
     && apt-get -y autoremove \
     && rm -rf /var/cache/apt
