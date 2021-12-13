@@ -12,7 +12,8 @@ def main(filename, bands):
 
     # Calculate some indices
     raster = add_indices(raster, indices=[
-        'dvi', 'ndvi', 'cs1', 'cs2', 'si', 'fdi', 'dwi', 'ndwi'])
+        'dvi', 'ndvi', 'cs1', 'cs2', 'si', 'fdi', 'dwi',
+        'ndwi', 'gndvi', 'sr'])
     print(raster)
 
     # Save to directory

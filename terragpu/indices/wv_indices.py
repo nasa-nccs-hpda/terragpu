@@ -76,19 +76,6 @@ def dwi(raster):
     )
     return index.expand_dims(dim="band", axis=0)
 
-def dwi_new(raster):
-    """
-    Difference Water Index (DWI), DWI := Green - NIR1
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with DWI calculated
-    """
-    nir1, green = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'green'])
-    index = (
-        raster[green, :, :] - raster[nir1, :, :]
-    )
-    return index.expand_dims(dim="band", axis=0)
-
 def fdi(raster):
     """
     Forest Discrimination Index (FDI), type int16
@@ -108,6 +95,19 @@ def fdi(raster):
     )
     return index.expand_dims(dim="band", axis=0)
 
+def gndvi(raster):
+    """
+    Difference Vegetation Index (DVI), GNDVI := (NIR - Green) / (NIR + Green)
+    :param raster: xarray or numpy array object in the form (c, h, w)
+    :return: new band with DVI calculated
+    """
+    nir1, green = _get_band_locations(
+        raster.attrs['band_names'], ['nir1', 'green'])
+    index = (
+        (raster[nir1, :, :] - raster[green, :, :]) /
+        (raster[nir1, :, :] + raster[green, :, :])
+    )
+    return index.expand_dims(dim="band", axis=0)
 
 def ndvi(raster):
     """
@@ -154,6 +154,18 @@ def si(raster):
     )
     return index.expand_dims(dim="band", axis=0)
 
+def sr(raster):
+    """
+    SR := NIR / Red
+    :param raster: xarray or numpy array object in the form (c, h, w)
+    :return: new band with SI calculated
+    """
+    nir1, red = _get_band_locations(
+        raster.attrs['band_names'], ['nir1', 'red'])
+    index = (
+        raster[nir1, :, :] / raster[red, :, :]
+    )
+    return index.expand_dims(dim="band", axis=0)
 
 indices_registry = {
     'cs1': cs1,
@@ -161,9 +173,11 @@ indices_registry = {
     'dvi': dvi,
     'dwi': dwi,
     'fdi': fdi,
+    'gndvi': gndvi,
     'ndvi': ndvi,
     'ndwi': ndwi,
-    'si': si
+    'si': si,
+    'sr': sr
 }
 
 def get_indices(index_key):
