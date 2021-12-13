@@ -1,5 +1,6 @@
 import xarray as xr
 import dask
+import numba
 
 from terragpu import engine
 from terragpu.array.utils import _get_band_locations
@@ -27,17 +28,10 @@ def cs1(raster):
     """
     nir1, red, blue, green = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'red', 'blue', 'green'])
-    #index = dask.array.true_divide(
-    #    dask.array.multiply(raster.band_data[nir1, :, :].persist(), 3.0).persist(),
-    #    dask.array.add(
-    #        raster.band_data[blue, :, :].persist(),
-    #        dask.array.add(raster.band_data[green, :, :].persist(), raster.band_data[red, :, :].persist()).persist()
-    #    ).persist()
-    #).persist()
     index = (
-        (3. * raster.band_data[nir1, :, :]) /
-        (raster.band_data[blue, :, :] + raster.band_data[green, :, :] \
-            + raster.band_data[red, :, :])
+        (3. * raster[nir1, :, :]) /
+        (raster[blue, :, :] + raster[green, :, :] \
+            + raster[red, :, :])
     )
     return index.expand_dims(dim="band", axis=0)
 
@@ -49,15 +43,9 @@ def cs2(raster):
     """
     nir1, red, blue, green = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'red', 'blue', 'green'])
-    #index = dask.array.true_divide(
-    #    dask.array.add(
-    #        dask.array.add(raster.band_data[blue, :, :].persist(), raster.band_data[green, :, :].persist()).persist(),
-    #        dask.array.add(raster.band_data[red, :, :].persist(), raster.band_data[nir1, :, :].persist()).persist()
-    #    ).persist(), 4.0
-    #).persist()
     index = (
-        (raster.band_data[blue, :, :] + raster.band_data[green, :, :] \
-            + raster.band_data[red, :, :] + raster.band_data[nir1, :, :])
+        (raster[blue, :, :] + raster[green, :, :] \
+            + raster[red, :, :] + raster[nir1, :, :])
         / 4.0
     )
     return index.expand_dims(dim="band", axis=0)
@@ -70,11 +58,8 @@ def dvi(raster):
     """
     nir1, red = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'red'])
-    #index = dask.array.subtract(
-    #    raster.band_data[nir1, :, :].persist(), raster.band_data[red, :, :].persist()
-    #).persist()
     index = (
-        raster.band_data[nir1, :, :] - raster.band_data[red, :, :]
+        raster[nir1, :, :] - raster[red, :, :]
     )
     return index.expand_dims(dim="band", axis=0)
 
@@ -86,14 +71,23 @@ def dwi(raster):
     """
     nir1, green = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'green'])
-    #index = dask.array.subtract(
-    #    raster.band_data[green, :, :].persist(), raster.band_data[nir1, :, :].persist()
-    #).persist()
     index = (
-        raster.band_data[green, :, :] - raster.band_data[nir1, :, :]
+        raster[green, :, :] - raster[nir1, :, :]
     )
     return index.expand_dims(dim="band", axis=0)
 
+def dwi_new(raster):
+    """
+    Difference Water Index (DWI), DWI := Green - NIR1
+    :param raster: xarray or numpy array object in the form (c, h, w)
+    :return: new band with DWI calculated
+    """
+    nir1, green = _get_band_locations(
+        raster.attrs['band_names'], ['nir1', 'green'])
+    index = (
+        raster[green, :, :] - raster[nir1, :, :]
+    )
+    return index.expand_dims(dim="band", axis=0)
 
 def fdi(raster):
     """
@@ -109,8 +103,8 @@ def fdi(raster):
     blue, nir, red = _get_band_locations(
         raster.attrs['band_names'], bands)
     index = (
-        raster.band_data[nir, :, :] - \
-            (raster.band_data[red, :, :] + raster.band_data[blue, :, :])
+        raster[nir, :, :] - \
+            (raster[red, :, :] + raster[blue, :, :])
     )
     return index.expand_dims(dim="band", axis=0)
 
@@ -124,9 +118,9 @@ def ndvi(raster):
     nir1, red = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'red'])
     index = (
-        (raster.band_data[nir1, :, :] - raster.band_data[red, :, :]) /
-        (raster.band_data[nir1, :, :] + raster.band_data[red, :, :])
-    ).persist()
+        (raster[nir1, :, :] - raster[red, :, :]) /
+        (raster[nir1, :, :] + raster[red, :, :])
+    )
     return index.expand_dims(dim="band", axis=0)
 
 
@@ -140,9 +134,9 @@ def ndwi(raster):
     nir1, green = _get_band_locations(
         raster.attrs['band_names'], ['nir1', 'green'])
     index = (
-        (raster.band_data[green, :, :] - raster.band_data[nir1, :, :]) /
-        (raster.band_data[green, :, :] + raster.band_data[nir1, :, :])
-    )#.persist()
+        (raster[green, :, :] - raster[nir1, :, :]) /
+        (raster[green, :, :] + raster[nir1, :, :])
+    )
     return index.expand_dims(dim="band", axis=0)
 
 
@@ -155,9 +149,9 @@ def si(raster):
     red, blue, green = _get_band_locations(
         raster.attrs['band_names'], ['red', 'blue', 'green'])
     index = (
-        (raster.band_data[blue, :, :] - raster.band_data[green, :, :] /
-            raster.band_data[red, :, :]) ** (1.0/3.0)
-    )#.persist()
+        (raster[blue, :, :] - raster[green, :, :] /
+            raster[red, :, :]) ** (1.0/3.0)
+    )
     return index.expand_dims(dim="band", axis=0)
 
 
@@ -177,7 +171,6 @@ def get_indices(index_key):
         return indices_registry[index_key]
     except KeyError:
         raise ValueError(f'Invalid indices mapping: {index_key}.')
-
 
 def add_indices(raster, indices):
     """
@@ -200,9 +193,9 @@ def add_indices(raster, indices):
 
         # Add band indices to raster, add future object
         new_index.coords['band'] = [nbands]
-        raster = xr.concat([raster, new_index.to_dataset()], dim='band')
+        raster = xr.concat([raster, new_index], dim='band')
         
         # Set metadata
         raster.attrs['band_names'].append(index_id)
     
-    return raster#.persist()
+    return raster

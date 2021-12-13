@@ -5,15 +5,28 @@ should be documented as CVE or BUG respectively.
 
 ## Status: [Released]
 
+## [2022.01] - TBD
+
+TBD
+
+## [2021.11] - 2021-11-01
+
+### Added
+
+- Included deep learning and machine learning classes.
+- Adding the integration of external projects for additional features.
+- Adding additional Dask capabilities for multi-GPU support.
+
+### Changed
+
+- Moved backend from TensorFlow to PyTorch.
+
 ## [2021.02] - 2021-02-19
 
 ### Added
 
-- Document
-
-### Changed
-
-- Document
+- Included raster library and additional raster implementations.
+- Preprocessing libraries included.
 
 ### Approved
 

@@ -48,7 +48,7 @@ def imread(filename: str = None, bands: list = None, backend: str = 'dask'):
     return engines[suffix](filename, bands, backend)
 
 
-def read_tif_new(filename: str, bands: list = None, backend: str = 'dask'):
+def read_tif(filename: str, bands: list = None, backend: str = 'dask'):
     """
     Read TIF Imagery to GPU.
     Next Release: cucim support for built-in GPU read.
@@ -60,22 +60,11 @@ def read_tif_new(filename: str, bands: list = None, backend: str = 'dask'):
         raster.attrs['band_names'] = [b.lower() for b in bands]
     return raster
 
-def read_tif(filename: str, bands: list = None, backend: str = 'dask'):
-    """
-    Read TIF Imagery to GPU.
-    Next Release: cucim support for built-in GPU read.
-    """
-    raster = xr.open_dataset(
-        filename, engine="rasterio", chunks=CHUNKS)
-    if xp.__name__ == 'cupy':
-        raster.band_data.data = _xarray_to_cupy_(raster.band_data.data)
-    if bands is not None:
-        raster.attrs['band_names'] = [b.lower() for b in bands]
-    return raster
 
 def read_hdf(filename: str, bands: list = None, backend: str = 'dask'):
     # rioxarray or cupy
     raise NotImplementedError
+
 
 def read_shp(filename: str, bands: list = None, backend: str = 'dask'):
     # cuspatial or geopandas
@@ -85,7 +74,7 @@ def read_shp(filename: str, bands: list = None, backend: str = 'dask'):
 # Output Methods
 # -------------------------------------------------------------------------------
 
-def imsave(data, filename):
+def imsave(data, filename: str, compress: str = 'LZW', crs: str = None):
     """
     Save imagery based on format
     """
@@ -97,25 +86,37 @@ def imsave(data, filename):
         '.tiff': to_tif,
         '.hdf': to_hdf,
         '.shp': to_shp,
+        '.zarr': to_zarr
     }
-    return engines[suffix](data, filename)
+    return engines[suffix](data, filename, compress, crs)
+
 
 def to_cog():
     raise NotImplementedError
 
+
 def to_hdf():
     raise NotImplementedError
+
 
 def to_shp():
     raise NotImplementedError
 
-def to_tif(raster, filename: str, compress: str = 'LZW'):
+
+def to_tif(raster, filename: str, compress: str = 'LZW', crs: str = None):
+    """
+    Save TIFF or TIF files, normally used from raster files.
+    """
     assert (pathlib.Path(filename).suffix)[:4] == '.tif', \
         f'to_tif suffix should be one of [.tif, .tiff]'
     if xp.__name__ == 'cupy':
-        raster.band_data.data = _xarray_to_numpy_(raster.band_data.data)
-    raster.band_data.rio.to_raster(filename, compress=compress)
+        raster.data = _xarray_to_numpy_(raster.data)
+    raster.rio.write_nodata(raster._FillValue)
+    if crs is not None:
+        raster.rio.write_crs(crs, inplace=True)
+    raster.rio.to_raster(filename, BIGTIFF="IF_SAFER", compress=compress)
     return
+
 
 def to_zarr():
     raise NotImplementedError

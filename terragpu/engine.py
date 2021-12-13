@@ -91,9 +91,17 @@ def configure_dask(
     """
     if device == 'gpu':
         cluster = LocalCUDACluster(
+            #ucx_net_devices="auto",
             local_directory=local_directory,
             device_memory_limit=0.8,
-            n_workers=n_workers
+            n_workers=n_workers,
+            #protocol="ucx",
+            #interface="ib0",
+            #enable_tcp_over_ucx=True,
+            #enable_nvlink=True,
+            #enable_infiniband=True,
+            #enable_rdmacm=True,
+            #rmm_pool_size="29GB"
         )
     else:
         cluster = LocalCluster(

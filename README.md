@@ -1,18 +1,19 @@
 # terragpu
 
-Python library to process and classify remote sensing imagery by means of GPUs and AI/ML
+Python library to process and classify remote sensing imagery by means of GPUs 
+and CPU parallelization for high performance and commodity base environments.
 
 [![DOI](https://zenodo.org/badge/295528915.svg)](https://zenodo.org/badge/latestdoi/295528915)
 ![Pipeline Status](https://github.com/nasa-cisto-ai/terragpu/actions/workflows/main.yml/badge.svg)
-
 
 <img src="images/nccslogo.png" height="150" width="300">
 
 ## Objectives
 
-- Library to process remote sensing imagery using memory efficient libraries.
-- Machine Learning and Deep Learning image classification.
-- Agnostic built-in GPU accelaration.
+- Library to process remote sensing imagery using GPU and CPU parallelization.
+- Machine Learning and Deep Learning image classification and regression.
+- Agnostic array and vector-like data structures.
+- User interface environments via Notebooks for easy to use AI/ML projects.
 - Example notebooks for quick AI/ML start with your own data.
 
 ### Installation
@@ -60,6 +61,7 @@ by the NVIDIA RAPIDS environment and we are in the development phase to support 
 - Brian Lee, brianlee52@bren.ucsb.edu
 
 ## Installation
+
 See the build [guide](requirements/README.md).
 
 ## Contributing
