@@ -77,7 +77,7 @@ class PLSegmentationDataset(Dataset):
         assert os.path.exists(self.labels_dir), \
             f'{self.labels_dir} does not exist. Make sure prepare_data: true.'
 
-        self.files = self.list_files()
+        self.files = self.get_filenames()
         self.augment = augment
         self.pytorch = pytorch
 
@@ -254,7 +254,7 @@ class SegmentationDataset(Dataset):
     # -------------------------------------------------------------------------
     # IO methods
     # -------------------------------------------------------------------------
-    def list_files(self, dataset_dir: str, files_list: list = []):
+    def get_filenames(self, dataset_dir: str, files_list: list = []):
 
         images_dir = os.path.join(dataset_dir, 'images')
         labels_dir = os.path.join(dataset_dir, 'labels')
@@ -282,3 +282,4 @@ class SegmentationDataset(Dataset):
         mask = xp.load(self.files[idx]['label'], allow_pickle=False)
         mask = xp.expand_dims(mask, 0) if add_dims else mask
         return from_dlpack(mask.toDlpack()).long()
+
