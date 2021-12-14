@@ -3,6 +3,9 @@
 Python library to process and classify remote sensing imagery by means of GPUs 
 and CPU parallelization for high performance and commodity base environments.
 
+We are currently working on tutorials and documentations. Feel to follow this repository for
+documentation updates and upcoming tutorials.
+
 [![DOI](https://zenodo.org/badge/295528915.svg)](https://zenodo.org/badge/latestdoi/295528915)
 ![Pipeline Status](https://github.com/nasa-cisto-ai/terragpu/actions/workflows/main.yml/badge.svg)
 
