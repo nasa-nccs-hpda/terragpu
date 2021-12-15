@@ -35,3 +35,4 @@ class RFWidgets(object):
 if __name__ == "__main__":
     
     # placeholder for RFWidgets class
+    logging.info("Upcoming Jupyter Notebook visualizations")
