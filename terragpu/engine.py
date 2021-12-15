@@ -4,8 +4,14 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from types import ModuleType
-from dask_cuda import LocalCUDACluster
-from dask.distributed import Client, LocalCluster
+
+try:
+    from dask_cuda import LocalCUDACluster
+    from dask.distributed import Client, LocalCluster
+    HAS_GPU = True
+except ModuleNotFoundError:
+    logging.info("Not importing Dask CUDA libraries")
+    HAS_GPU = False
 
 _warn_array_module_once = False
 _warn_df_module_once = False

@@ -33,3 +33,4 @@ dependencies:
     - pdoc3
     - flake8
     - coverage
+    - numba

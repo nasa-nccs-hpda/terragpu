@@ -2,7 +2,10 @@ from terragpu import io
 from terragpu import engine
 from terragpu.array.raster import Raster
 from terragpu.indices.wv_indices import add_indices
+from terragpu.engine import array_module, df_module
 
+xp = array_module()
+xf = df_module()
 
 def main(filename, bands):
 
@@ -38,10 +41,11 @@ if __name__ == '__main__':
     ]
 
     # Start dask cluster - dask scheduler must be started from main
-    engine.configure_dask(
-        device='gpu',
-        n_workers=4,
-        local_directory='/lscratch/jacaraba')
+    if xp.__name__ == 'cupy':
+        engine.configure_dask(
+            device='gpu',
+            n_workers=4,
+            local_directory='/lscratch/jacaraba')
 
     # Execute main function and calculate indices
     main(filename, bands)
