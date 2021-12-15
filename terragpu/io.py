@@ -21,11 +21,17 @@ CHUNKS = {'band': 'auto', 'x': 'auto', 'y': 'auto'}
 # -------------------------------------------------------------------------------
 
 def _xarray_to_cupy_(data_array):
-    return data_array.map_blocks(xp.asarray)
+    try:
+        return data_array.map_blocks(xp.asarray)
+    except AttributeError:
+        return xp.asarray(data_array)
 
 
 def _xarray_to_numpy_(data_array):
-    return data_array.map_blocks(xp.asnumpy)
+    try:
+        return data_array.map_blocks(xp.asnumpy)
+    except AttributeError:
+        return xp.asnumpy(data_array)
 
 # -------------------------------------------------------------------------------
 # Read Methods
@@ -111,7 +117,7 @@ def to_tif(raster, filename: str, compress: str = 'LZW', crs: str = None):
         f'to_tif suffix should be one of [.tif, .tiff]'
     if xp.__name__ == 'cupy':
         raster.data = _xarray_to_numpy_(raster.data)
-    raster.rio.write_nodata(raster._FillValue)
+    raster.rio.write_nodata(raster.rio.nodata, encoded=True)
     if crs is not None:
         raster.rio.write_crs(crs, inplace=True)
     raster.rio.to_raster(filename, BIGTIFF="IF_SAFER", compress=compress)

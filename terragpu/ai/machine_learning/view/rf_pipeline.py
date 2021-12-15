@@ -31,8 +31,8 @@ def main():
     parser.add_argument(
         '--step', type=str, nargs='*', required=True,
         dest='pipeline_step', help='Pipeline step to perform',
-        default=['preprocess', 'train', 'predict', 'vis'],
-        choices=['preprocess', 'train', 'predict', 'vis'])
+        default=['preprocess', 'train', 'predict', 'vis', 'all'],
+        choices=['preprocess', 'train', 'predict', 'vis', 'all'])
 
     args = parser.parse_args()
 
@@ -53,7 +53,7 @@ def main():
     # --------------------------------------------------------------------------------
     # Initialiaze pipeline
     # --------------------------------------------------------------------------------
-    conf = OmegaConf.load(args.config_file)
+    # conf = OmegaConf.load(args.config_file)
     pipeline = rf_model.RF(
         train_csv=conf.train_csv, dataset_metadata=conf.dataset_metadata,
         model_metadata=conf.model_metadata, model_filename=conf.model_filename,
@@ -63,12 +63,16 @@ def main():
     # --------------------------------------------------------------------------------
     # Execute pipeline step
     # --------------------------------------------------------------------------------
-    if "preprocess" in args.pipeline_step:
-        pipeline.preprocess()
-    #elif args.pipeline_step == "train":
-    #    pipeline.train()
-    #elif args.pipeline_step == "predict":
-    #    pipeline.predict()
+    
+    if "all" in args.pipeline_step:
+        pipeline.all()
+    else:
+        if "preprocess" in args.pipeline_step:
+            pipeline.preprocess()
+        if "train" in args.pipeline_step:
+            pipeline.train()
+        if "predict" in args.pipeline_step:
+            pipeline.predict()
 
     return
 

@@ -7,4 +7,4 @@ from .ai.deep_learning.models import unet_model
 from .ai.deep_learning.models.unet_model import UNetSegmentation
 from .ai.deep_learning.datamodules.segmentation_datamodule import SegmentationDataModule
 from .ai.deep_learning.datamodules.segmentation_datamodule import SegmentationDataModule
-from .ai.machine_learning.models import rf_model
+from .ai.machine_learning.model import rf_model
