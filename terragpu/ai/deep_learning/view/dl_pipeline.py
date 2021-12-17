@@ -8,7 +8,7 @@ from terragpu.decorators import DuplicateFilter
 # from terragpu import unet_model
 # from terragpu.ai.deep_learning.datamodules.segmentation_datamodule import SegmentationDataModule
 from pytorch_lightning import Trainer, seed_everything, LightningModule, LightningDataModule
-from terragpu.ai.deep_learning.console.cli import TerraGPULightningCLI
+from terragpu.ai.deep_learning.view.cli import TerraGPULightningCLI
 
 # -----------------------------------------------------------------------------
 # main
