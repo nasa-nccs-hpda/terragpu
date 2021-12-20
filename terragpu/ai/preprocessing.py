@@ -13,7 +13,6 @@ from terragpu.engine import array_module, df_module
 xp = array_module()
 xf = df_module()
 
-import numpy as np
 
 # -------------------------------------------------------------------------
 # Preprocess methods - Modify
@@ -110,7 +109,7 @@ def calc_ntiles(
 # -------------------------------------------------------------------------
 def gen_random_tiles(
         image: xp.ndarray, label: xp.ndarray, tile_size: int = 128,
-        max_patches: Union[int, float] = None, seed: int = 24):
+        max_patches: Union[int, float] = None, augment: bool = True):
     """
     Extract small patches for final dataset
     Args:
@@ -126,46 +125,53 @@ def gen_random_tiles(
 
     images_list = []  # list to store data patches
     labels_list = []  # list to store label patches
+    generated_tiles = 0  # counter for generated tiles
 
-    for i in tqdm(range(ntiles)):
+    while generated_tiles < ntiles:
 
         # Generate random integers from image
         x = random.randint(0, image.shape[0] - tile_size)
         y = random.randint(0, image.shape[1] - tile_size)
 
-        while image[x: (x + tile_size), y: (y + tile_size), :].min() < 0 \
-                or label[x: (x + tile_size), y: (y + tile_size)].min() < 0 \
-                or xp.unique(
-                    label[x: (x + tile_size), y: (y + tile_size)]).shape[0] < 2:
-            x = random.randint(0, image.shape[0] - tile_size)
-            y = random.randint(0, image.shape[1] - tile_size)
+        # Bool values for conditional statement
+        if image[x: (x + tile_size), y: (y + tile_size), :].min() < 0:
+            continue
+
+        if image[x: (x + tile_size), y: (y + tile_size), :].min() < 0:
+            continue
+        
+        if xp.unique(label[x: (x + tile_size), y: (y + tile_size)]).shape[0] < 2:
+            continue
+
+        # Add to the tiles counter
+        generated_tiles += 1
 
         # Generate img and mask patches
         image_tile = image[x:(x + tile_size), y:(y + tile_size)]
         label_tile = label[x:(x + tile_size), y:(y + tile_size)]
 
         # Apply some random transformations
-        random_transformation = xp.random.randint(1, 8)
-        if random_transformation == 1:
-            image_tile = xp.fliplr(image_tile)
-            label_tile = xp.fliplr(label_tile)
-        if random_transformation == 2:
-            image_tile = xp.flipud(image_tile)
-            label_tile = xp.flipud(label_tile)
-        if random_transformation == 3:
-            image_tile = xp.rot90(image_tile, 1)
-            label_tile = xp.rot90(label_tile, 1)
-        if random_transformation == 4:
-            image_tile = xp.rot90(image_tile, 2)
-            label_tile = xp.rot90(label_tile, 2)
-        if random_transformation == 5:
-            image_tile = xp.rot90(image_tile, 3)
-            label_tile = xp.rot90(label_tile, 3)
-        if random_transformation > 5:
-            pass
+        if augment:
 
+            if xp.random.random_sample() > 0.5:
+                image_tile = xp.fliplr(image_tile)
+                label_tile = xp.fliplr(label_tile)
+            if xp.random.random_sample() > 0.5:
+                image_tile = xp.flipud(image_tile)
+                label_tile = xp.flipud(label_tile)
+            if xp.random.random_sample() > 0.5:
+                image_tile = xp.rot90(image_tile, 1)
+                label_tile = xp.rot90(label_tile, 1)
+            if xp.random.random_sample() > 0.5:
+                image_tile = xp.rot90(image_tile, 2)
+                label_tile = xp.rot90(label_tile, 2)
+            if xp.random.random_sample() > 0.5:
+                image_tile = xp.rot90(image_tile, 3)
+                label_tile = xp.rot90(label_tile, 3)
+        
         images_list.append(image_tile)
         labels_list.append(label_tile)
+    
     return xp.asarray(images_list), xp.asarray(labels_list)
 
 
