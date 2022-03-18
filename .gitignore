@@ -5,6 +5,7 @@
 *-workspace
 .ipynb_checkpoints/
 .coverage
+lightning_logs/
 
 # Ignore runtime directories
 dask-worker-space/

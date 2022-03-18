@@ -1,20 +1,18 @@
+# ------------------------------------------------------------------------------
+# Segmentation Dataset for PyTorch and PyTorch Lighning
+# ------------------------------------------------------------------------------
 import os
-import random
 import logging
 from glob import glob
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
-import torch
 import numpy as np
 from torch.utils.data import Dataset
 from torch.utils.dlpack import from_dlpack
 
-import xarray as xr
 import rioxarray as rxr
-from terragpu import io
 from terragpu.engine import array_module, df_module
-
 import terragpu.ai.preprocessing as preprocessing
 
 CHUNKS = {'band': 'auto', 'x': 'auto', 'y': 'auto'}
@@ -23,39 +21,28 @@ xp = array_module()
 xf = df_module()
 
 class SegmentationDataset(Dataset):
-    """
-    Segmentation Dataset for PyTorch and PyTorch Lighning
-    """
+
     def __init__(
             self,
             input_bands: list = ['CB', 'B', 'G', 'Y', 'R', 'RE', 'N1', 'N2'],
             output_bands: list = ['B', 'G', 'R'],
             tile_size: int = 256,
             max_patches: Union[float, int] = 100,
+            test_size: float = 0.20,
             dataset_dir: Optional[str] = None,
             generate_dataset: bool = False,
             images_regex: Optional[str] = None,
             labels_regex: Optional[str] = None,
-            transform: Optional[bool] = False,
-            test_size: float = 0.20,
-            invert: bool = True,
-            normalize: bool = False,
-            standardize: bool = False
+            transforms: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = False,
+            add_dims: bool = False
         ):
 
-        # Set imagery metadata
         self.input_bands = input_bands
         self.output_bands = output_bands
         self.tile_size = tile_size
         self.max_patches = max_patches
         self.test_size = test_size
 
-        # Set preprocessing parameters
-        self.invert = invert
-        self.normalize = normalize
-        self.standardize = standardize
-
-        # Set dataset variables
         assert dataset_dir is not None, \
             f'dataset_dir={dataset_dir} should be defined.'
 
@@ -81,8 +68,8 @@ class SegmentationDataset(Dataset):
             assert labels_regex is not None, \
                 f'labels_regex should be defined with generate_dataset=True.'
     
-            self.images_regex = images_regex  # images location
-            self.labels_regex = labels_regex  # labels location
+            self.images_regex = images_regex
+            self.labels_regex = labels_regex
 
             self.gen_dataset()
 
@@ -91,7 +78,8 @@ class SegmentationDataset(Dataset):
 
         # Set Dataset metadata
         self.data_filenames = self.get_filenames()
-        self.transform = transform
+        self.transform = transforms
+        self.add_dims = add_dims
     
     # -------------------------------------------------------------------------
     # Dataset methods
@@ -104,11 +92,10 @@ class SegmentationDataset(Dataset):
         return s
 
     def __getitem__(self, idx: int):
-        # idx = idx % len(self.files)
-        x, y = self.open_image(idx), self.open_mask(idx)
+        subject = self._load_from_disk(idx)
         if self.transform:
-            x, y = self.transform(x, y)
-        return x, y
+            subject = self.transform(subject)
+        return subject
 
     def get_filenames(self):
         filenames_list: list = []
@@ -117,26 +104,27 @@ class SegmentationDataset(Dataset):
                 {
                     'image': os.path.join(self.images_dir, i),
                     'label': os.path.join(self.labels_dir, i)
-                })
+                }
+            )
         return filenames_list
 
-    def open_image(self, idx: int):
-        image = xp.load(self.files[idx]['image'], allow_pickle=False)
-        if self.invert:
-            image = image.transpose((2, 0, 1))
-        if self.normalize:
-            image = (image / xp.iinfo(image.dtype).max)
-        if self.standardize:
-            image = preprocessing.standardize_local(image)
-        return from_dlpack(image.toDlpack()).float()
-
-    def open_mask(self, idx: int, add_dims: bool = False):
-        mask = xp.load(self.files[idx]['label'], allow_pickle=False)
-        mask = xp.expand_dims(mask, 0) if add_dims else mask
-        return from_dlpack(mask.toDlpack()).long()
+    def _load_from_disk(self, idx: int):
+        
+        # load image from disk
+        image = xp.load(self.data_filenames[idx]['image'], allow_pickle=False)
+        image = image.transpose((2, 0, 1))
+        image = preprocessing.downscale(image)
+        image = image / xp.iinfo(image.dtype).max
+        image =  from_dlpack(image.toDlpack()).float()
+        
+        # load label from disk
+        mask = xp.load(self.data_filenames[idx]['label'], allow_pickle=False)
+        mask = xp.expand_dims(mask, 0) if self.add_dims else mask
+        mask = from_dlpack(mask.toDlpack()).long()
+        return {'image': image, 'label': mask}
 
     # -------------------------------------------------------------------------
-    # preprocess methods
+    # Preprocessing methods
     # -------------------------------------------------------------------------
     def gen_dataset(self):
         """
@@ -186,7 +174,7 @@ class SegmentationDataset(Dataset):
 
 if __name__ == '__main__':
 
-    random_forest = SegmentationDataset(
+    dataset = SegmentationDataset(
         dataset_dir='/lscratch/jacaraba/terragpu/clouds/senegal',
         generate_dataset=True,
         max_patches=750,

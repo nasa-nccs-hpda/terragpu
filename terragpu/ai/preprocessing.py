@@ -7,6 +7,7 @@ import xarray as xr
 # import tensorflow as tf
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn import feature_extraction
+import torchvision.transforms as T
 
 from terragpu.engine import array_module, df_module
 
@@ -220,3 +221,12 @@ def standardize_local(image, strategy='per-image') -> xp.array:
             image[j, :, :] = \
                 (image[j, :, :] - channel_mean) / channel_std
         return image
+
+def downscale(image, target_type_min=0, target_type_max=255, target_type=xp.int8):
+    """
+    Downscale image from type A to type B (e.g. int16 to int8)
+    """
+    imin, imax = image.min(), image.max()
+    a = (target_type_max - target_type_min) / (imax - imin)
+    b = target_type_max - a * imax    
+    return (a * image + b).astype(target_type)

@@ -1,10 +1,22 @@
+# ------------------------------------------------------------------------------
+# Base Segmentation Datamodule for PyTorch and PyTorch Lighning
+# ------------------------------------------------------------------------------
+from typing import Any, Dict, cast
+
 import torch
-from pytorch_lightning import LightningModule
 from torch.nn import functional as F
+
+import segmentation_models_pytorch as smp
+from pytorch_lightning import LightningModule, Trainer, seed_everything
 from pl_bolts.models.vision.unet import UNet
+from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, DeviceStatsMonitor
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torchmetrics import MetricCollection, Accuracy, IoU
 
+from ..datasets.utils import unbind_samples
+from ..datamodules.segmentation_datamodule import SegmentationDataModule
 
 # -------------------------------------------------------------------------------
 # class UNet
@@ -17,170 +29,181 @@ class UNetSegmentation(LightningModule):
     # ---------------------------------------------------------------------------
     # __init__
     # ---------------------------------------------------------------------------
-    def __init__(
-        self,
-        input_channels: int = 4,
-        num_classes: int = 19,
-        num_layers: int = 5,
-        features_start: int = 64,
-        bilinear: bool = False,
-    ):
+    def __init__(self, **kwargs: Any) -> None:
+        
         super().__init__()
+        self.save_hyperparameters()  # creates `self.hparams` from kwargs
 
-        self.input_channels = input_channels
-        self.num_classes = num_classes
-        self.num_layers = num_layers
-        self.features_start = features_start
-        self.bilinear = bilinear
+        print(self.hparams)
 
-        self.net = UNet(
-            input_channels=self.input_channels,
-            num_classes=num_classes,
-            num_layers=self.num_layers,
-            features_start=self.features_start,
-            bilinear=self.bilinear,
+        self.ignore_zeros = None if kwargs["ignore_zeros"] else 0
+
+        self.model = smp.Unet(
+            encoder_name=self.hparams["encoder_name"],
+            encoder_weights=self.hparams["encoder_weights"],
+            in_channels=self.hparams["input_channels"],
+            classes=self.hparams["num_classes"],
         )
 
-        metrics = MetricCollection(
+        self.train_metrics = MetricCollection(
             [
-                Accuracy(), IoU(num_classes=self.num_classes)
-            ]
+                Accuracy(
+                    num_classes=self.hparams["num_classes"],
+                    ignore_index=self.ignore_zeros,
+                ),
+                IoU(
+                    num_classes=self.hparams["num_classes"],
+                    ignore_index=self.ignore_zeros,
+                ),
+            ],
+            prefix="train_",
         )
-        self.train_metrics = metrics.clone(prefix='train_')
-        self.val_metrics = metrics.clone(prefix='val_')
+        self.val_metrics = self.train_metrics.clone(prefix="val_")
+        self.test_metrics = self.train_metrics.clone(prefix="test_")
 
     # ---------------------------------------------------------------------------
     # model methods
     # ---------------------------------------------------------------------------
     def forward(self, x):
-        return self.net(x)
+        return self.model(x)
 
-    def training_step(self, batch, batch_nb):
-        img, mask = batch
-        img, mask = img.float(), mask.long()
+    def compute_loss(self, out, mask):
+        return F.cross_entropy(out, mask)
 
-        # Forward step, calculate logits and loss
-        logits = self(img)
-        # loss_val = F.cross_entropy(logits, mask)
+    def training_step(
+            self, batch: Dict[str, Any], batch_idx: int
+        ) -> torch.Tensor:
+        x, y = batch["image"].float(), batch["label"].long()
+        y_hat = self.forward(x)
+        y_hat_bin = y_hat.argmax(dim=1)
+        loss = self.compute_loss(y_hat, y)
+        self.log("train_loss", loss, on_step=True, on_epoch=False)
+        self.train_metrics(y_hat_bin, y)
+        return cast(torch.Tensor, loss)
 
-        # Get target tensor from logits for metrics, calculate metrics
-        probs = torch.nn.functional.softmax(logits, dim=1)
-        probs = torch.argmax(probs, dim=1)
+    def training_epoch_end(self, outputs: Any) -> None:
+        self.log_dict(self.train_metrics.compute())
+        self.train_metrics.reset()
 
-        # metrics_train = self.train_metrics(probs, mask)
-        # log_dict = {"train_loss": loss_val.detach()}
-        # return {"loss": loss_val, "log": log_dict, "progress_bar": log_dict}
-        # return {
-        #    "loss": loss_val, "train_acc": metrics_train['train_Accuracy'],
-        #    "train_iou": metrics_train['train_IoU']
-        # }
+    def validation_step(
+            self, batch: Dict[str, Any], batch_idx: int
+        ) -> None:
+        x, y = batch["image"].float(), batch["label"].long()
+        y_hat = self.forward(x)
+        y_hat_bin = y_hat.argmax(dim=1)
+        loss = self.compute_loss(y_hat, y)
+        self.log("val_loss", loss, on_step=False, on_epoch=True)
+        self.val_metrics(y_hat_bin, y)
 
-        tensorboard_logs = self.train_metrics(probs, mask)
-        tensorboard_logs['loss'] = F.cross_entropy(logits, mask)
-        # tensorboard_logs['lr'] = self._get_current_lr()
+        if batch_idx < 10:
+            try:
+                datamodule = self.trainer.datamodule  # type: ignore[attr-defined]
+                batch["prediction"] = y_hat_bin
+                for key in ["image", "label", "prediction"]:
+                    batch[key] = batch[key].cpu()
+                sample = unbind_samples(batch)[0]
+                fig = datamodule.plot(sample)
+                summary_writer = self.logger.experiment
+                summary_writer.add_figure(
+                    f"image/{batch_idx}", fig, global_step=self.global_step
+                )
+            except AttributeError:
+                pass
 
-        self.log(
-            'acc', tensorboard_logs['train_Accuracy'],
-            sync_dist=True, prog_bar=True
+    def validation_epoch_end(self, outputs: Any) -> None:
+        self.log_dict(self.val_metrics.compute())
+        self.val_metrics.reset()
+
+    def test_step(
+            self, batch: Dict[str, Any], batch_idx: int
+        ) -> None:
+        x, y = batch["image"].float(), batch["label"].long()
+        y_hat = self.forward(x)
+        y_hat_bin = y_hat.argmax(dim=1)
+        loss = self.compute_loss(y_hat, y)
+        self.log("test_loss", loss, on_step=False, on_epoch=True)
+        self.test_metrics(y_hat_bin, y)
+
+    def test_epoch_end(self, outputs: Any) -> None:
+        self.log_dict(self.test_metrics.compute())
+        self.test_metrics.reset()
+    
+    def configure_optimizers(self) -> Dict[str, Any]:
+        optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=self.hparams["learning_rate"]
         )
-        self.log(
-            'iou', tensorboard_logs['train_IoU'],
-            sync_dist=True, prog_bar=True
-        )
-        return tensorboard_logs
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": ReduceLROnPlateau(
+                    optimizer, patience=self.hparams["learning_rate_schedule_patience"]
+                ),
+                "monitor": "val_loss",
+            },
+        }
+
+def cli_main():
+
+    seed_everything(1234)
+    
+    # model args
+    model = UNetSegmentation(
+        input_channels=3,
+        num_classes=2,
+        num_layers=5,
+        features_start=64,
+        bilinear=False,
+        lr=0.0001
+    )
+
+    datamodule =  SegmentationDataModule(
+
+        # Dataset parameters
+        input_bands=['CB', 'B', 'G', 'Y', 'R', 'RE', 'N1', 'N2'],
+        output_bands=['B', 'G', 'R'],
+        tile_size=256,
+        seed=42,
+        max_patches=500,
+        dataset_dir='/lscratch/jacaraba/terragpu/clouds/senegal',
+        generate_dataset=True,
+        images_regex='/adapt/nobackup/projects/ilab/projects/Senegal/LCLUC_Senegal_Cloud/training/data/*.tif',
+        labels_regex='/adapt/nobackup/projects/ilab/projects/Senegal/LCLUC_Senegal_Cloud/training/labels/*.tif',
+        transform=False,
+        test_size=0.20,
+        normalize=False,
+        downscale=False,
+        standardize=False,
+
+        # Datamodule parameters
+        val_split=0.2,
+        test_split=0.1,
+        
+        # Performance parameters
+        batch_size=32,
+        shuffle=True,
+    )
+
+    # default logger used by trainer
+    logger = TensorBoardLogger(
+        save_dir="/lscratch/jacaraba/terragpu/clouds/senegal/tensor",
+        version=1, name="lightning_logs")
+
+    # train
+    trainer = Trainer(
+        gpus=4,
+        num_processes=40,
+        strategy='ddp',
+        precision=16,
+        logger=logger,
+        default_root_dir="/lscratch/jacaraba/terragpu/clouds/senegal/saving_model",
+        callbacks=[
+            EarlyStopping(monitor="val_loss"),
+            ModelCheckpoint(dirpath="/lscratch/jacaraba/terragpu/clouds/senegal/saving_model", save_top_k=2, monitor="val_loss"),
+            DeviceStatsMonitor()
+        ],
+    )
+    trainer.fit(model, datamodule=datamodule)
 
 
-    def training_epoch_end(self, outputs):
-        # Get average metrics from multi-GPU batch sources
-        loss_val = torch.stack([x["loss"] for x in outputs]).mean()
-        acc_train = torch.stack([x["train_acc"] for x in outputs]).mean()
-        iou_train = torch.stack([x["train_iou"] for x in outputs]).mean()
-
-        tensorboard_logs = self.train_metrics(probs, mask)
-        tensorboard_logs['loss'] = F.cross_entropy(logits, mask)
-        # tensorboard_logs['lr'] = self._get_current_lr()
-
-        self.log(
-            'acc', tensorboard_logs['train_Accuracy'],
-            sync_dist=True, prog_bar=True
-        )
-        self.log(
-            'iou', tensorboard_logs['train_IoU'],
-            sync_dist=True, prog_bar=True
-        )
-        return tensorboard_logs
-
-
-    #    # Send output to logger
-    #    self.log(
-    #        "loss", loss_val, on_epoch=True, prog_bar=True, logger=True)
-    #    self.log(
-    #        "train_acc", acc_train, on_epoch=True, prog_bar=True, logger=True)
-    #    self.log(
-    #        "train_iou", iou_train, on_epoch=True, prog_bar=True, logger=True)
-
-    def validation_step(self, batch, batch_idx):
-
-        # Get data, change type for validation
-        img, mask = batch
-        img, mask = img.float(), mask.long()
-
-        # Forward step, calculate logits and loss
-        logits = self(img)
-        # loss_val = F.cross_entropy(logits, mask)
-
-        # Get target tensor from logits for metrics, calculate metrics
-        probs = torch.nn.functional.softmax(logits, dim=1)
-        probs = torch.argmax(probs, dim=1)
-        metrics_val = self.val_metrics(probs, mask)
-
-        # return {
-        #    "val_loss": loss_val, "val_acc": metrics_val['val_Accuracy'],
-        #    "val_iou": metrics_val['val_IoU']
-        # }
-        tensorboard_logs = self.val_metrics(probs, mask)
-        tensorboard_logs['val_loss'] = F.cross_entropy(logits, mask)
-
-        self.log(
-             'val_loss', tensorboard_logs['val_loss'],
-             sync_dist=True, prog_bar=True
-        )
-        self.log(
-            'val_acc', tensorboard_logs['val_Accuracy'],
-            sync_dist=True, prog_bar=True
-        )
-        self.log(
-            'val_iou', tensorboard_logs['val_IoU'],
-            sync_dist=True, prog_bar=True
-        )
-        return tensorboard_logs
-
-
-    #def validation_epoch_end(self, outputs):
-
-    #    # Get average metrics from multi-GPU batch sources
-    #    loss_val = torch.stack([x["val_loss"] for x in outputs]).mean()
-    #    acc_val = torch.stack([x["val_acc"] for x in outputs]).mean()
-    #    iou_val = torch.stack([x["val_iou"] for x in outputs]).mean()
-
-    #    # Send output to logger
-    #    self.log(
-    #        "val_loss", torch.mean(self.all_gather(loss_val)),
-    #        on_epoch=True, prog_bar=True, logger=True)
-    #    self.log(
-    #        "val_acc", torch.mean(self.all_gather(acc_val)),
-    #        on_epoch=True, prog_bar=True, logger=True)
-    #    self.log(
-    #        "val_iou", torch.mean(self.all_gather(iou_val)),
-    #        on_epoch=True, prog_bar=True, logger=True)
-
-    # def configure_optimizers(self):
-    #    opt = torch.optim.Adam(self.net.parameters(), lr=self.lr)
-    #    sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
-    #    return [opt], [sch]
-
-    def test_step(self, batch, batch_idx, dataloader_idx=0):
-        return self(batch)
-
-    def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        return self(batch)
+if __name__ == "__main__":
+    cli_main()
