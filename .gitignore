@@ -30,4 +30,5 @@ Logs/
 
 # EOF
 .venv/
+.venv-prism/
 .pytest_cache/

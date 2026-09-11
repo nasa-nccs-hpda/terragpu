@@ -111,6 +111,47 @@ def fetch_worldview_sample(cache_dir='data/worldview-example'):
     return directory / '1040010025C68500.json'
 
 
+def fetch_satstereo(cache_dir='data/satstereo'):
+    """Pinned Purdue SatStereo MP1 sample, with reference disparity/building masks."""
+    import tarfile
+    directory = Path(cache_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    archive = directory / 'sample.tar.gz'
+    url = 'https://engineering.purdue.edu/RVL/Database/SatStereo/database/RVL_SatStereo_Sample_MP1.tar.gz'
+    digest = '700398ac6c8b918c8359afc94422905fd74944404ea397dc1d7806fa74e44217'
+    if not archive.exists() or sha256(archive) != digest:
+        context = ssl.create_default_context()
+        context.load_verify_locations(cafile=certifi.where())
+        fd, temporary = tempfile.mkstemp(dir=directory, prefix='.download-')
+        try:
+            with os.fdopen(fd, 'wb') as stream, urlopen(url, timeout=60, context=context) as response:
+                size = 0
+                while block := response.read(1024*1024):
+                    size += len(block)
+                    if size > 17906618:
+                        raise ValueError('Stereo sample exceeds pinned size')
+                    stream.write(block)
+            if sha256(temporary) != digest:
+                raise ValueError('Stereo sample checksum mismatch')
+            os.replace(temporary, archive)
+        finally:
+            if os.path.exists(temporary):os.unlink(temporary)
+    # Re-extract verified bytes so modified working inputs cannot enter a run.
+    with tarfile.open(archive) as bundle:
+        members = bundle.getmembers()
+        if sum(m.size for m in members) > 100_000_000 or any(
+                not (m.isfile() or m.isdir()) or not (directory/m.name).resolve().is_relative_to(directory.resolve())
+                for m in members):
+            raise ValueError('Unexpected stereo archive contents')
+        bundle.extractall(directory, filter='data')
+    root = directory / 'RVL_SatStereo_Sample_MP1'
+    _write_json(directory/'sample-manifest.json', dict(source=url, archive_sha256=digest,
+                license='GPL-3.0 per provider download page',
+                citation='Patil et al. (2019), A New Stereo Benchmarking Dataset for Satellite Images, arXiv:1907.04404',
+                files=[dict(name=str(p.relative_to(directory)), sha256=sha256(p)) for p in sorted(root.rglob('*')) if p.is_file()]))
+    return root
+
+
 def _query(short_name, version, bbox, start, end, limit):
     if not short_name or not version:
         raise ValueError('Supply a collection short name and version')
@@ -233,6 +274,8 @@ def main():
     sample.add_argument('--cache-dir', default='data/examples')
     worldview = sub.add_parser('worldview', help='Download the pinned public WorldView-3 ARD sample')
     worldview.add_argument('--cache-dir', default='data/worldview-example')
+    stereo = sub.add_parser('satstereo', help='Download the pinned satellite stereo benchmark sample')
+    stereo.add_argument('--cache-dir', default='data/satstereo')
     nasa = sub.add_parser('nasa', help='Discover or download native NASA granules')
     nasa.add_argument('--short-name', required=True)
     nasa.add_argument('--version', required=True)
@@ -251,6 +294,8 @@ def main():
             print(fetch_sample(**args))
         elif command == 'worldview':
             print(fetch_worldview_sample(**args))
+        elif command == 'satstereo':
+            print(fetch_satstereo(**args))
         else:
             print(json.dumps(nasa_data(**args), indent=2))
     except (ValueError, RuntimeError, ImportError, OSError) as exc:

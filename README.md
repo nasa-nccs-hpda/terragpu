@@ -74,6 +74,8 @@ See the [geospatial roadmap](docs/modernization-plan.md),
 [GPU installation guide](requirements/README.md).
 The paper plan targets PRISM V100/H100 with HLS, WorldView, PACE, VIIRS and AVIRIS.
 Start with the [PRISM test and dataset checklist](docs/prism-validation.md).
+For an existing allocation, use the [uv setup and expanded paper benchmark commands](docs/prism-paper-runs.md),
+including public WorldView stereo data, focal filtering and spectral-angle workloads.
 Historical scripts in archives/ and generated HTML documentation are not the
 supported API; current self-contained tests live in tests/.
 
