@@ -97,3 +97,51 @@ def test_nasa_missing_auth(tmp_path, nasa):
 def test_nasa_query_validation(overrides):
     with pytest.raises(ValueError):
         datasets.nasa_data(**{**QUERY, **overrides}, search_only=True)
+
+
+def test_token_file_login_restores_environment(tmp_path, monkeypatch, nasa):
+    token = tmp_path / 'token.txt'
+    token.write_text('test-only-token\n')
+    token.chmod(0o600)
+    monkeypatch.setenv('EARTHDATA_TOKEN', 'previous-test-token')
+    def login(**kwargs):
+        assert datasets.os.environ['EARTHDATA_TOKEN'] == 'test-only-token'
+        assert kwargs == {'strategy': 'environment', 'persist': False}
+        return SimpleNamespace(authenticated=True)
+    nasa.login = login
+    result = datasets.nasa_data(**QUERY, output=tmp_path/'download', token_file=token)
+    assert datasets.os.environ['EARTHDATA_TOKEN'] == 'previous-test-token'
+    assert 'test-only-token' not in json.dumps(result)
+    assert str(token) not in json.dumps(result)
+
+
+def test_token_auth_failure_redacted(tmp_path, monkeypatch, nasa):
+    token = tmp_path / 'token.txt'
+    token.write_text('fake-secret-test-token')
+    token.chmod(0o600)
+    monkeypatch.delenv('EARTHDATA_TOKEN', raising=False)
+    def login(**kwargs):
+        raise ValueError('failed with fake-secret-test-token')
+    nasa.login = login
+    with pytest.raises(RuntimeError) as error:
+        datasets._login(nasa, 'environment', token)
+    assert 'fake-secret' not in str(error.value)
+    assert 'EARTHDATA_TOKEN' not in datasets.os.environ
+
+
+@pytest.mark.parametrize('content', ['', 'Bearer test-token'])
+def test_invalid_token_file(tmp_path, nasa, content):
+    token = tmp_path / 'token.txt'
+    token.write_text(content)
+    token.chmod(0o600)
+    with pytest.raises(ValueError, match='one nonempty token'):
+        datasets._login(nasa, 'environment', token)
+
+
+@pytest.mark.skipif(datasets.os.name != 'posix', reason='POSIX mode check')
+def test_token_file_permissions(tmp_path, nasa):
+    token = tmp_path / 'token.txt'
+    token.write_text('test-only-token')
+    token.chmod(0o644)
+    with pytest.raises(ValueError, match='private'):
+        datasets._login(nasa, 'environment', token)

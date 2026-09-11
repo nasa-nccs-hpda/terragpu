@@ -96,8 +96,40 @@ def _granule_summary(granule):
             'granule_ur': granule.get('umm', {}).get('GranuleUR')}
 
 
+
+def _login(client, strategy, token_file=None):
+    """Use a token file without placing its contents in arguments or manifests.
+
+    Environment mutation is limited to login and restored afterwards. Call this
+    from a single controlling thread; earthaccess retains its authenticated session.
+    """
+    if token_file is None:
+        return client.login(strategy=strategy, persist=False)
+    if strategy != 'environment':
+        raise ValueError('token_file requires the environment login strategy')
+    path = Path(token_file).expanduser()
+    if os.name == 'posix' and path.stat().st_mode & 0o077:
+        raise ValueError('Token file must be private to its owner (chmod 600)')
+    token = path.read_text().strip()
+    if not token or any(character.isspace() for character in token):
+        raise ValueError('Token file must contain only one nonempty token')
+    previous = os.environ.get('EARTHDATA_TOKEN')
+    try:
+        os.environ['EARTHDATA_TOKEN'] = token
+        try:
+            return client.login(strategy='environment', persist=False)
+        except Exception:
+            # Do not propagate third-party exception messages containing secrets.
+            raise RuntimeError('Earthdata token authentication failed; check token validity and authorization') from None
+    finally:
+        if previous is None:
+            os.environ.pop('EARTHDATA_TOKEN', None)
+        else:
+            os.environ['EARTHDATA_TOKEN'] = previous
+
+
 def nasa_data(*, short_name, version, bbox, start, end, limit=1,
-              output='data/nasa-example', search_only=False, login_strategy='environment'):
+              output='data/nasa-example', search_only=False, login_strategy='environment', token_file=None):
     """Discover/download whole native NASA granules, retaining a local manifest.
 
     Search is anonymous. Downloads require Earthdata credentials supplied to
@@ -135,7 +167,7 @@ def nasa_data(*, short_name, version, bbox, start, end, limit=1,
         return summary
     if login_strategy not in {'environment', 'netrc', 'interactive'}:
         raise ValueError('Unsupported login strategy')
-    auth = client.login(strategy=login_strategy, persist=False)
+    auth = _login(client, login_strategy, token_file)
     if not auth.authenticated:
         raise RuntimeError('Earthdata authentication required; authenticate locally, not in chat')
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -174,6 +206,7 @@ def main():
     nasa.add_argument('--limit', type=int, default=1)
     nasa.add_argument('--output', default='data/nasa-example')
     nasa.add_argument('--search-only', action='store_true')
+    nasa.add_argument('--token-file', type=Path, help='Private file containing only an Earthdata User Token')
     nasa.add_argument('--login-strategy', choices=['environment', 'netrc', 'interactive'], default='environment')
     args = vars(parser.parse_args())
     command = args.pop('command')

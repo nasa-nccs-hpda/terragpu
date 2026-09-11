@@ -58,6 +58,19 @@ terragpu-data nasa --short-name HLSL30 --version 2.0 \
   --limit 1 --output data/hls-l30-example --login-strategy interactive
 ```
 
+For a password-free local handoff, generate an Earthdata **User Token** in
+[Earthdata Login](https://urs.earthdata.nasa.gov/), save only the token in an
+owner-readable file outside the repository, and pass `--token-file /path/to/token`.
+The token must not include a `Bearer ` prefix, quotes or a shell assignment.
+On POSIX the file must have mode 600. The token-file option uses the default
+`environment` strategy, sets EARTHDATA_TOKEN only during login, and restores the
+previous environment afterwards. Neither token contents nor its path enter the
+download manifest. The authenticated Earthdata session remains in process for
+the transfer. Token-file login should run from one controlling thread.
+
+NASA documents a 60-day lifetime for User Tokens; replace expired tokens in the
+same file. [Token management](https://urs.earthdata.nasa.gov/documentation/for_users/user_token).
+
 For unattended runs use `--login-strategy environment` (the default), with an
 Earthdata token or credentials already configured locally, or `netrc` for an
 existing local configuration. TerraGPU passes `persist=False` and never writes
