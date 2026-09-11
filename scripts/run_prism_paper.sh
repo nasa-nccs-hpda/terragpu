@@ -42,7 +42,7 @@ if [[ "$mode" == both ]]; then
   run_logged 'NVIDIA driver' nvidia-smi.txt nvidia-smi
   run_logged 'CUDA computation' cupy-config.txt python -c 'import cupy as cp; cp.show_config(); assert cp.cuda.runtime.getDeviceCount()>0; print(cp.arange(10).sum().get())'
 fi
-run_logged 'Correctness tests' tests.txt python -m pytest tests -q
+run_logged 'Correctness tests' tests.txt python -m pytest tests -q --tb=short --disable-warnings
 stage='Public-data benchmark suite'
 printf 'Running: %s\n' "$stage"
 python -m terragpu.paper_benchmark --backends "${backends[@]}" --repeat "$repeat" --warmup 2 --output "$out/suite.json"

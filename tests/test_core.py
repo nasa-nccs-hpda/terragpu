@@ -16,7 +16,19 @@ def raster(values=(2, 4, 8, 16, 32, 64), dtype='uint16'):
 
 
 def test_light_import():
-    subprocess.run([sys.executable, '-c', "import terragpu, sys; assert 'torch' not in sys.modules; assert 'cupy' not in sys.modules"], check=True)
+    code = """
+import importlib.abc
+import sys
+class RejectNumericalImports(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.split('.')[0] in {'torch', 'cupy', 'xarray', 'rioxarray', 'numpy'}:
+            raise AssertionError('Unexpected eager import: ' + fullname)
+sys.meta_path.insert(0, RejectNumericalImports())
+import terragpu
+assert not {'torch', 'cupy', 'xarray', 'rioxarray', 'numpy'} & sys.modules.keys()
+"""
+    result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 def test_backend_and_cpu_cluster():

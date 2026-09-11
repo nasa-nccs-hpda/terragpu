@@ -4,6 +4,18 @@ from importlib import import_module
 from types import ModuleType
 
 
+def masked_divide(numerator, denominator, valid, *, xp):
+    """Finite division with NaN elsewhere, without NumPy-only ufunc keywords.
+
+    CuPy ufuncs do not accept ``where=``. Mask both operands before dividing so
+    excluded zeros/infinities are never evaluated, then mark exclusions as NaN.
+    Operations remain on the selected device and require no host synchronization.
+    """
+    valid = valid & xp.isfinite(numerator) & xp.isfinite(denominator) & (denominator != 0)
+    quotient = xp.divide(xp.where(valid, numerator, 0), xp.where(valid, denominator, 1))
+    return xp.where(valid, quotient, xp.nan)
+
+
 def array_module(xp=None):
     """Select numpy/cupy; auto falls back to CPU, explicit cupy fails clearly."""
     if isinstance(xp, ModuleType):

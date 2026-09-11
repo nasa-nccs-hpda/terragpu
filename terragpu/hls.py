@@ -15,7 +15,7 @@ import numpy as np
 import rasterio
 from rasterio.windows import Window
 
-from .engine import array_module
+from .engine import array_module, masked_divide
 
 
 def process_hls_ndvi(source, destination, *, backend='numpy', tile_size=512):
@@ -78,8 +78,7 @@ def process_hls_ndvi(source, destination, *, backend='numpy', tile_size=512):
                         n_device = xp.asarray(n.data, dtype=xp.float32) * xp.float32(0.0001)
                         denominator = n_device + r_device
                         valid = ~xp.asarray(invalid) & (denominator != 0)
-                        result = xp.full(r.shape, xp.nan, dtype=xp.float32)
-                        xp.divide(n_device-r_device, denominator, out=result, where=valid)
+                        result = masked_divide(n_device-r_device, denominator, valid, xp=xp)
                         output = xp.asnumpy(result) if backend == 'cupy' else result
                         valid_pixels += int(np.count_nonzero(np.isfinite(output)))
                         dst.write(output, 1, window=window)

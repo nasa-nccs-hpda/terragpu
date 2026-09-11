@@ -13,7 +13,7 @@ from rasterio.enums import Resampling
 from rasterio.vrt import WarpedVRT
 from rasterio.windows import Window
 
-from .engine import array_module
+from .engine import array_module, masked_divide
 
 
 def _asset_path(item_path, asset):
@@ -91,8 +91,7 @@ def process_worldview(item, destination, *, backend='numpy', tile_size=512):
                         for a, b in ((n, r), (g, n)):
                             denominator = a+b
                             valid = ~xp.asarray(invalid) & xp.isfinite(a) & xp.isfinite(b) & (denominator != 0)
-                            result = xp.full(a.shape, xp.nan, dtype=xp.float32)
-                            xp.divide(a-b, denominator, out=result, where=valid)
+                            result = masked_divide(a-b, denominator, valid, xp=xp)
                             outputs.append(result)
                         result = xp.stack(outputs)
                         values = xp.asnumpy(result) if backend == 'cupy' else result

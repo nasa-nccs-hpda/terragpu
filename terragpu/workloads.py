@@ -1,5 +1,6 @@
 """Classical spatial, spectral and stereo workloads; no learned models."""
 import numpy as np
+from .engine import masked_divide
 
 
 def _filters(xp):
@@ -22,9 +23,7 @@ def focal_mean(data, size=15, *, xp=np):
     # which could otherwise turn an all-invalid neighborhood into a valid one.
     count = xp.rint(count * (size*size))
     total = total * (size*size)
-    out = xp.full(data.shape, xp.nan, dtype=xp.float32)
-    xp.divide(total, count, out=out, where=count > 0)
-    return out
+    return masked_divide(total, count, count > 0, xp=xp)
 
 
 def spectral_angle(cube, reference, *, xp=np):
@@ -33,8 +32,7 @@ def spectral_angle(cube, reference, *, xp=np):
         raise ValueError('Expected y,x,wavelength cube and matching reference')
     dot = xp.sum(cube * reference, axis=-1)
     norm = xp.sqrt(xp.sum(cube*cube, axis=-1) * xp.sum(reference*reference))
-    cosine = xp.full(dot.shape, xp.nan, dtype=xp.float32)
-    xp.divide(dot, norm, out=cosine, where=norm > 0)
+    cosine = masked_divide(dot, norm, norm > 0, xp=xp)
     return xp.arccos(xp.clip(cosine, -1, 1))
 
 
