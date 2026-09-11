@@ -58,6 +58,24 @@ not a claim that a GPU beats every optimized multicore CPU configuration.
 The existing Dask benchmark uses one execution thread and a prebuilt graph;
 it is not a multi-GPU or cluster throughput measurement.
 
+### Tiled focal processing
+
+For a separate streaming experiment on a georeferenced index raster:
+
+```bash
+python -m terragpu.focal indices.tif focal-mean.tif --band 1 --size 15 --tile-size 512 --backend cupy
+```
+
+Install the `benchmark` extra for its SciPy CPU reference. Each output tile reads
+a halo of `size//2` pixels, computes the neighborhood mean, and writes only its
+core. Outside-image pixels contribute nothing. Nodata holes are filled when a
+window has finite neighbors; all-invalid windows remain NaN. Stored scale/offset
+are applied, but product QA/calibration are not inferred—use a prepared index or
+reflectance raster. Tests compare seams and edge windows with independent manual
+neighborhood means, including tile sizes smaller than the halo. The paper suite's
+existing focal measurement is still resident-input timing; this streaming CLI
+is a separate path and does not silently change its scope.
+
 Each operation is checked outside timing. NumPy/CuPy results are compared on
 the entire output. Focal samples and the spectral-angle result have independent
 CPU arithmetic checks; synthetic tests check stereo recovery of known signed

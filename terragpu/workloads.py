@@ -12,12 +12,16 @@ def _filters(xp):
 
 def focal_mean(data, size=15, *, xp=np):
     """NaN-aware square mean, clipped at image boundaries (no reflected pixels)."""
-    if data.ndim != 2 or size < 1 or size % 2 != 1:
+    if data.ndim != 2 or not isinstance(size, int) or size < 1 or size % 2 != 1:
         raise ValueError('Expected a 2-D image and positive odd window size')
     filt = _filters(xp)
     valid = xp.isfinite(data)
     total = filt.uniform_filter(xp.where(valid, data, 0).astype(xp.float32), size=size, mode='constant')
     count = filt.uniform_filter(valid.astype(xp.float32), size=size, mode='constant')
+    # The count is an integer. Round away sliding-filter cancellation residue,
+    # which could otherwise turn an all-invalid neighborhood into a valid one.
+    count = xp.rint(count * (size*size))
+    total = total * (size*size)
     out = xp.full(data.shape, xp.nan, dtype=xp.float32)
     xp.divide(total, count, out=out, where=count > 0)
     return out

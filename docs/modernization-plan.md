@@ -1,7 +1,8 @@
 # TerraGPU geospatial acceleration roadmap
 
 Updated 2026-09-11 following the maintainer's scope change. Target hardware:
-NCCS PRISM V100 and H100. Target collections: HLS, WorldView, PACE and AVIRIS.
+NCCS PRISM V100 and H100. Target collections: HLS, WorldView, PACE, VIIRS and AVIRIS,
+plus a public satellite stereo pair for classical photogrammetry benchmarking.
 Model training, inference, estimators and model-framework integration are removed
 from scope and source. TerraGPU owns its Raster abstraction; the former raster
 wrapper library is not a dependency.
@@ -67,13 +68,19 @@ Do not add the full RAPIDS meta-package when only Dask-CUDA is required.
 | HLS | QA-masked reflectance, NDVI/NDWI, time reductions | L30/S30/version, band mapping, Fmask, scale/offset and common grid |
 | WorldView | Multispectral indices, masks, focal operations | Sensor/band order, units, orthorectification/RPC status, redistribution terms |
 | PACE | Wavelength selection, masking, spectral reductions | Instrument/product/level, groups, wavelengths, quality flags, swath versus grid |
+| VIIRS | Ocean-color masking and spectral reductions | Platform/product/version, per-variable packing, wavelengths, flags and swath navigation |
 | AVIRIS | Bad-band masking, spectral normalization/reductions | Generation/product, wavelength, bad-band flags, units, ENVI/NetCDF layout |
 
-Exact product versions and sample paths are still needed. Access does not imply
-permission to redistribute WorldView. HLS compatibility adapters are not a full
-product reader. PACE swaths must not be treated as affine rasters without explicit
-geolocation handling. A general-purpose single-device GeoTIFF path is implemented;
-product-specific scientific processing is not yet qualified.
+Public HLS L30, WorldView-3 ARD, PACE OCI and NOAA-21 VIIRS examples now have
+local CPU metadata/numerical validation and download manifests. AVIRIS and
+additional product variants remain pending. Access does not imply permission
+to redistribute WorldView. PACE/VIIRS output retains native swath coordinates.
+CUDA parity and product-specific scientific qualification remain open.
+
+Focal means now have a tiled GeoTIFF path with explicit halos, finite-neighbor
+boundary semantics and seam tests, including tiles smaller than the halo.
+This is available independently of the resident focal benchmark; larger-than-VRAM
+qualification still requires measured memory and real GPU runs.
 
 ## Publication experiment design
 
@@ -107,7 +114,7 @@ validation, experimental method, results/ablations, limitations, reproducibility
 
 ## Next PRISM run
 
-Run scripts/prism_benchmark.sh inside an existing allocated job. It does not
-request resources or invent account/partition/module settings. Provide module or
-environment details and representative scene paths for the next integration.
+Use scripts/setup_prism_uv.sh and scripts/run_prism_paper.sh in the existing
+allocation, as documented in prism-paper-runs.md. The user will run the jobs and
+return result bundles; no SSH or scheduler configuration is needed here.
 No remote job has been submitted and no GPU improvement is claimed locally.
