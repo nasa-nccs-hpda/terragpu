@@ -7,8 +7,7 @@ installed, run:
 git switch codex/geospatial-revival
 git pull --ff-only
 srun --ntasks=1 bash scripts/setup_prism_uv.sh gpu
-source .venv-prism/bin/activate
-srun --ntasks=1 bash scripts/run_prism_paper.sh results/prism-h100 both
+srun --ntasks=1 bash -ec 'arch=$(uname -m); [[ "$arch" == arm64 ]] && arch=aarch64; source ".venv-prism-$arch/bin/activate"; bash scripts/run_prism_paper.sh results/prism-h100 both'
 tar -czf prism-h100-results.tar.gz -C results prism-h100
 ```
 
@@ -18,6 +17,12 @@ account, partition, or hard-coded PRISM path is required. The Python environment
 and repository must be on a filesystem visible to the allocated node.
 The runner uses the first visible CUDA device and runs CPU and GPU sequentially
 on that same node. It does not use all allocated GPUs.
+
+The setup script resolves `uv` on the compute node, including installations laid
+out as `uv-x86_64/uv` and `uv-aarch64/uv`. An inherited login-node `UV_BIN` must
+not select the architecture of the compute environment. Environments are named
+`.venv-prism-x86_64` or `.venv-prism-aarch64`; activation also happens inside
+`srun`, so a login node cannot select the wrong Python binary.
 
 `setup_prism_uv.sh` creates a Python 3.12 environment and installs the benchmark
 extras with `uv pip`, NumPy <2.5 / SciPy <1.18 (within CuPy 14's tested API range),
