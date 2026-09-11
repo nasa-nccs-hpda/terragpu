@@ -81,7 +81,8 @@ Use `HLSS30` for the S30 counterpart. For PACE and public AVIRIS collections,
 select their exact CMR collection short name/version and date/region using
 [Earthdata Search](https://search.earthdata.nasa.gov/), then use the same command.
 This downloads original native products and sidecars exposed as granule data
-links; product-specific processing adapters are still being implemented.
+links. The [PACE OCI example](pace.md) now supports native L2 AOP swath processing;
+AVIRIS adapters remain planned.
 WorldView requires an authorized public sample or licensed data source; this
 command does not bypass access restrictions or provide a generic WorldView feed.
 
