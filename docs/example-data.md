@@ -95,10 +95,37 @@ verifies and reuses the cache without network/authentication. A different query
 requires a new output directory. CMR search results can change over time; retain
 the downloaded manifest for the actual selected granules.
 
+## Native HLS NDVI
+
+After downloading one HLS V2 granule, process its separate band COGs directly:
+
+```bash
+python -m terragpu.hls data/hls-l30-example data/hls-ndvi.tif
+# On a configured CUDA system, choose --backend cupy.
+```
+
+The processor reads spatial windows (512 pixels by default), selecting B04/B05
+for L30 or B04/B8A for S30. It applies the documented 0.0001 reflectance scale,
+rejects -9999 reflectance fill and 255 QA fill, and masks Fmask bits 1–4
+(cloud, adjacent cloud/shadow, shadow, snow). Water and every aerosol level are
+retained; this is an explicit example policy, not a universal science filter.
+Zero denominators become NaN, and NDVI is not clipped. Input grids must match.
+Output is a compressed float32 GeoTIFF with source and QA policy tags.
+Exactly one native V2 granule is required per directory, and existing outputs
+are rejected. No Dask scheduler or intermediate multiband scene is required.
+See the [HLS V2 user guide, sections 6.2 and 6.4](https://lpdaac.usgs.gov/documents/1698/HLS_User_Guide_V2.pdf).
+
 ## Validation status
 
 The RGB example has been downloaded and run locally. Anonymous HLS discovery was verified with earthaccess 0.19.0: the documented
 query selected `HLS.L30.T18SUJ.2024158T154508.v2.0`
-(CMR `G3110284222-LPCLOUD`). NASA download orchestration is covered by offline tests;
-authenticated real-granule transfer still requires an Earthdata login and has
-not been claimed as validated. GPU example parity awaits PRISM hardware.
+(CMR `G3110284222-LPCLOUD`). Authenticated transfer using an Earthdata User Token
+was verified on 2026-09-11: 15 files, 242,178,772 bytes. Native L30 NDVI was then
+processed on CPU and checked across the full 3660 × 3660 grid against an
+independent float64 raw-DN ratio and independently decoded QA bits. Masks, CRS
+and transform matched; values passed rtol=1e-5, atol=2e-6. The maximum absolute
+error was 0.00038147 (ratios near zero denominators can be large). Only 74,378
+pixels survived masking, so this scene is a workflow check rather than a
+representative clear-scene benchmark. No GPU speedup is inferred from this run.
+Synthetic tests cover L30/S30 band selection, individual QA bits, native fill,
+zero denominators and mismatched grids. Real S30 and GPU parity await validation.
