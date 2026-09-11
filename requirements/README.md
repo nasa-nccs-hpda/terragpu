@@ -1,59 +1,39 @@
-# Requirements
+# Installation and qualification
 
-TerraGPU can be installe and used via anaconda environments and containers.
-A Docker container is provided and this same container can be converted
-to a Singularity container without loosing any functionalities.
-A demo cpu based conda environment is provided with limited capabilities for
-CPU-only users.
-
-CPU support is limited and the author does not provide any guarantee of usability.
-Limited functionalities have been adapted for CPU in order to provide demo support
-or local testing before migrating to production environments testing.
-
-## Architecture
-
-The container is built on top of NGC NVIDIA RAPIDS containers. It provides a built-in
-anaconda environment called rapids which includes all other dependencies for software
-development of Earth Science applications on GPUS and AI/ML frameworks.
-
-This application is powered by PyTorch and PyTorch Lighning AI/ML backends, including
-CUML for the development of machine learning models support by NVIDIA RAPIDS.
-
-## Example to Download the Container via Singularity
-
-A Dockerhub public extension will be provided as soon as permissions
-are granted from the software release process.
+CPU raster core (Python 3.11+):
 
 ```bash
-module load singularity
-singularity build --sandbox terragpu docker://gitlab.nccs.nasa.gov:5050/nccs-lcluc/terragpu/terragpu:latest
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[test,parallel]'
+python -m pytest
+terragpu-benchmark --backend numpy --output results/numpy.json
 ```
 
-## Example to Install Anaconda Environment
+The base install has no Dask, distributed, or model-framework requirement.
+Install `.[parallel]` for Dask arrays and clusters. Use `backend="numpy"` or
+`backend="cupy"` for direct execution and `terragpu.streaming.process_indices`
+for single-device window processing without Dask.
 
-``` bash
-git clone https://github.com/nasa-cisto-ai/terragpu.git
-cd terragpu; conda env create -f requirements/environment_gpu.yml;
-conda activate terragpu
-python setup.py install
-```
+GPU execution requires Linux and a working NVIDIA environment. On PRISM,
+start with the site's supported CUDA 12 environment for V100 and a controlled
+H100 comparison. Install exactly one matching CuPy distribution, e.g.
+`python -m pip install 'cupy-cuda12x>=14,<15'`, then test an actual computation.
+Use the [CuPy installation guide](https://docs.cupy.dev/en/stable/install.html)
+for toolkit/header requirements. For Dask-CUDA, use the matching
+[RAPIDS installation selector](https://docs.rapids.ai/install/); independently
+upgrading Dask after RAPIDS installation can invalidate compatibility.
 
-## Container Usage
+`environment_gpu.yml` is a CUDA 12 raster-only candidate, not a qualified RAPIDS
+lock. CUDA 13 removes compilation support for Volta/V100; use a separate H100
+environment for CUDA 13 experiments. Record `pip freeze`, `conda list --explicit`
+(if applicable), `nvidia-smi`, and the source revision for every hardware run.
+The local CPU freeze is platform-specific evidence, not a Linux/GPU lock.
 
-As an example, you can shell into the container:
+Run `bash scripts/prism_benchmark.sh results/prism-smoke` within an allocated
+PRISM GPU job, with this package installed in the active environment. No site
+partition/account/module names are assumed. Current benchmark scope is synthetic,
+resident, single-GPU NDVI; see docs/modernization-plan.md for real-data milestones.
 
-```bash
-singularity shell --nv terragpu
-```
-
-Then activate the Anaconda environment:
-
-```
-source active rapids
-```
-
-And start developing your Python applications:
-
-```bash
-python --version
-```
+The Dockerfile is now a CPU reference recipe; it has not been built locally.
+GitLab CI now tests the package rather than publishing the old model container.

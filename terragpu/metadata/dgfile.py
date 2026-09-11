@@ -1,7 +1,6 @@
 import os
 import warnings
 import xml.etree.ElementTree as ET
-from terragpu.array.raster import Raster
 
 # -------------------------------------------------------------------------------
 # class DGFile
@@ -11,7 +10,7 @@ from terragpu.array.raster import Raster
 # -------------------------------------------------------------------------------
 
 
-class DGFile(Raster):
+class DGFile:
 
     # ---------------------------------------------------------------------------
     # __init__
@@ -46,7 +45,7 @@ class DGFile(Raster):
         ----------
         """
         # Initialize super class
-        super().__init__()
+        self.filename = filename
 
         # Check that the file has NITF or TIFF extension
         extension = os.path.splitext(filename)[1]
@@ -113,19 +112,10 @@ class DGFile(Raster):
             raster.get_xml_tag(xml_tag='MEANOFFNADIRVIEWANGLE')
         ----------
         """
-        value = self.imd_tag.find('IMAGE').find(xml_tag)
+        image = self.imd_tag.find('IMAGE')
+        value = image.find(xml_tag) if image is not None else None
         if value is not None:
             return float(value.text)
         else:
             warnings.warn('Unable to locate {}, return None.'.format(xml_tag))
             return None
-
-
-# -------------------------------------------------------------------------------
-# class DGFile Unit Tests
-# -------------------------------------------------------------------------------
-
-if __name__ == "__main__":
-
-    # Running Unit Tests
-    print("Unit tests located under xrasterlib/tests/dgfile.py")

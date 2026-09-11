@@ -1,215 +1,105 @@
+"""Lazy spectral indices for band/y/x DataArrays on NumPy, CuPy, or Dask.
+
+Arithmetic uses at least float32 to avoid integer overflow. Invalid pixels and
+zero denominators propagate as NaN. No function computes or transfers arrays.
+"""
+import numpy as np
 import xarray as xr
-import dask
-import numba
 
-from terragpu import engine
-from terragpu.array.utils import _get_band_locations
 
-__all__ = [
-    "cs1", "cs2", "dvi", "dwi", "fdi", "ndvi", "ndwi",
-    "si", "get_indices", "add_indices"
-]
+def _band(raster, name):
+    names = [b.lower() for b in raster.attrs.get('band_names', [])]
+    if len(names) != raster.sizes.get('band', 0) or len(set(names)) != len(names):
+        raise ValueError('band_names must contain one unique name per band')
+    if name not in names:
+        raise ValueError(f'{name} not in raster bands {names}')
+    band = raster.isel(band=names.index(name), drop=True)
+    band = band.astype(np.result_type(band.dtype, np.float32))
+    nodata = raster.attrs.get('_FillValue')
+    if nodata is not None:
+        band = band.where(band != nodata)
+    return band
 
-# ignore warning = RuntimeWarning: invalid value encountered in power
 
-xp = engine.array_module()
-xf = engine.df_module()
+def _ratio(a, b):
+    return a / b.where(b != 0)
 
-CHUNKS = {'band': 'auto', 'x': 'auto', 'y': 'auto'}
 
-# ---------------------------------------------------------------------------
-# Methods
-# ---------------------------------------------------------------------------
+def _finish(index):
+    return index.expand_dims(band=[1])
+
+
 def cs1(raster):
-    """
-    Cloud detection index (CS1), CS1 := (3. * NIR1) / (Blue + Green + Red)
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with SI calculated
-    """
-    nir1, red, blue, green = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'red', 'blue', 'green'])
-    index = (
-        (3. * raster[nir1, :, :]) /
-        (raster[blue, :, :] + raster[green, :, :] \
-            + raster[red, :, :])
-    )
-    return index.expand_dims(dim="band", axis=0)
+    return _finish(_ratio(3 * _band(raster, 'nir1'), sum(_band(raster, b) for b in ('blue', 'green', 'red'))))
+
 
 def cs2(raster):
-    """
-    Cloud detection index (CS2), CS2 := (Blue + Green + Red + NIR1) / 4.
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with CS2 calculated
-    """
-    nir1, red, blue, green = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'red', 'blue', 'green'])
-    index = (
-        (raster[blue, :, :] + raster[green, :, :] \
-            + raster[red, :, :] + raster[nir1, :, :])
-        / 4.0
-    )
-    return index.expand_dims(dim="band", axis=0)
+    return _finish(sum(_band(raster, b) for b in ('blue', 'green', 'red', 'nir1')) / 4)
+
 
 def dvi(raster):
-    """
-    Difference Vegetation Index (DVI), DVI := NIR1 - Red
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with DVI calculated
-    """
-    nir1, red = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'red'])
-    index = (
-        raster[nir1, :, :] - raster[red, :, :]
-    )
-    return index.expand_dims(dim="band", axis=0)
+    return _finish(_band(raster, 'nir1') - _band(raster, 'red'))
+
 
 def dwi(raster):
-    """
-    Difference Water Index (DWI), DWI := Green - NIR1
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with DWI calculated
-    """
-    nir1, green = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'green'])
-    index = (
-        raster[green, :, :] - raster[nir1, :, :]
-    )
-    return index.expand_dims(dim="band", axis=0)
+    return _finish(_band(raster, 'green') - _band(raster, 'nir1'))
+
 
 def fdi(raster):
-    """
-    Forest Discrimination Index (FDI), type int16
-    8 band imagery: FDI := NIR2 - (RedEdge + Blue)
-    4 band imagery: FDI := NIR1 - (Red + Blue)
-    :param data: xarray or numpy array object in the form (c, h, w)
-    :return: new band with FDI calculated
-    """
-    bands = ['blue', 'nir2', 'rededge']
-    if not all(b in bands for b in raster.attrs['band_names']):
-        bands = ['blue', 'nir1', 'red']
-    blue, nir, red = _get_band_locations(
-        raster.attrs['band_names'], bands)
-    index = (
-        raster[nir, :, :] - \
-            (raster[red, :, :] + raster[blue, :, :])
-    )
-    return index.expand_dims(dim="band", axis=0)
+    names = [b.lower() for b in raster.attrs.get('band_names', [])]
+    nir, red = ('nir2', 'rededge') if all(b in names for b in ('nir2', 'rededge')) else ('nir1', 'red')
+    return _finish(_band(raster, nir) - (_band(raster, red) + _band(raster, 'blue')))
 
-def gndvi(raster):
-    """
-    Difference Vegetation Index (DVI), GNDVI := (NIR - Green) / (NIR + Green)
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with DVI calculated
-    """
-    nir1, green = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'green'])
-    index = (
-        (raster[nir1, :, :] - raster[green, :, :]) /
-        (raster[nir1, :, :] + raster[green, :, :])
-    )
-    return index.expand_dims(dim="band", axis=0)
+
+def _normalized(raster, first, second):
+    a, b = _band(raster, first), _band(raster, second)
+    return _finish(_ratio(a - b, a + b))
+
 
 def ndvi(raster):
-    """
-    Difference Vegetation Index (DVI), NDVI := (NIR - Red) / (NIR + RED)
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with DVI calculated
-    """
-    nir1, red = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'red'])
-    index = (
-        (raster[nir1, :, :] - raster[red, :, :]) /
-        (raster[nir1, :, :] + raster[red, :, :])
-    )
-    return index.expand_dims(dim="band", axis=0)
+    """(NIR1 - Red) / (NIR1 + Red)."""
+    return _normalized(raster, 'nir1', 'red')
+
+
+def gndvi(raster):
+    return _normalized(raster, 'nir1', 'green')
 
 
 def ndwi(raster):
-    """
-    Normalized Difference Water Index (NDWI)
-    NDWI := factor * (Green - NIR1) / (Green + NIR1)
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with SI calculated
-    """
-    nir1, green = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'green'])
-    index = (
-        (raster[green, :, :] - raster[nir1, :, :]) /
-        (raster[green, :, :] + raster[nir1, :, :])
-    )
-    return index.expand_dims(dim="band", axis=0)
+    return _normalized(raster, 'green', 'nir1')
 
 
 def si(raster):
-    """
-    Shadow Index (SI), SI := (Blue * Green * Red) ** (1.0 / 3)
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with SI calculated
-    """
-    red, blue, green = _get_band_locations(
-        raster.attrs['band_names'], ['red', 'blue', 'green'])
-    index = (
-        (raster[blue, :, :] - raster[green, :, :] /
-            raster[red, :, :]) ** (1.0/3.0)
-    )
-    return index.expand_dims(dim="band", axis=0)
+    """Cube root of Blue * Green * Red (legacy documented definition)."""
+    return _finish(np.cbrt(_band(raster, 'blue') * _band(raster, 'green') * _band(raster, 'red')))
+
 
 def sr(raster):
-    """
-    SR := NIR / Red
-    :param raster: xarray or numpy array object in the form (c, h, w)
-    :return: new band with SI calculated
-    """
-    nir1, red = _get_band_locations(
-        raster.attrs['band_names'], ['nir1', 'red'])
-    index = (
-        raster[nir1, :, :] / raster[red, :, :]
-    )
-    return index.expand_dims(dim="band", axis=0)
+    return _finish(_ratio(_band(raster, 'nir1'), _band(raster, 'red')))
 
-indices_registry = {
-    'cs1': cs1,
-    'cs2': cs2,
-    'dvi': dvi,
-    'dwi': dwi,
-    'fdi': fdi,
-    'gndvi': gndvi,
-    'ndvi': ndvi,
-    'ndwi': ndwi,
-    'si': si,
-    'sr': sr
-}
+
+indices_registry = {f.__name__: f for f in (cs1, cs2, dvi, dwi, fdi, gndvi, ndvi, ndwi, si, sr)}
+__all__ = [*indices_registry, 'get_indices', 'add_indices']
+
 
 def get_indices(index_key):
     try:
-        return indices_registry[index_key]
+        return indices_registry[index_key.lower()]
     except KeyError:
-        raise ValueError(f'Invalid indices mapping: {index_key}.')
+        raise ValueError(f'Invalid indices mapping: {index_key}.') from None
+
 
 def add_indices(raster, indices):
-    """
-    :param rastarr: xarray or numpy array object in the form (c, h, w)
-    :param bands: list with strings of bands in the raster
-    :param indices: indices to calculate and append to the raster
-    :param factor: factor used for toa imagery
-    :return: raster with updated bands list
-    """
-    nbands = len(raster.attrs['band_names'])  # get initial number of bands
-    indices = [b.lower() for b in indices]  # lowercase indices list
-    for index_id in indices:  # iterate over each new band
-        
-        # Counter for number of bands, increase metadata at concat
-        indices_function  = get_indices(index_id)
-        nbands += 1  # Counter for number of bands
+    """Append indices in one concat, preserving source metadata without mutation.
 
-        # Calculate band (indices)
-        new_index = indices_function(raster)
-
-        # Add band indices to raster, add future object
-        new_index.coords['band'] = [nbands]
-        raster = xr.concat([raster, new_index], dim='band')
-        
-        # Set metadata
-        raster.attrs['band_names'].append(index_id)
-    
-    return raster
+    Output band coordinates are numbered from 1; band_names stores semantics.
+    """
+    names = [name.lower() for name in indices]
+    original = list(raster.attrs.get('band_names', []))
+    if len(set(names + [n.lower() for n in original])) != len(names) + len(original):
+        raise ValueError('Requested indices duplicate existing or requested band names')
+    additions = [get_indices(name)(raster) for name in names]
+    result = xr.concat([raster, *additions], dim='band') if additions else raster.copy(deep=False)
+    result = result.assign_coords(band=np.arange(1, result.sizes['band'] + 1))
+    result.attrs = {**raster.attrs, 'band_names': original + names}
+    return result

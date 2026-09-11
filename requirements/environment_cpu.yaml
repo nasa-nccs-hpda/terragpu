@@ -1,36 +1,8 @@
-# definition file to build xrasterlib conda environment
-name: xrasterlib
-
+name: terragpu-cpu
 channels:
   - conda-forge
-  - defaults
-  - anaconda
-  - rapidsai
-  - nvidia
-
 dependencies:
-  - python=3.7
-  - Pillow
+  - python=3.13
   - pip
   - pip:
-    - tensorflow
-    - opencv-python
-    - scikit-image
-    - tifffile
-    - seaborn
-    - scipy
-    - Pillow
-    - imagecodecs
-    - rasterio
-    - xarray
-    - scikit-learn
-    - dask[complete]
-    - imutils
-    - joblib
-    - toolz
-    - webcolors
-    - tqdm
-    - pdoc3
-    - flake8
-    - coverage
-    - numba
+      - -e .[test,parallel]

@@ -29,3 +29,5 @@ Results/
 Logs/
 
 # EOF
+.venv/
+.pytest_cache/
