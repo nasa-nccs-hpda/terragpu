@@ -145,3 +145,26 @@ def test_token_file_permissions(tmp_path, nasa):
     token.chmod(0o644)
     with pytest.raises(ValueError, match='private'):
         datasets._login(nasa, 'environment', token)
+
+
+def test_worldview_pinned_download_cache_and_failure(tmp_path, monkeypatch):
+    import hashlib
+    import io
+    from terragpu import sample_data
+    payload = b'public-test-fixture'
+    filename = '1040010025C68500.json'
+    monkeypatch.setattr(sample_data, 'WORLDVIEW_SAMPLE', dict(license='proprietary', files=[dict(
+        name=filename, url='https://example.test/sample', size_bytes=len(payload),
+        sha256=hashlib.sha256(payload).hexdigest())]))
+    monkeypatch.setattr(datasets, 'urlopen', lambda *a, **kw: io.BytesIO(payload))
+    path = datasets.fetch_worldview_sample(tmp_path)
+    assert path.read_bytes() == payload
+    def offline(*a, **kw):raise AssertionError('must reuse verified cache')
+    monkeypatch.setattr(datasets, 'urlopen', offline)
+    assert datasets.fetch_worldview_sample(tmp_path) == path
+    path.write_bytes(b'corrupt')
+    monkeypatch.setattr(datasets, 'urlopen', lambda *a, **kw: io.BytesIO(b'bad'))
+    with pytest.raises(ValueError, match='checksum'):
+        datasets.fetch_worldview_sample(tmp_path)
+    assert path.read_bytes() == b'corrupt'
+    assert not list(tmp_path.glob('.download-*'))

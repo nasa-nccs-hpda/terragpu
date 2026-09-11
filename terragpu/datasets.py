@@ -77,6 +77,40 @@ def _earthaccess():
     return earthaccess
 
 
+def fetch_worldview_sample(cache_dir='data/worldview-example'):
+    """Download a pinned vendor sample (~257 MB); preserve proprietary attribution.
+
+    This public sample does not grant redistribution rights to licensed imagery.
+    Verified files are reusable offline; interrupted downloads never replace them.
+    """
+    from .sample_data import WORLDVIEW_SAMPLE
+    directory = Path(cache_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    context = ssl.create_default_context()
+    context.load_verify_locations(cafile=certifi.where())
+    for item in WORLDVIEW_SAMPLE['files']:
+        path = directory / item['name']
+        if path.is_file() and path.stat().st_size == item['size_bytes'] and sha256(path) == item['sha256']:
+            continue
+        fd, temporary = tempfile.mkstemp(dir=directory, prefix='.download-')
+        try:
+            with os.fdopen(fd, 'wb') as stream, urlopen(item['url'], timeout=60, context=context) as response:
+                total = 0
+                while block := response.read(1024*1024):
+                    total += len(block)
+                    if total > item['size_bytes']:
+                        raise ValueError('WorldView sample exceeds pinned size')
+                    stream.write(block)
+            if total != item['size_bytes'] or sha256(temporary) != item['sha256']:
+                raise ValueError('WorldView sample checksum/size mismatch')
+            os.replace(temporary, path)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+    _write_json(directory / 'sample-manifest.json', {'schema_version': 1, **WORLDVIEW_SAMPLE})
+    return directory / '1040010025C68500.json'
+
+
 def _query(short_name, version, bbox, start, end, limit):
     if not short_name or not version:
         raise ValueError('Supply a collection short name and version')
@@ -197,6 +231,8 @@ def main():
     sub = parser.add_subparsers(dest='command', required=True)
     sample = sub.add_parser('sample', help='Download the no-login RGB example')
     sample.add_argument('--cache-dir', default='data/examples')
+    worldview = sub.add_parser('worldview', help='Download the pinned public WorldView-3 ARD sample')
+    worldview.add_argument('--cache-dir', default='data/worldview-example')
     nasa = sub.add_parser('nasa', help='Discover or download native NASA granules')
     nasa.add_argument('--short-name', required=True)
     nasa.add_argument('--version', required=True)
@@ -213,6 +249,8 @@ def main():
     try:
         if command == 'sample':
             print(fetch_sample(**args))
+        elif command == 'worldview':
+            print(fetch_worldview_sample(**args))
         else:
             print(json.dumps(nasa_data(**args), indent=2))
     except (ValueError, RuntimeError, ImportError, OSError) as exc:

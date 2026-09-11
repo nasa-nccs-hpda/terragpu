@@ -83,8 +83,9 @@ select their exact CMR collection short name/version and date/region using
 This downloads original native products and sidecars exposed as granule data
 links. The [PACE OCI example](pace.md) now supports native L2 AOP swath processing;
 AVIRIS adapters remain planned.
-WorldView requires an authorized public sample or licensed data source; this
-command does not bypass access restrictions or provide a generic WorldView feed.
+The [WorldView and VIIRS examples](worldview-viirs.md) provide a pinned public
+WorldView-3 ARD sample and authenticated NOAA-21 VIIRS ocean-color download.
+Other licensed WorldView data still require an authorized source.
 
 The region selects whole granules; it does not crop them. `--limit` defaults to
 one granule (maximum ten), and a single spectral granule can still be large.

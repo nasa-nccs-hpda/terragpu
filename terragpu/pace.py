@@ -19,11 +19,36 @@ def _netcdf():
     try:
         from netCDF4 import Dataset
     except ImportError as exc:
-        raise ImportError('Install terragpu[pace] for PACE NetCDF processing') from exc
+        raise ImportError('Install terragpu[pace] or terragpu[viirs] for NetCDF processing') from exc
     return Dataset
 
 
-class PaceSwath:
+class OceanColorSwath:
+    """Shared resource lifetime and metadata-driven ocean-color flags."""
+
+    def flag_mask(self, names):
+        meanings = self.flags.flag_meanings.split()
+        masks = np.asarray(self.flags.flag_masks).reshape(-1)
+        if len(meanings) != len(masks):
+            raise ValueError('Malformed flag metadata')
+        result = 0
+        for name in names:
+            if meanings.count(name) != 1:
+                raise ValueError(f'Flag must occur exactly once in metadata: {name}')
+            result |= int(masks[meanings.index(name)]) & 0xffffffff
+        return result
+
+    def close(self):
+        self.dataset.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+
+class PaceSwath(OceanColorSwath):
     """Own a grouped NetCDF handle; read decoded tiles without loading the cube.
 
     netCDF4 applies packed scale/offset and masks fill and valid-range violations.
@@ -60,30 +85,12 @@ class PaceSwath:
             self.close()
             raise
 
-    def flag_mask(self, names):
-        meanings = self.flags.flag_meanings.split()
-        masks = np.asarray(self.flags.flag_masks).reshape(-1)
-        if len(meanings) != len(masks):
-            raise ValueError('Malformed flag metadata')
-        result = 0
-        for name in names:
-            if meanings.count(name) != 1:
-                raise ValueError(f'Flag must occur exactly once in metadata: {name}')
-            result |= int(masks[meanings.index(name)]) & 0xffffffff
-        return result
-
-    def close(self):
-        self.dataset.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        self.close()
+    def read_rrs(self, window, spectral):
+        return self.rrs[window + (spectral,)].astype("float32").filled(np.nan)
 
 
-def process_pace(source, destination, *, backend='numpy', tile_size=128,
-                 wavelength_range=(400., 700.), reject_flags=DEFAULT_FLAGS):
+def _process_swath(source, destination, *, reader, backend='numpy', tile_size=128,
+                   wavelength_range=(400., 700.), reject_flags=DEFAULT_FLAGS):
     """Write mean Rrs = trapezoid integral / wavelength span on native samples.
 
     Uses samples inside the requested interval, without interpolating endpoints;
@@ -109,7 +116,7 @@ def process_pace(source, destination, *, backend='numpy', tile_size=128,
     started = time.perf_counter()
     temporary = None
     try:
-        with PaceSwath(source) as src:
+        with reader(source) as src:
             chosen = np.flatnonzero((src.wavelengths >= bounds[0]) & (src.wavelengths <= bounds[1]))
             if len(chosen) < 2:
                 raise ValueError('Requested interval must contain at least two wavelengths')
@@ -140,6 +147,8 @@ def process_pace(source, destination, *, backend='numpy', tile_size=128,
                     v.setncatts(dict(standard_name=name, units=unit))
                     coordinates.append(v)
                 dst.setncatts(dict(Conventions='CF-1.8', source_file=Path(source).name,
+                                  source_platform=str(getattr(src.dataset, 'platform', 'unknown')),
+                                  source_instrument=str(getattr(src.dataset, 'instrument', 'unknown')),
                                   source_processing_version=str(getattr(src.dataset, 'processing_version', 'unknown')),
                                   reduction='trapezoid integral divided by actual wavelength span; all samples required',
                                   requested_wavelength_min_nm=float(bounds[0]), requested_wavelength_max_nm=float(bounds[1]),
@@ -149,7 +158,7 @@ def process_pace(source, destination, *, backend='numpy', tile_size=128,
                     for col in range(0, src.shape[1], tile_size):
                         window = (slice(row, row+tile_size), slice(col, col+tile_size))
                         start = time.perf_counter()
-                        host = src.rrs[window + (spectral,)].astype('float32').filled(np.nan)
+                        host = src.read_rrs(window, spectral)
                         flags = src.flags[window]
                         lat, lon = [v[window].astype('float32').filled(np.nan) for v in (src.latitude, src.longitude)]
                         invalid = (np.ma.getmaskarray(flags) | ((flags.data.astype('uint32') & mask) != 0)
@@ -176,6 +185,14 @@ def process_pace(source, destination, *, backend='numpy', tile_size=128,
     timing.update(total_seconds=time.perf_counter()-started, backend=backend, tile_size=tile_size,
                   wavelength_count=len(wave), wavelength_min_nm=float(wave[0]), wavelength_max_nm=float(wave[-1]))
     return timing
+
+
+def process_pace(source, destination, *, backend='numpy', tile_size=128,
+                 wavelength_range=(400., 700.), reject_flags=DEFAULT_FLAGS):
+    """Reduce a PACE OCI L2 AOP cube on its native swath; see docs/pace.md."""
+    return _process_swath(source, destination, reader=PaceSwath, backend=backend,
+                          tile_size=tile_size, wavelength_range=wavelength_range,
+                          reject_flags=reject_flags)
 
 
 def main():

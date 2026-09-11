@@ -12,7 +12,7 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .
 # Optional parallel processing and the full development test suite:
-python -m pip install -e '.[parallel,test]'
+python -m pip install -e '.[parallel,test,pace,viirs]'
 python -m pytest
 ```
 
@@ -25,7 +25,10 @@ python -m terragpu.example
 Downloads a checksum-verified 1.7 MB public RGB raster and validates windowed
 processing. No login or PRISM paths are needed. Use `--backend cupy` in a CUDA
 environment. See [automatic example data](docs/example-data.md) for caching,
-offline use and optional NASA Earthdata downloads for HLS/PACE/AVIRIS.
+offline use and NASA Earthdata downloads. Product-aware workflows are available
+for [HLS](docs/example-data.md#native-hls-ndvi), [PACE](docs/pace.md), and
+[WorldView ARD / VIIRS ocean color](docs/worldview-viirs.md), with real-data CPU
+validation. AVIRIS ingestion remains planned.
 
 ## Process a large raster without Dask
 
@@ -69,7 +72,7 @@ See the [geospatial roadmap](docs/modernization-plan.md),
 [execution-backend decision](docs/execution-backends.md),
 [benchmark protocol](docs/benchmark-protocol.md), and
 [GPU installation guide](requirements/README.md).
-The paper plan targets PRISM V100/H100 with HLS, WorldView, PACE and AVIRIS.
+The paper plan targets PRISM V100/H100 with HLS, WorldView, PACE, VIIRS and AVIRIS.
 Start with the [PRISM test and dataset checklist](docs/prism-validation.md).
 Historical scripts in archives/ and generated HTML documentation are not the
 supported API; current self-contained tests live in tests/.
