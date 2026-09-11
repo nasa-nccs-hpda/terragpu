@@ -11,15 +11,18 @@ requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{name = "Jordan A. Caraballo-Vega", email = "jordan.a.caraballo-vega@nasa.gov"}]
 dependencies = [
-  "numpy>=2,<3", "xarray>=2025.1",
+  "numpy>=2,<3", "xarray>=2025.1", "certifi>=2024.2.2",
   "rasterio>=1.4,<2", "rioxarray>=0.19,<1",
 ]
 
 [project.optional-dependencies]
+data = ["earthaccess>=0.16,<1"]
 parallel = ["dask[array,distributed]>=2025.1"]
 test = ["pytest>=8", "build>=1.2"]
 
 [project.scripts]
+terragpu-data = "terragpu.datasets:main"
+terragpu-example = "terragpu.example:main"
 terragpu-benchmark = "terragpu.benchmark:main"
 
 [tool.setuptools.packages.find]

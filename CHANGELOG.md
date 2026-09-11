@@ -1,3 +1,13 @@
+# Automatic example downloads
+
+- Added a pinned, SHA-256-verified public RGB example with offline cache reuse.
+- Added terragpu-data and terragpu-example commands; download and process without
+  PRISM paths or a login for the small sample.
+- Added optional earthaccess discovery/downloads with explicit collection/version,
+  region, dates, bounded granule counts and local provenance manifests.
+- NASA downloads use locally configured authentication and never persist credentials.
+- RGB sample is explicitly a display-byte arithmetic demo, not NDVI/reflectance.
+
 # Geospatial scope update
 
 - Removed model training/inference packages, ML/DL examples and notebooks,

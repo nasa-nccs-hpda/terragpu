@@ -24,7 +24,15 @@ Send results in the task; do not upload proprietary imagery to GitHub.
 This runner is single-GPU and does not require Dask-CUDA or the full RAPIDS stack.
 Dask-CUDA qualification is a later multi-GPU milestone.
 
-## Find these datasets
+## Automatic data access
+
+You no longer need to supply PRISM paths for the downloadable quickstart.
+Run `python -m terragpu.example` on CPU or append `--backend cupy` on a GPU.
+See [automatic example data](example-data.md) for NASA catalog discovery and
+authenticated native downloads. The product matrix below remains the target
+for scientific validation; the tiny RGB quickstart does not replace it.
+
+## Scientific validation datasets
 
 Start with full-resolution source products plus their metadata. No training
 labels, annotations or model checkpoints are needed. Do not pre-convert PACE or

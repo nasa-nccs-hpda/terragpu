@@ -16,6 +16,17 @@ python -m pip install -e '.[parallel,test]'
 python -m pytest
 ```
 
+## Download and run an example
+
+```bash
+python -m terragpu.example
+```
+
+Downloads a checksum-verified 1.7 MB public RGB raster and validates windowed
+processing. No login or PRISM paths are needed. Use `--backend cupy` in a CUDA
+environment. See [automatic example data](docs/example-data.md) for caching,
+offline use and optional NASA Earthdata downloads for HLS/PACE/AVIRIS.
+
 ## Process a large raster without Dask
 
 ```python
