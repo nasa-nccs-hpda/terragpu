@@ -35,3 +35,6 @@ Logs/
 .pytest_cache/
 .venv-io-*/
 /prism-*-results.tar.gz
+
+# cuFile diagnostic output generated in the working directory
+/cufile.log
