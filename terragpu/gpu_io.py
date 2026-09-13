@@ -41,7 +41,8 @@ def io_mode(mode):
             import kvikio.defaults
         except ImportError as exc:
             raise ImportError('Install the gpu-io extra on a CUDA Linux node') from exc
-        with kvikio.defaults.set('compat_mode', 'ON' if mode == 'kvikio-compat' else 'OFF'):
+        compat = kvikio.CompatMode.ON if mode == 'kvikio-compat' else kvikio.CompatMode.OFF
+        with kvikio.defaults.set('compat_mode', compat):
             yield
     else:
         yield

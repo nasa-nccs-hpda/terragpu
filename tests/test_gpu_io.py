@@ -62,3 +62,40 @@ def test_kvikio_compat_device_roundtrip(tmp_path):
     result=probe('kvikio-compat',tmp_path)
     assert result['gds_verified'] is False
     assert not list(tmp_path.iterdir())
+
+@pytest.mark.parametrize('mode,expected', [('kvikio-compat', 1), ('kvikio-cufile', 0)])
+def test_kvikio_mode_contract_and_restoration(monkeypatch,mode,expected):
+    # Match the released KvikIO 26.8 integer enum API without requiring CUDA.
+    from contextlib import contextmanager
+    from enum import IntEnum
+    from types import ModuleType
+    import sys
+    import terragpu.gpu_io as io
+
+    class CompatMode(IntEnum):
+        OFF=0
+        ON=1
+        AUTO=2
+
+    state={'mode':CompatMode.AUTO}
+    @contextmanager
+    def setting(key,value):
+        assert key=='compat_mode'
+        assert isinstance(value,CompatMode)
+        old=state['mode'];state['mode']=value
+        try:yield
+        finally:state['mode']=old
+
+    package=ModuleType('kvikio');defaults=ModuleType('kvikio.defaults')
+    package.CompatMode=CompatMode;package.defaults=defaults;defaults.set=setting
+    monkeypatch.setitem(sys.modules,'kvikio',package)
+    monkeypatch.setitem(sys.modules,'kvikio.defaults',defaults)
+    monkeypatch.setattr(io,'module',lambda mode:np)
+    with pytest.raises(RuntimeError,match='processing failure'):
+        with io.io_mode(mode):
+            assert state['mode']==expected
+            with io.io_mode('kvikio-compat'):
+                assert state['mode']==CompatMode.ON
+            assert state['mode']==expected
+            raise RuntimeError('processing failure')
+    assert state['mode']==CompatMode.AUTO
