@@ -7,6 +7,7 @@ installed, run:
 git switch codex/geospatial-revival
 git pull --ff-only
 srun --ntasks=1 bash scripts/setup_prism_uv.sh gpu
+# Export your Earthdata user token as EARTHDATA_TOKEN before the next command.
 srun --ntasks=1 bash -ec 'arch=$(uname -m); [[ "$arch" == arm64 ]] && arch=aarch64; source ".venv-prism-$arch/bin/activate"; bash scripts/run_prism_paper.sh results/prism-h100 both'
 tar -czf prism-h100-results.tar.gz -C results prism-h100
 ```
@@ -38,11 +39,31 @@ References: [uv environments](https://docs.astral.sh/uv/pip/environments/),
 
 For a CPU-only allocation, use `setup_prism_uv.sh cpu` and
 `run_prism_paper.sh results/prism-cpu cpu`. Use a new output directory for every
-run. Inputs download automatically before timing (about 275 MB for the public
-WorldView and SatStereo samples); no Earthdata credentials are required.
-To prefetch on a network-enabled node, run `terragpu-data worldview` and
-`terragpu-data satstereo` first. Transfer the resulting `data/` directories to
-the shared filesystem if compute nodes cannot reach the internet.
+run. All five datasets download automatically before timing (approximately 1 GB total).
+Export an Earthdata user token as **`EARTHDATA_TOKEN`** in the launching shell;
+Slurm must inherit this variable on the compute node. The program reads it from
+the environment; do not put it in command arguments or run with shell tracing.
+The setup script now includes the `data` extra (earthaccess). Rerun setup when
+updating an older environment which lacks that extra.
+
+HLS, PACE and VIIRS require the token for a first download. WorldView and
+SatStereo are anonymous downloads. No site-specific imagery paths are needed.
+All NASA queries select an exact granule name and collection version; manifests
+record granule IDs and SHA-256 checksums. Completed caches are verified and reused
+offline. A failed or mismatched cache stops the run instead of selecting new data.
+
+If compute nodes cannot reach NASA, prefetch from a network-enabled node with
+an environment matching that node's architecture, from the repository root:
+
+```bash
+python -m scripts.benchmark_products --download-only
+```
+
+The cache defaults to `data/`. To use another shared location, export
+`TERRAGPU_DATA_ROOT=/path/to/shared/cache` for the runner and pass
+`--data-root "$TERRAGPU_DATA_ROOT"` to the prefetch command. Transfer the entire
+cache (including manifests) if needed. The token is unnecessary for a fully
+cached run. Keep the same cache for matched V100 and H100 runs.
 
 ## Workloads
 
@@ -52,9 +73,12 @@ the shared filesystem if compute nodes cannot reach the internet.
 | Focal mean | WorldView-3 ARD red band, 4251² | NaN-aware 15×15 neighborhood reduction |
 | Spectral angle | Fixed-seed 512×512×136 cube | Dot products, norms and angular distance to a supplied spectrum |
 | Stereo matching | SatStereo MP1, 1286×1298 pair | Census descriptors, Hamming costs, spatial aggregation, disparity search |
+| HLS NDVI I/O | Fixed HLS L30 V2 granule, red/NIR/Fmask | Read, QA mask, scaled NDVI, transfers and compressed GeoTIFF write |
+| PACE ocean-color I/O | Fixed OCI L2 AOP V3.2 granule | Native swath, packing/QA, 136-band visible spectral mean, compressed NetCDF write |
+| VIIRS ocean-color I/O | Fixed JPSS2 L2 OC R2025 granule | Native swath, packing/QA, five-band visible spectral mean, compressed NetCDF write |
 | WorldView NDVI/NDWI I/O | WorldView-3 ARD and QA | Open, read, QA alignment, transfers, compute, compressed write and close |
 
-The first three complex workloads report resident-input timing, cold execution,
+The focal, spectral-angle and stereo workloads report resident-input timing, cold execution,
 and input transfer separately. Host output copies for correctness checks are
 outside resident timings. The I/O workload includes transfers and file close;
 its CPU/GPU ordering alternates. The runner does not flush filesystem caches.
@@ -80,6 +104,14 @@ reflectance raster. Tests compare seams and edge windows with independent manual
 neighborhood means, including tile sizes smaller than the halo. The paper suite's
 existing focal measurement is still resident-input timing; this streaming CLI
 is a separate path and does not silently change its scope.
+
+HLS, PACE and VIIRS alternate CPU/GPU order and independently validate every
+warmup and measured output using float64 reference calculations outside timing.
+Checks include QA/nodata masks, navigation or georeferencing and nonempty valid
+pixels. Reports retain the worst absolute numerical error, cold time, individual
+samples, bootstrap timing intervals, valid-pixel throughput and input hashes.
+Temporary output imagery is removed after validation; the results bundle contains
+metrics and logs. Downloads, hashing and validation are excluded from timings.
 
 Each operation is checked outside timing. NumPy/CuPy results are compared on
 the entire output. Focal samples and the spectral-angle result have independent
@@ -125,6 +157,8 @@ set `TERRAGPU_REPEAT=15` for more timing samples. It writes:
 
 - `suite.json`: raw timings, cold/transfer times, bootstrap intervals, input
   hashes, hardware, software versions, revision, correctness and stereo quality.
+- `products.json`: HLS/PACE/VIIRS raw end-to-end timings, validation, throughput,
+  exact input manifests and hashes.
 - `ndvi-*.json`: explicit execution/scheduler metadata for the NDVI comparisons.
 - `summary.csv`, `samples.csv`, `speedups.json`: plot-ready exports.
 - `tests.txt`, `nvidia-smi.txt`, `cupy-config.txt`, `pip-freeze.txt`, and logs.
@@ -134,6 +168,8 @@ Bring back each `.tar.gz` results bundle. It contains metrics/logs, not imagery
 or credentials. We can then plot throughput, CPU/GPU ratios, runtime distributions,
 and stereo quality, keeping resident and end-to-end scopes separate. Bootstrap
 intervals describe timing repetitions on one input, not dataset generalization.
+The exporter requires the complete NASA product/backend matrix and rejects failed
+correctness checks, invalid timings and mismatched CPU/GPU inputs.
 An interrupted suite leaves `.partial.json`; partial results are not a completed
 paper run. Publishable claims still require matched V100/H100 runs, multiple
 scenes/sizes, an optimized multicore CPU comparison, memory measurements and

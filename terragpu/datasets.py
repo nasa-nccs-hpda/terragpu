@@ -204,7 +204,8 @@ def _login(client, strategy, token_file=None):
 
 
 def nasa_data(*, short_name, version, bbox, start, end, limit=1,
-              output='data/nasa-example', search_only=False, login_strategy='environment', token_file=None):
+              output='data/nasa-example', search_only=False, login_strategy='environment', token_file=None,
+              granule_name=None):
     """Discover/download whole native NASA granules, retaining a local manifest.
 
     Search is anonymous. Downloads require Earthdata credentials supplied to
@@ -214,6 +215,8 @@ def nasa_data(*, short_name, version, bbox, start, end, limit=1,
     Reuse a verified completed output offline, or use a new directory for a new query.
     """
     query = _query(short_name, version, bbox, start, end, limit)
+    if granule_name is not None:
+        query['granule_name'] = granule_name
     output = Path(output)
     manifest_path = output / 'manifest.json'
     if not search_only and output.exists():

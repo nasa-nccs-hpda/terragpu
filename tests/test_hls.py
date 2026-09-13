@@ -67,3 +67,17 @@ def test_hls_gpu_parity(tmp_path):
     process_hls_ndvi(tmp_path, tmp_path / 'gpu.tif', backend='cupy', tile_size=2)
     with rasterio.open(tmp_path / 'cpu.tif') as cpu, rasterio.open(tmp_path / 'gpu.tif') as gpu:
         np.testing.assert_allclose(cpu.read(), gpu.read(), rtol=1e-6, equal_nan=True)
+
+
+@pytest.mark.parametrize('product', ['L30','S30'])
+def test_independent_validator_detects_corrupted_output(tmp_path,product):
+    from scripts.validate_hls import validate
+    make_scene(tmp_path,product)
+    target=tmp_path/'ndvi.tif'
+    process_hls_ndvi(tmp_path,target,tile_size=2)
+    assert validate(tmp_path,target)['valid_pixels']==25
+    with rasterio.open(target,'r+') as dst:
+        values=dst.read(1);values[0,0]=100
+        dst.write(values,1)
+    with pytest.raises(AssertionError):
+        validate(tmp_path,target)

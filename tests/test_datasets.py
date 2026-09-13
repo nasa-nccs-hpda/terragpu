@@ -168,3 +168,16 @@ def test_worldview_pinned_download_cache_and_failure(tmp_path, monkeypatch):
         datasets.fetch_worldview_sample(tmp_path)
     assert path.read_bytes() == b'corrupt'
     assert not list(tmp_path.glob('.download-*'))
+
+
+def test_exact_granule_is_in_query_and_cache_identity(tmp_path, nasa):
+    seen=[]
+    original=nasa.search_data
+    def search(**kw):
+        seen.append(kw['granule_name'])
+        return original(**kw)
+    nasa.search_data=search
+    datasets.nasa_data(**QUERY,output=tmp_path/'cache',granule_name='example')
+    assert seen==['example']
+    with pytest.raises(ValueError,match='Cached query differs'):
+        datasets.nasa_data(**QUERY,output=tmp_path/'cache',granule_name='other')

@@ -23,7 +23,7 @@ if ! "$uv_cmd" --version; then
 fi
 printf 'Node architecture: %s; environment: %s\n' "$arch" "$envdir"
 "$uv_cmd" venv --python 3.12 --seed "$envdir"
-"$uv_cmd" pip install --python "$envdir/bin/python" -e '.[benchmark,test,parallel,pace,viirs]' 'numpy>=2,<2.5' 'scipy>=1.16,<1.18'
+"$uv_cmd" pip install --python "$envdir/bin/python" -e '.[benchmark,test,parallel,pace,viirs,data]' 'numpy>=2,<2.5' 'scipy>=1.16,<1.18'
 if [[ "$mode" == gpu ]]; then
   "$uv_cmd" pip install --python "$envdir/bin/python" 'cupy-cuda12x[ctk]==14.2.0'
   "$envdir/bin/python" -c 'import cupy as cp; cp.show_config(); x=cp.arange(32,dtype=cp.float32); assert float((x*x).sum().get())==10416.; print("CUDA compute preflight passed")'

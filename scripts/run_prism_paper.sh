@@ -4,6 +4,7 @@ set -euo pipefail
 out=${1:-results/prism-$(date -u +%Y%m%dT%H%M%SZ)}
 mode=${2:-both}
 repeat=${TERRAGPU_REPEAT:-7}
+data_root=${TERRAGPU_DATA_ROOT:-data}
 case "$mode" in both) backends=(numpy cupy);; cpu) backends=(numpy);; *) echo 'Mode must be both or cpu' >&2;exit 2;; esac
 if [[ -e "$out" ]]; then echo "Use a new output directory: $out" >&2;exit 1;fi
 mkdir -p "$out"
@@ -43,9 +44,11 @@ if [[ "$mode" == both ]]; then
   run_logged 'CUDA computation' cupy-config.txt python -c 'import cupy as cp; cp.show_config(); assert cp.cuda.runtime.getDeviceCount()>0; print(cp.arange(10).sum().get())'
 fi
 run_logged 'Correctness tests' tests.txt python -m pytest tests -q --tb=short --disable-warnings
+run_logged 'Download/verify all five datasets' downloads.txt python -m scripts.benchmark_products --data-root "$data_root" --download-only
 stage='Public-data benchmark suite'
 printf 'Running: %s\n' "$stage"
-python -m terragpu.paper_benchmark --backends "${backends[@]}" --repeat "$repeat" --warmup 2 --output "$out/suite.json"
+python -m terragpu.paper_benchmark --data-root "$data_root" --backends "${backends[@]}" --repeat "$repeat" --warmup 2 --output "$out/suite.json"
+run_logged 'HLS, PACE and VIIRS benchmarks' products.log python -m scripts.benchmark_products --data-root "$data_root" --backends "${backends[@]}" --repeat "$repeat" --warmup 2 --output "$out/products.json"
 # Retain Dask as an explicit comparison, with scheduler/scope in each JSON.
 for backend in numpy dask; do
   stage="NDVI benchmark: $backend"
@@ -58,5 +61,5 @@ if [[ "$mode" == both ]]; then
   done
 fi
 stage='Metric export'
-python scripts/export_benchmark_metrics.py "$out"
+python scripts/export_benchmark_metrics.py "$out" --require-products
 printf 'Results: %s\n' "$out"
