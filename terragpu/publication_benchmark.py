@@ -6,7 +6,7 @@ packing, all requested analyses and compressed georeferenced output close.
 import argparse
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 import csv
 from datetime import datetime, timezone
 from importlib.metadata import distributions
@@ -81,6 +81,26 @@ class MemoryMonitor:
                     sampling_error=self.error)
 
 
+class StageTimings:
+    """Diagnostic wall times; concurrent worker durations are not additive."""
+    def __init__(self, enabled=False):
+        self.enabled=enabled;self.values={};self.lock=threading.Lock()
+
+    @contextmanager
+    def measure(self, name, xp=None):
+        if not self.enabled:
+            yield
+            return
+        if xp is not None:xp.cuda.get_current_stream().synchronize()
+        started=time.perf_counter()
+        yield
+        if xp is not None:xp.cuda.get_current_stream().synchronize()
+        elapsed=time.perf_counter()-started
+        with self.lock:
+            entry=self.values.setdefault(name,dict(seconds=0.,calls=0))
+            entry['seconds']+=elapsed;entry['calls']+=1
+
+
 def read_tile(source,row,col,tile,halo):
     with rasterio.open(source) as src:
         top,left=max(0,row-halo),max(0,col-halo)
@@ -113,10 +133,11 @@ def bounded_map(function,items,workers):
             if item is not None:pending.append(executor.submit(function,item))
 
 
-def pipeline(source,folder,queries,*,backend='numpy',workers=1,tile=1024,strategy='reuse'):
+def pipeline(source,folder,queries,*,backend='numpy',workers=1,tile=1024,strategy='reuse',stages=None):
     if backend not in ('numpy','cupy') or workers<1 or (backend=='cupy' and workers!=1):
         raise ValueError('GPU uses one controlling worker; CPU requires positive worker count')
     if strategy not in ('stream','reuse','packed'):raise ValueError('Unknown strategy')
+    stages=stages if stages is not None else StageTimings()
     xp=array_module(backend);halo=max(max(q) for q in queries)//2
     with rasterio.open(source) as src:
         height,width,count=src.height,src.width,src.count
@@ -127,18 +148,29 @@ def pipeline(source,folder,queries,*,backend='numpy',workers=1,tile=1024,strateg
                      compress='LZW',NUM_THREADS='1')
     cache=None;packing=None
     if strategy=='packed':
-        packing=pack_raster(source,folder/'cache',tile_size=tile,halo=halo)
+        with stages.measure('packing'):
+            packing=pack_raster(source,folder/'cache',tile_size=tile,halo=halo)
         cache=RasterCache(folder/'cache')
     origins=[(r,c) for r in range(0,height,tile) for c in range(0,width,tile)]
     outputs=[folder/f'query-{i}.tif' for i in range(len(queries))]
     def calculate(task):
         row,col,indices=task
-        data=cache.read_tile(row,col,backend) if cache else xp.asarray(read_tile(source,row,col,tile,halo))
+        if stages.enabled:
+            with stages.measure('read_decode'):
+                host=cache.read_tile(row,col,'numpy') if cache else read_tile(source,row,col,tile,halo)
+            if backend=='cupy':
+                with stages.measure('host_to_device',xp):data=xp.asarray(host)
+            else:data=host
+        else:
+            data=cache.read_tile(row,col,backend) if cache else xp.asarray(read_tile(source,row,col,tile,halo))
         h,w=min(tile,height-row),min(tile,width-col)
         answers=[]
         for index in indices:
-            value=features(data,queries[index],xp)[:,halo:halo+h,halo:halo+w]
-            answers.append((index,xp.asnumpy(value) if backend=='cupy' else np.ascontiguousarray(value)))
+            with stages.measure('compute',xp if backend=='cupy' else None):
+                value=features(data,queries[index],xp)[:,halo:halo+h,halo:halo+w]
+            with stages.measure('device_to_host' if backend=='cupy' else 'host_materialize',xp if backend=='cupy' else None):
+                answer=xp.asnumpy(value) if backend=='cupy' else np.ascontiguousarray(value)
+            answers.append((index,answer))
         return row,col,h,w,answers
     with ExitStack() as stack:
         writers=[]
@@ -152,7 +184,9 @@ def pipeline(source,folder,queries,*,backend='numpy',workers=1,tile=1024,strateg
             # One read/transfer per tile across all distinct analyses.
             tasks=((r,c,range(len(queries))) for r,c in origins)
         for row,col,h,w,answers in bounded_map(calculate,tasks,workers):
-            for index,array in answers:writers[index].write(array,window=Window(col,row,w,h))
+            for index,array in answers:
+                with stages.measure('write'):writers[index].write(array,window=Window(col,row,w,h))
+        with stages.measure('output_close'):stack.close()
     if backend=='cupy':xp.cuda.get_current_stream().synchronize()
     return outputs,packing
 
@@ -190,7 +224,7 @@ def validate_outputs(source,outputs,queries,tile):
 
 def run(output,*,source=None,data_root='data',work_root='data/publication',backends=('numpy','cupy'),
         workers=(1,8),tiles=(1024,),query_counts=(1,3),strategies=('stream','reuse','packed'),
-        sizes=(15,31),repeat=5,warmup=1,seed=731,storage_label='unspecified',allow_dirty=False):
+        sizes=(15,31),repeat=5,warmup=1,seed=731,storage_label='unspecified',allow_dirty=False,profile_stages=False):
     if repeat<1 or warmup<0:raise ValueError('Invalid repetition count')
     for values in (workers,tiles,query_counts,sizes):
         if not values or len(set(values))!=len(values) or any(type(v) is not int or v<1 for v in values):
@@ -219,7 +253,7 @@ def run(output,*,source=None,data_root='data',work_root='data/publication',backe
     report=dict(schema_version=1,status='running',timestamp_utc=datetime.now(timezone.utc).isoformat(),
                 git_commit=_git('rev-parse','HEAD'),git_dirty=dirty,execution=execution_metadata(),inputs=inputs,source_shape=source_shape,
                 source_kind='WorldView native ARD to QA-masked indices to spatial features' if item else 'user GeoTIFF to spatial features',
-                repeat=repeat,warmup=warmup,seed=seed,storage_label=storage_label,records=[],execution_order=[],
+                repeat=repeat,warmup=warmup,seed=seed,storage_label=storage_label,profile_stages=profile_stages,records=[],execution_order=[],
                 hardware=dict(platform=platform.platform(),cpu_count=os.cpu_count(),available_cpus=available_cpus(),
                               cpu_affinity=sorted(os.sched_getaffinity(0)) if hasattr(os,'sched_getaffinity') else None),
                 packages={d.metadata['Name']:d.version for d in distributions()},
@@ -232,6 +266,8 @@ def run(output,*,source=None,data_root='data',work_root='data/publication',backe
                        'Memory is sampled at 10 ms; RSS is process-wide, CUDA usage device-wide, pool reservation process-local.',
                        'Device-wide usage can include unrelated processes. Sampled peaks can miss transients.',
                        'Filesystem caches uncontrolled; no fsync durability barrier. Repeats within this invocation are not independent jobs.'])
+    if profile_stages:
+        report['notes'].append('Diagnostic stage wall times synchronize CUDA at stage boundaries. Worker durations overlap and must not be summed as elapsed time; setup and instrumentation overhead remain outside stage totals. Do not mix with unprofiled throughput runs.')
     if cp is not None:
         props=cp.cuda.runtime.getDeviceProperties(cp.cuda.Device().id)
         report['hardware']['gpu']=dict(name=props['name'].decode() if isinstance(props['name'],bytes) else props['name'],
@@ -259,13 +295,15 @@ def run(output,*,source=None,data_root='data',work_root='data/publication',backe
                     if item is not None:
                         prepared=folder/'indices.tif';process_worldview(item,prepared,backend='numpy')
                     native_seconds=time.perf_counter()-prep_started if item is not None else 0.
-                    outputs,packing=pipeline(prepared,folder,record['queries'],backend=case['backend'],workers=case['workers'],tile=case['tile'],strategy=case['strategy'])
+                    stages=StageTimings(profile_stages)
+                    outputs,packing=pipeline(prepared,folder,record['queries'],backend=case['backend'],workers=case['workers'],tile=case['tile'],strategy=case['strategy'],stages=stages)
                     elapsed=time.perf_counter()-started
                 check=validate_outputs(prepared,outputs,record['queries'],case['tile'])
                 if item is not None:validate_worldview(item,prepared)
                 if packing:RasterCache(folder/'cache',verify=True)
                 sample=dict(total_seconds=elapsed,native_preparation_seconds=native_seconds,packing=packing,
                             memory=monitor.result(),validation=check,output_bytes=sum(p.stat().st_size for p in outputs))
+                if profile_stages:sample['stage_timings']=stages.values
                 if monitor.error:raise RuntimeError('Memory sampling failed: '+monitor.error)
                 record['warmup_samples' if iteration<warmup else 'samples'].append(sample)
             _write_json(partial,report)
@@ -296,6 +334,7 @@ def main():
     p.add_argument('--strategies',nargs='+',default=['stream','reuse','packed']);p.add_argument('--sizes',nargs='+',type=int,default=[15,31])
     p.add_argument('--repeat',type=int,default=5);p.add_argument('--warmup',type=int,default=1);p.add_argument('--seed',type=int,default=731)
     p.add_argument('--storage-label',default='unspecified')
+    p.add_argument('--profile-stages',action='store_true',help='Diagnostic synchronized stage timings; separate from throughput runs')
     p.add_argument('--allow-dirty',action='store_true');run(**vars(p.parse_args()))
 
 

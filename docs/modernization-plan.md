@@ -119,3 +119,9 @@ Use scripts/setup_prism_uv.sh and scripts/run_prism_paper.sh in the existing
 allocation, as documented in prism-paper-runs.md. The user will run the jobs and
 return result bundles; no SSH or scheduler configuration is needed here.
 No remote job has been submitted and no GPU improvement is claimed locally.
+
+The publication runner now offers opt-in synchronized stage diagnostics via
+`--profile-stages` (see publication-runs.md). Use these separately from ordinary
+throughput measurements to identify read/decode, transfer, computation and
+output costs before implementing a concurrent GPU input pipeline. CPU worker
+stage durations overlap and cannot be summed as end-to-end elapsed time.

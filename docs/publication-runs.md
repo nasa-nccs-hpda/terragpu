@@ -163,3 +163,34 @@ Older reports and local runs without Slurm remain usable with the default figure
 command. They cannot pass this optional allocation check. Do not invent or guess
 missing job IDs. Keep the same benchmark revision throughout a run series rather
 than upgrading mid-series solely to obtain this metadata.
+
+## Diagnose native pipeline stages
+
+Use a separate diagnostic run before choosing prefetching, transfer overlap or
+codec changes. The optional `--profile-stages` records per-sample
+`stage_timings` in `publication.json`: read/decode (including masks, scaling and
+host padding), host-to-device transfer, computation, device-to-host transfer
+(or CPU contiguous materialization), writer calls, output close, and packing
+when selected. Native WorldView preparation remains the existing separate
+`native_preparation_seconds` measurement.
+
+With the publication environment active in an allocated PRISM GPU session:
+
+```bash
+git pull --ff-only
+TERRAGPU_IO_ROOT=/lscratch/$USER/terragpu \
+TERRAGPU_STORAGE_LABEL=nvme \
+bash scripts/run_prism_publication.sh results/prism-publication-profile-01 \
+  --profile-stages --workers 1 4 --query-counts 1 3 --strategies stream reuse
+```
+
+Request at least four CPU cores for that example; consult
+[PRISM validation](prism-validation.md) for environment and device checks.
+Keep completed throughput results intact. Profiling synchronizes the current
+CUDA stream before and after each GPU stage, changes execution timing, and is
+not a substitute for an unprofiled performance run. CPU worker durations may
+overlap: their sums are aggregate worker time, not elapsed pipeline time.
+Setup, scheduling and measurement overhead are not fully attributed. Writes
+can be buffered until close; neither measurement implies an fsync durability
+barrier or GDS. Plot aggregation rejects mixing profiled and unprofiled runs.
+CUDA profiling tests are included in the runner but require PRISM qualification.

@@ -32,7 +32,7 @@ def test_run_medians_not_pooled_and_figures(tmp_path):
     with pytest.raises(ValueError,match='Duplicate'):summarize([paths[0],paths[0]])
 
 
-@pytest.mark.parametrize('fault',['dirty','incomplete','median','validation','negative','matrix','storage','source'])
+@pytest.mark.parametrize('fault',['dirty','incomplete','median','validation','negative','matrix','storage','source','profile'])
 def test_reject_invalid_comparisons(tmp_path,fault):
     first=report();second=copy.deepcopy(first)
     if fault=='dirty':second['git_dirty']=True
@@ -42,6 +42,7 @@ def test_reject_invalid_comparisons(tmp_path,fault):
     elif fault=='negative':second['records'][0]['samples'][0]['total_seconds']=-1.
     elif fault=='matrix':second['records'][0]['workers']=2
     elif fault=='storage':second['storage_label']='panfs'
+    elif fault=='profile':second['profile_stages']=True
     elif fault=='source':second['inputs']=['different']
     paths=[tmp_path/'a.json',tmp_path/'b.json']
     for path,value in zip(paths,[first,second]):path.write_text(json.dumps(value))

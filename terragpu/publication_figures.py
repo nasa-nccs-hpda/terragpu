@@ -55,6 +55,7 @@ def summarize(paths,allow_dirty=False,require_distinct_jobs=False):
         signatures={case_key(r) for r in report['records']}
         if not signatures or len(signatures)!=len(report['records']):raise ValueError('Duplicate or missing cases')
         current={k:report.get(k) for k in ('git_commit','inputs','source_shape','source_kind','hardware','packages','threads','storage_label')}
+        current['profile_stages']=report.get('profile_stages',False)
         current['queries']={str(case_key(r)):r['queries'] for r in report['records']}
         if identity is not None and (identity!=current or matrix!=signatures):
             raise ValueError('Runs differ in source, hardware, environment, storage label or case matrix')
@@ -104,7 +105,7 @@ def plot(paths,output,allow_dirty=False,require_distinct_jobs=False):
                 for i,r in enumerate(group):
                     ax.scatter([i]*len(r['run_medians_seconds']),r['run_medians_seconds'],color='black',s=15,zorder=3)
             ax.set_xticks(range(len(group)),labels,rotation=35,ha='right');ax.set_ylabel(ylabel)
-            ax.set_title(f'{q} distinct analyses; {len(reports)} run(s)');ax.grid(axis='y',alpha=.2);ax.set_axisbelow(True)
+            ax.set_title(f'{q} distinct analyses; {len(reports)} run(s)' + ('; synchronized profiling' if reports[0].get('profile_stages',False) else ''));ax.grid(axis='y',alpha=.2);ax.set_axisbelow(True)
         fig.tight_layout()
         for extension in ('png','pdf'):fig.savefig(output/f'{name}.{extension}',dpi=180)
         plt.close(fig)
@@ -113,12 +114,14 @@ def plot(paths,output,allow_dirty=False,require_distinct_jobs=False):
         writer=csv.DictWriter(stream,fieldnames=fields,extrasaction='ignore');writer.writeheader();writer.writerows(rows)
     provenance=dict(distinct_reported_jobs_checked=require_distinct_jobs,
                     execution=[r.get('execution') for r in reports],
+                    profile_stages=reports[0].get('profile_stages',False),
                     git_commit=reports[0]['git_commit'], storage_label=reports[0].get('storage_label'),
                     input_manifests=reports[0]['inputs'],
                     report_sha256=[hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths],
                     aggregation='median of run medians; independent job provenance must be checked separately')
     (output/'provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
     (output/'figure-notes.txt').write_text(
+        ('Synchronized profiling run: diagnostic timings, not ordinary throughput.\n' if reports[0].get('profile_stages',False) else '') +
         'Bars summarize whole-pipeline trials including compressed GeoTIFF close. Points are run medians.\n'
         'Within-run repetitions are not pooled across runs. These plots do not establish job independence.\n'
         'Memory is sampled process RSS, includes retained allocator/library memory, and can miss transient peaks.\n'
