@@ -1,4 +1,4 @@
-# Experimental GPU raster I/O on Discover
+# Experimental GPU raster I/O on PRISM
 
 TerraGPU now has a small geospatial GPU cache reader/writer. It preserves CRS,
 affine transform, band names and nodata while allowing KvikIO to read and write
@@ -12,19 +12,19 @@ From the repository root, with `uv` installed:
 
 ```bash
 git pull --ff-only
-srun --ntasks=1 bash scripts/setup_discover_gpu_io.sh
+srun --ntasks=1 bash scripts/setup_prism_gpu_io.sh
 srun --ntasks=1 --export=ALL bash -ec '
   arch=$(uname -m)
   if [[ "$arch" == arm64 ]]; then arch=aarch64; fi
   source ".venv-io-$arch/bin/activate"
-  bash scripts/run_discover_gpu_io.sh results/discover-gpu-io-01
+  bash scripts/run_prism_gpu_io.sh results/prism-gpu-io-01
 '
-tar -czf discover-gpu-io-01-results.tar.gz -C results discover-gpu-io-01
+tar -czf prism-gpu-io-01-results.tar.gz -C results prism-gpu-io-01
 ```
 
 The setup creates a separate architecture-specific environment, uses the existing
 CUDA 12/CuPy setup, and installs KvikIO CUDA 12 version 26.8.0. Linux ARM64 and
-x86-64 are supported by the selected wheels. Discover's installed driver and
+x86-64 are supported by the selected wheels. PRISM's installed driver and
 storage configuration still need to pass the on-node probes.
 
 The default example automatically downloads the public WorldView sample (~257 MB),

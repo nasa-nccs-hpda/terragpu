@@ -35,4 +35,3 @@ Logs/
 .pytest_cache/
 .venv-io-*/
 /prism-*-results.tar.gz
-/discover-*-results.tar.gz

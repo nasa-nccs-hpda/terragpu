@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Existing Slurm allocation, repository root, activated .venv-io-$arch.
 set -euo pipefail
-out=${1:-results/discover-gpu-io-$(date -u +%Y%m%dT%H%M%SZ)}
+out=${1:-results/prism-gpu-io-$(date -u +%Y%m%dT%H%M%SZ)}
 work=${TERRAGPU_IO_ROOT:-data/gpu-io}
 data_root=${TERRAGPU_DATA_ROOT:-data}
 repeat=${TERRAGPU_REPEAT:-5}
