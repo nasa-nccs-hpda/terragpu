@@ -59,3 +59,24 @@ def test_cpu_allocation_enforced(tmp_path,monkeypatch):
     with pytest.raises(ValueError,match='allocation'):
         run(tmp_path/'report.json',backends=['numpy'],workers=[2],allow_dirty=True)
     assert not (tmp_path/'report.json').exists()
+
+
+@pytest.mark.parametrize('fault',['missing','extra','duplicate','compression','dtype','nodata'])
+def test_output_contract_rejects_incomplete_or_reencoded_products(tmp_path,fault):
+    source=tmp_path/'input.tif';scene(source);queries=[[3],[5]]
+    outputs,_=pipeline(source,tmp_path,queries,tile=8)
+    assert validate_outputs(source,outputs,queries,8)['finite_values']>0
+    if fault=='missing':outputs=outputs[:1]
+    elif fault=='extra':outputs=outputs+[source]
+    elif fault=='duplicate':outputs=[outputs[0],outputs[0]]
+    else:
+        with rasterio.open(outputs[0]) as original:
+            values=original.read();profile=original.profile;descriptions=original.descriptions
+        if fault=='compression':profile['compress']='NONE'
+        elif fault=='dtype':profile['dtype']='float64'
+        elif fault=='nodata':profile['nodata']=None
+        changed=tmp_path/'changed.tif'
+        with rasterio.open(changed,'w',**profile) as dst:
+            dst.write(values);dst.descriptions=descriptions
+        outputs=[changed,outputs[1]]
+    with pytest.raises(AssertionError):validate_outputs(source,outputs,queries,8)

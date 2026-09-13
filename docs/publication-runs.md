@@ -49,7 +49,10 @@ Every trial starts from the original input. For the default WorldView example,
 CPU QA alignment and NDVI/NDWI preparation are included in the timer. For
 `--source`, timing starts from that supplied GeoTIFF, and processing that created
 it is outside scope. All cases produce the same LZW-compressed float32 GeoTIFF
-outputs, with identical bands, grid, masks and validation tolerances.
+outputs, with identical bands, grid, masks and validation tolerances. Validation
+requires exactly one distinct output per query and checks float32 storage, NaN
+nodata, LZW compression and 256-by-256 tiled layout; numerical agreement alone
+does not permit a cheaper output encoding in a comparison.
 
 - `stream`: reread/decode and transfer tiles separately for each distinct analysis.
 - `reuse`: read/transfer each tile once and retain it across the analyses.

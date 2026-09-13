@@ -157,11 +157,21 @@ def pipeline(source,folder,queries,*,backend='numpy',workers=1,tile=1024,strateg
 
 
 def validate_outputs(source,outputs,queries,tile):
+    if not queries or len(outputs)!=len(queries):
+        raise AssertionError('Expected exactly one output per query')
+    if len({Path(p).resolve() for p in outputs})!=len(outputs):
+        raise AssertionError('Duplicate output paths')
     halo=max(max(q) for q in queries)//2;maximum=0.;finite=0
     with rasterio.open(source) as src:
         bands=[b or f'band{i+1}' for i,b in enumerate(src.descriptions)]
         for output,query in zip(outputs,queries):
             with rasterio.open(output) as dst:
+                if (dst.driver!='GTiff' or any(dtype!='float32' for dtype in dst.dtypes)
+                        or dst.nodata is None or not np.isnan(dst.nodata)
+                        or dst.compression is None or dst.compression.value!='LZW'
+                        or not dst.profile.get('tiled')
+                        or any(shape!=(256,256) for shape in dst.block_shapes)):
+                    raise AssertionError('Output encoding/layout mismatch')
                 if (dst.shape,dst.crs,dst.transform,dst.descriptions)!=(src.shape,src.crs,src.transform,names(bands,query)):
                     raise AssertionError('Output metadata mismatch')
                 for row in range(0,src.height,tile):
