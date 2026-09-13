@@ -42,3 +42,32 @@ def test_complete_products_export_and_mismatch_rejection(tmp_path):
     (tmp_path/'products.json').write_text(json.dumps(product))
     with pytest.raises(ValueError,match='Incomplete'):
         export(tmp_path,require_products=True)
+
+
+def test_io_export_requires_matched_devices_inputs_and_tiles(tmp_path):
+    backends=('numpy','cupy')
+    (tmp_path/'suite.json').write_text(json.dumps({'git_commit':'same','records':[
+        dict(workload='resident',backend=b,samples_seconds=[1.],correctness_passed=True) for b in backends]}))
+    def write(device,**changes):
+        report=dict(git_commit='same',device=device,samples_seconds={'streaming':[2.,4.],'dask':[4.,8.]},
+                    correctness_passed=True,shape=[2,8,8],scope='read/compute/write',tile_size=4,
+                    input_array_sha256=['same-input'])
+        report.update(changes)
+        (tmp_path/f'io-{device}.json').write_text(json.dumps(report))
+    write('numpy')
+    with pytest.raises(ValueError,match='Incomplete I/O backend'):
+        export(tmp_path,require_io=True)
+    write('cupy',samples_seconds={'streaming':[1.,2.],'dask':[2.,4.]})
+    export(tmp_path,require_io=True)
+    ratios={r['workload']:r['cpu_over_gpu'] for r in json.loads((tmp_path/'speedups.json').read_text())}
+    assert ratios['synthetic_geotiff_ndvi_streaming']==2.
+    assert ratios['synthetic_geotiff_ndvi_dask']==2.
+    write('cupy',input_array_sha256=['different-input'])
+    with pytest.raises(ValueError,match='input_array_sha256'):
+        export(tmp_path,require_io=True)
+    write('cupy',tile_size=8)
+    with pytest.raises(ValueError,match='tile_size'):
+        export(tmp_path,require_io=True)
+    write('cupy',git_commit='different')
+    with pytest.raises(ValueError,match='source revisions'):
+        export(tmp_path,require_io=True)

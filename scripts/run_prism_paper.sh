@@ -60,6 +60,9 @@ if [[ "$mode" == both ]]; then
     python -m terragpu.benchmark --backend "$backend" --size 4096 --repeat "$repeat" --warmup 2 --output "$out/ndvi-$backend.json"
   done
 fi
+for backend in "${backends[@]}"; do
+  run_logged "Streaming versus Dask I/O: $backend" "io-$backend.log" python -m terragpu.benchmark_io --device "$backend" --size 2048 --tile-size 1024 --repeat "$repeat" --warmup 2 --output "$out/io-$backend.json"
+done
 stage='Metric export'
-python scripts/export_benchmark_metrics.py "$out" --require-products
+python scripts/export_benchmark_metrics.py "$out" --require-products --require-io
 printf 'Results: %s\n' "$out"

@@ -70,6 +70,7 @@ cached run. Keep the same cache for matched V100 and H100 runs.
 | Workload | Data | What it measures |
 |---|---|---|
 | NDVI | Fixed-seed synthetic 4096² bands | NumPy, CuPy, Dask and Dask-CuPy, resident data |
+| NDVI GeoTIFF I/O | Fixed-seed synthetic 2048² bands | Direct streaming versus Dask on CPU and GPU, including reads and compressed writes |
 | Focal mean | WorldView-3 ARD red band, 4251² | NaN-aware 15×15 neighborhood reduction |
 | Spectral angle | Fixed-seed 512×512×136 cube | Dot products, norms and angular distance to a supplied spectrum |
 | Stereo matching | SatStereo MP1, 1286×1298 pair | Census descriptors, Hamming costs, spatial aggregation, disparity search |
@@ -86,6 +87,17 @@ CPU numerical libraries are limited to one thread: this is a defined baseline,
 not a claim that a GPU beats every optimized multicore CPU configuration.
 The existing Dask benchmark uses one execution thread and a prebuilt graph;
 it is not a multi-GPU or cluster throughput measurement.
+
+The additional GeoTIFF I/O comparison includes graph construction, transfers,
+reads, computation and compressed writes. It alternates streaming/Dask order
+within each device block, records the first execution separately, then excludes
+two warmups before collecting the requested repetitions. CPU and GPU device
+blocks run sequentially. Both strategies use the same 1024-pixel application
+chunks/tiles and 256-pixel LZW output blocks. Every output is checked against an
+independent float64 ratio and for CRS, transform, dtype, compression and tiling.
+Input-array hashes and source revision are recorded; exporters reject different
+CPU/GPU inputs or tile sizes. This synthetic case measures scheduling and I/O
+overhead, not product-specific QA or distributed scaling.
 
 ### Tiled focal processing
 
@@ -160,6 +172,8 @@ set `TERRAGPU_REPEAT=15` for more timing samples. It writes:
 - `products.json`: HLS/PACE/VIIRS raw end-to-end timings, validation, throughput,
   exact input manifests and hashes.
 - `ndvi-*.json`: explicit execution/scheduler metadata for the NDVI comparisons.
+- `io-numpy.json`, `io-cupy.json`: streaming/Dask I/O raw timings, first execution,
+  numerical error, input identity and tile configuration (CPU mode omits CuPy).
 - `summary.csv`, `samples.csv`, `speedups.json`: plot-ready exports.
 - `tests.txt`, `nvidia-smi.txt`, `cupy-config.txt`, `pip-freeze.txt`, and logs.
 - `run-status.txt`: 0 for completion; retain nonzero failures for diagnosis.

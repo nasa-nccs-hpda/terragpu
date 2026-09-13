@@ -18,6 +18,20 @@ def test_invalid_size():
 
 def test_io_benchmark_correctness():
     from terragpu.benchmark_io import run as run_io
-    result = run_io(size=19, tile_size=8, repeat=1)
+    result = run_io(size=19, tile_size=8, repeat=2, warmup=1)
     assert result['correctness_passed']
-    assert all(len(samples) == 1 for samples in result['samples_seconds'].values())
+    assert all(len(samples) == 2 for samples in result['samples_seconds'].values())
+    assert all(t > 0 for t in result['cold_seconds'].values())
+    assert all(e < 1e-6 for e in result['max_absolute_error'].values())
+    assert len(result['input_array_sha256'][0]) == 64
+    other = run_io(size=19, tile_size=16, repeat=1, warmup=0)
+    assert result['input_array_sha256'] == other['input_array_sha256']
+
+
+@pytest.mark.gpu
+def test_io_benchmark_gpu_correctness():
+    pytest.importorskip('cupy')
+    from terragpu.benchmark_io import run as run_io
+    result=run_io(size=19,tile_size=8,repeat=1,warmup=0,device='cupy')
+    assert result['correctness_passed']
+    assert all(error < 1e-6 for error in result['max_absolute_error'].values())

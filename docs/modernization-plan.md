@@ -102,8 +102,9 @@ confidence intervals across independent jobs. Use warmups, >=10 kernel repeats,
 multiple end-to-end jobs, and randomized backend order. Measure peak RAM/VRAM,
 transfer volume, pixels/s or spectra/s and scaling efficiency. Add energy only
 with trustworthy telemetry. Masks must match exactly; report numerical error
-alongside time. Current I/O benchmark is a preliminary smoke test, not this full
-protocol.
+alongside time. The PRISM runner includes matched synthetic streaming/Dask GeoTIFF I/O on
+CPU and GPU, with warmups, input hashes and geospatial/output-layout checks.
+It remains one small synthetic case, not this full protocol.
 
 Ablations: tile/chunk size; lazy versus resident versus streaming; fused versus
 unfused kernels; transfers included/excluded; allocation pool; number of GPUs.
