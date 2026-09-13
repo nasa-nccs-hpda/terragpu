@@ -51,3 +51,30 @@ def test_bad_output_aborts_before_reporting_timings(tmp_path, monkeypatch):
     with pytest.raises(AssertionError,match='wrong science'):
         bench.measure('test',None,operation,validator,'.tif',('numpy',),1,0,tmp_path)
     assert not list(tmp_path.iterdir())
+
+
+def test_failure_preserves_stage_and_http_status_without_secrets(tmp_path,monkeypatch,capsys):
+    monkeypatch.setenv('EARTHDATA_TOKEN','secret-test-token')
+    def download(**kw):
+        kw['progress']('NASA file download')
+        error=RuntimeError('https://provider/?token=secret-test-token')
+        error.response=SimpleNamespace(status_code=403)
+        raise error
+    monkeypatch.setattr(bench,'nasa_data',download)
+    with pytest.raises(RuntimeError,match='NASA file download: HTTP status 403') as caught:
+        bench.prepare(tmp_path)
+    output=capsys.readouterr()
+    assert 'secret-test-token' not in str(caught.value)+output.out+output.err
+    assert 'https://' not in str(caught.value)
+
+
+@pytest.mark.parametrize('error,expected',[
+    (ValueError('Cached query differs; choose a new output directory'),'different scene/query'),
+    (FileExistsError('Use a new output directory or a completed TerraGPU cache'),'without a manifest'),
+    (ModuleNotFoundError('secret-path'),'data extra'),
+    (PermissionError('secret-path'),'permission denied'),
+    (OSError(28,'secret-path'),'error number 28'),
+])
+def test_safe_failure_categories(error,expected):
+    assert expected in bench.safe_failure(error)
+    assert 'secret-path' not in bench.safe_failure(error)

@@ -36,6 +36,48 @@ SAMPLES = {
 }
 
 
+def safe_failure(error):
+    """Keep diagnostic categories/status codes, never provider messages or URLs."""
+    known = {
+        'Use a new output directory or a completed TerraGPU cache': 'Cache directory exists without a manifest; choose a new TERRAGPU_DATA_ROOT or move the incomplete cache aside.',
+        'Cached query differs; choose a new output directory': 'Existing cache selects a different scene/query; choose a new TERRAGPU_DATA_ROOT.',
+        'Cached manifest contains no files': 'Cache manifest is empty; use a new cache directory.',
+        'Cached file missing/corrupt; use a new output directory': 'Cache checksum verification failed; use a new cache directory.',
+        'Invalid cached filename': 'Cache manifest contains an invalid filename.',
+        'No granules found; adjust dates, region or collection/version': 'NASA catalog returned no matches for the fixed granule.',
+        'NASA returned no downloaded files': 'NASA returned no files; check token validity, product access and compute-node network access.',
+        'Unexpected or empty downloaded file': 'Downloader returned an empty or unexpected file.',
+        'Earthdata authentication required; authenticate locally, not in chat': 'Earthdata authentication was rejected; check EARTHDATA_TOKEN.',
+    }
+    if str(error) in known:
+        return known[str(error)]
+    # Inspect structured metadata only; exception strings may embed credentials.
+    current = error; seen = set(); statuses = set(); classes = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        classes.update(c.__name__ for c in type(current).__mro__)
+        status = getattr(getattr(current, 'response', None), 'status_code', None)
+        if type(status) is int and 100 <= status <= 599:
+            statuses.add(status)
+        current = current.__cause__ or current.__context__
+    if statuses:
+        codes = ', '.join(map(str, sorted(statuses)))
+        return f'HTTP status {codes}; 401/403 indicate authentication or access denial; 429/5xx indicate a service/rate-limit failure.'
+    for category, advice in [
+        ('SSLError', 'TLS certificate verification failed; check the node certificate/proxy configuration.'),
+        ('Timeout', 'Network request timed out; try download-only on a network-enabled node.'),
+        ('ConnectionError', 'Network connection failed; check DNS, proxy and compute-node outbound access.'),
+        ('ImportError', 'Downloader dependency could not be imported; rerun setup_prism_uv.sh to install the data extra.'),
+        ('PermissionError', 'Filesystem permission denied; check cache directory access.'),
+        ('JSONDecodeError', 'Invalid JSON was returned or read from the cache manifest.'),
+    ]:
+        if category in classes:
+            return advice
+    if isinstance(error, OSError) and type(error.errno) is int:
+        return f'Filesystem/network OS error number {error.errno}; check available space and directory access.'
+    return 'Exception type '+type(error).__name__+'; provider message omitted to protect credentials.'
+
+
 def prepare(data_root):
     root = Path(data_root)
     manifests = {}
@@ -47,12 +89,16 @@ def prepare(data_root):
         # Suppress third-party download diagnostics, including signed URLs. Never
         # propagate provider exception text which may contain authorization data.
         previous_logging = logging.root.manager.disable
+        phase = 'initialization'
+        def progress(value):
+            nonlocal phase
+            phase = value
         try:
             logging.disable(logging.CRITICAL)
             with open(os.devnull, 'w') as sink, redirect_stdout(sink), redirect_stderr(sink):
-                manifest = nasa_data(**query, output=destination)
-        except Exception:
-            raise RuntimeError(f'{name} download/cache verification failed; check EARTHDATA_TOKEN, network access and cache integrity') from None
+                manifest = nasa_data(**query, output=destination, progress=progress)
+        except Exception as error:
+            raise RuntimeError(f'{name} failed during {phase}: {safe_failure(error)}') from None
         finally:
             logging.disable(previous_logging)
         if len(manifest['granules']) != 1 or manifest['granules'][0]['granule_ur'] != query['granule_name']:

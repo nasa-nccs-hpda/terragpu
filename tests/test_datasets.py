@@ -181,3 +181,27 @@ def test_exact_granule_is_in_query_and_cache_identity(tmp_path, nasa):
     assert seen==['example']
     with pytest.raises(ValueError,match='Cached query differs'):
         datasets.nasa_data(**QUERY,output=tmp_path/'cache',granule_name='other')
+
+
+def test_old_cache_reused_only_for_same_pinned_granule(tmp_path, nasa, monkeypatch):
+    output=tmp_path/'cache'
+    original=datasets.nasa_data(**QUERY,output=output)
+    def offline():raise AssertionError('Verified cache must work offline')
+    monkeypatch.setattr(datasets,'_earthaccess',offline)
+    stages=[]
+    assert datasets.nasa_data(**QUERY,output=output,granule_name='example',progress=stages.append)==original
+    assert stages==['cache verification']
+    with pytest.raises(ValueError,match='Cached query differs'):
+        datasets.nasa_data(**QUERY,output=output,granule_name='another-scene')
+    (output/'B04.tif').write_bytes(b'corrupt')
+    with pytest.raises(ValueError,match='missing/corrupt'):
+        datasets.nasa_data(**QUERY,output=output,granule_name='example')
+
+
+def test_download_failure_reports_current_phase(tmp_path,nasa):
+    stages=[]
+    def failed(*args,**kwargs):raise OSError('provider detail')
+    nasa.download=failed
+    with pytest.raises(OSError):
+        datasets.nasa_data(**QUERY,output=tmp_path/'cache',progress=stages.append)
+    assert stages[-1]=='NASA file download'

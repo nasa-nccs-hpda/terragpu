@@ -205,7 +205,7 @@ def _login(client, strategy, token_file=None):
 
 def nasa_data(*, short_name, version, bbox, start, end, limit=1,
               output='data/nasa-example', search_only=False, login_strategy='environment', token_file=None,
-              granule_name=None):
+              granule_name=None, progress=None):
     """Discover/download whole native NASA granules, retaining a local manifest.
 
     Search is anonymous. Downloads require Earthdata credentials supplied to
@@ -215,15 +215,26 @@ def nasa_data(*, short_name, version, bbox, start, end, limit=1,
     Reuse a verified completed output offline, or use a new directory for a new query.
     """
     query = _query(short_name, version, bbox, start, end, limit)
+    def stage(name):
+        if progress is not None:
+            progress(name)
     if granule_name is not None:
         query['granule_name'] = granule_name
     output = Path(output)
     manifest_path = output / 'manifest.json'
     if not search_only and output.exists():
+        stage('cache verification')
         if not manifest_path.is_file():
             raise FileExistsError('Use a new output directory or a completed TerraGPU cache')
         manifest = json.loads(manifest_path.read_text())
-        if manifest.get('query') != query:
+        cached_query = manifest.get('query')
+        # Older download examples did not include a granule-name search filter.
+        # Reuse only when all other query fields AND the actual granule match.
+        legacy_match = (granule_name is not None
+                        and cached_query == {k:v for k,v in query.items() if k != 'granule_name'}
+                        and len(manifest.get('granules', [])) == 1
+                        and manifest['granules'][0].get('granule_ur') == granule_name)
+        if cached_query != query and not legacy_match:
             raise ValueError('Cached query differs; choose a new output directory')
         if not manifest.get('files'):
             raise ValueError('Cached manifest contains no files')
@@ -234,7 +245,9 @@ def nasa_data(*, short_name, version, bbox, start, end, limit=1,
             if not path.is_file() or sha256(path) != item['sha256']:
                 raise ValueError('Cached file missing/corrupt; use a new output directory')
         return manifest
+    stage('load Earthdata downloader')
     client = _earthaccess()
+    stage('NASA catalog search')
     granules = client.search_data(**{**query, 'bounding_box': tuple(query['bounding_box']),
                                      'temporal': tuple(query['temporal'])})
     if not granules:
@@ -245,16 +258,20 @@ def nasa_data(*, short_name, version, bbox, start, end, limit=1,
         return summary
     if login_strategy not in {'environment', 'netrc', 'interactive'}:
         raise ValueError('Unsupported login strategy')
+    stage('Earthdata authentication')
     auth = _login(client, login_strategy, token_file)
     if not auth.authenticated:
         raise RuntimeError('Earthdata authentication required; authenticate locally, not in chat')
+    stage('create download directory')
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output.parent, prefix='.nasa-download-') as temporary:
         staging = Path(temporary) / 'dataset'
         staging.mkdir()
+        stage('NASA file download')
         paths = client.download(granules, local_path=staging, threads=2)
         if not paths:
             raise RuntimeError('NASA returned no downloaded files')
+        stage('downloaded file verification')
         files = []
         for raw in paths:
             path = Path(raw)
@@ -263,6 +280,7 @@ def nasa_data(*, short_name, version, bbox, start, end, limit=1,
             files.append({'name': path.name, 'size_bytes': path.stat().st_size, 'sha256': sha256(path)})
         manifest = {**summary, 'retrieved_utc': datetime.now(timezone.utc).isoformat(),
                     'earthaccess_version': client.__version__, 'files': files}
+        stage('save verified cache')
         _write_json(staging / 'manifest.json', manifest)
         if output.exists():
             raise FileExistsError(output)

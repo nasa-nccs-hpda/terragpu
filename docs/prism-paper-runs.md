@@ -188,3 +188,18 @@ An interrupted suite leaves `.partial.json`; partial results are not a completed
 paper run. Publishable claims still require matched V100/H100 runs, multiple
 scenes/sizes, an optimized multicore CPU comparison, memory measurements and
 appropriate external baselines (e.g. established classical stereo implementations).
+
+## Download failure diagnostics
+
+To retry only download/cache verification inside an activated environment, use
+`python -m scripts.benchmark_products --download-only`. The error identifies the
+stage (cache verification, catalog search, authentication, file download or cache
+save) and reports safe HTTP status/error categories without provider URLs or
+credentials. HTTP 401/403 indicates authentication/access denial, not necessarily
+a missing environment variable. TLS/connection failures may require prefetching
+on a network-enabled node. Missing downloader dependencies require rerunning setup.
+
+Older TerraGPU caches without the granule-name query field can be reused when
+the remaining query, exact recorded granule and all file checksums match. A
+mismatched scene or corrupt cache remains an error. Keep existing caches until
+the diagnostic identifies a problem; no blanket deletion is required.
