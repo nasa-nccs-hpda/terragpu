@@ -7,10 +7,15 @@ from terragpu.gpu_io import pack_raster,RasterCache
 from test_gpu_io import scene
 
 
-def test_multiscale_against_manual_neighbors():
-    tile=np.arange(2*9*11,dtype='float32').reshape(2,9,11)/100
+@pytest.mark.parametrize('backend', ['numpy', pytest.param('cupy', marks=pytest.mark.gpu)])
+@pytest.mark.parametrize('offset,scale', [(0., .01), (2.**30, 128.)])
+def test_multiscale_against_manual_neighbors(offset,scale,backend):
+    xp=np if backend=='numpy' else pytest.importorskip('cupy')
+    tile=np.arange(2*9*11,dtype='float32').reshape(2,9,11)*scale+offset
     tile[:,2:5,3:7]=np.nan
-    actual=features(tile,[3,5],np)
+    tile=np.concatenate((tile,np.full((1,9,11),np.nan,dtype='float32')))
+    actual=features(xp.asarray(tile),[3,5],xp)
+    if backend!='numpy':actual=xp.asnumpy(actual)
     expected=[]
     for band in tile:
         for size in [3,5]:
@@ -21,10 +26,16 @@ def test_multiscale_against_manual_neighbors():
                     if np.isfinite(patch).any():mean[y,x]=np.nanmean(patch);var[y,x]=np.nanvar(patch)
             expected.extend([mean,var])
     np.testing.assert_allclose(actual,np.stack(expected),rtol=2e-5,atol=2e-6,equal_nan=True)
+    np.testing.assert_allclose(reference(tile,[3,5]),np.stack(expected),rtol=2e-5,atol=2e-6,equal_nan=True)
 
 
-def test_full_cpu_experiment_and_cleanup(tmp_path):
+@pytest.mark.parametrize('large_offset', [False, True])
+def test_full_cpu_experiment_and_cleanup(tmp_path,large_offset):
     src=tmp_path/'source.tif';scene(src)
+    if large_offset:
+        import rasterio
+        with rasterio.open(src,'r+') as dataset:
+            dataset.scales=(128.,);dataset.offsets=(2.**30,)
     result=run(tmp_path/'result.json',work_root=tmp_path/'work',source=src,modes=['numpy'],
                tiles=[8,32],sizes=[3,5],repeat=1,warmup=0,allow_dirty=True)
     assert result['status']=='complete' and not result['gds_verified']

@@ -32,16 +32,19 @@ def features(tile, sizes, xp):
         from cupyx.scipy.ndimage import uniform_filter as filt
     result=[]
     for band in tile:
-        # Float64 moments avoid cancellation in low-variance neighborhoods.
+        # Center float64 moments to preserve small variance at large offsets.
+        # The reduction and scalar stay on device in GPU modes.
         band=band.astype(xp.float64)
         valid=xp.isfinite(band)
         values=xp.where(valid,band,0.)
+        offset=xp.sum(values)/xp.maximum(xp.sum(valid),1)
+        values=xp.where(valid,band-offset,0.)
         for size in sizes:
             count=xp.rint(filt(valid.astype(xp.float64),size,mode='constant')*size**2)
             denominator=xp.where(count>0,count,1.)
             mean=filt(values,size,mode='constant')*size**2/denominator
             second=filt(values*values,size,mode='constant')*size**2/denominator
-            result.extend((xp.where(count>0,mean,xp.nan),
+            result.extend((xp.where(count>0,mean+offset,xp.nan),
                            xp.where(count>0,xp.maximum(second-mean*mean,0),xp.nan)))
     return xp.stack(result).astype(xp.float32)
 
@@ -51,13 +54,15 @@ def reference(tile,sizes):
     result=[]
     for band in tile.astype('float64'):
         valid=np.isfinite(band)
-        data=np.where(valid,band,0.)
+        # Use a different center from the production reduction.
+        offset=band[valid][0] if valid.any() else 0.
+        data=np.where(valid,band-offset,0.)
         for size in sizes:
             count=np.rint(uniform_filter(valid.astype('float64'),size,mode='constant')*size**2)
             mean=np.full(band.shape,np.nan);second=mean.copy()
             np.divide(uniform_filter(data,size,mode='constant')*size**2,count,out=mean,where=count>0)
             np.divide(uniform_filter(data*data,size,mode='constant')*size**2,count,out=second,where=count>0)
-            result.extend((mean,np.maximum(second-mean*mean,0)))
+            result.extend((mean+offset,np.maximum(second-mean*mean,0)))
     return np.stack(result)
 
 
@@ -146,7 +151,7 @@ def run(output,work_root='data/gpu-io',data_root='data',source=None,modes=('nump
                 packages={d.metadata['Name']:d.version for d in distributions()},
                 threads={k:os.environ.get(k) for k in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','NUMEXPR_NUM_THREADS')},
                 gds_verified=False,notes=['Experimental uncompressed halo cache; not native GeoTIFF/NetCDF GPU decoding.',
-                'Float64 moment accumulation and float32 cache output on both CPU and GPU.',
+                'Centered float64 moment accumulation and float32 cache output on both CPU and GPU.',
                 'CPU metadata, initial ingestion and explicit GeoTIFF export remain on host.',
                 'Cache pipeline read timings include H2D in cupy mode; write timings include D2H in cupy mode.',
                 'KvikIO cuFile mode is requested, not verified direct storage. Inspect mount-specific GDS diagnostics.',

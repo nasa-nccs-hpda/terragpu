@@ -30,7 +30,7 @@ storage configuration still need to pass the on-node probes.
 The default example automatically downloads the public WorldView sample (~257 MB),
 or verifies its existing cache. **No Earthdata token is needed for this example.**
 It first produces QA-masked NDVI/NDWI on CPU, then benchmarks multi-scale spatial
-means and variances at 15- and 31-pixel windows. Moments accumulate in float64;
+means and variances at 15- and 31-pixel windows. Centered moments accumulate in float64;
 outputs are float32 on both backends. This is a new experiment alongside the
 existing five-product paper suite, which remains available unchanged.
 
@@ -93,9 +93,9 @@ python -m terragpu.benchmark_gpu_io \
 
 Use representative larger scenes and more substantial analysis, not duplicated
 pixels to manufacture a speedup. The suite validates every output against a
-float64 reference. The raw moment variance estimator is intended for reflectance
-and index imagery; very large offsets with tiny variance can still require a
-more stable variance algorithm and will be rejected if validation fails.
+float64 reference. The variance estimator centers each tile before accumulating moments, reducing
+cancellation when values have a large offset. Extreme within-tile dynamic range
+can still require a different algorithm; numerical validation remains mandatory.
 
 ## Reader/writer API
 
