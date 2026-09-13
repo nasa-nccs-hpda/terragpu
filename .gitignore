@@ -38,3 +38,5 @@ Logs/
 
 # cuFile diagnostic output generated in the working directory
 /cufile.log
+
+.venv-publication-*/

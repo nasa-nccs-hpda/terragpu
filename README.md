@@ -122,3 +122,6 @@ For the experimental device-buffer reader/writer and a GPU-resident spatial
 feature pipeline, see [GPU I/O on PRISM](docs/gpu-direct-io.md). This measures
 KvikIO compatibility and cuFile-requested paths separately; native format
 conversion remains an explicit CPU step.
+
+For native-input-to-GeoTIFF timing, CPU worker sweeps, tile reuse and sampled
+memory, use the [publication experiment commands](docs/publication-runs.md).
