@@ -35,4 +35,6 @@ fi
 stage='GPU I/O experiment'
 # All scratch payloads are created on work, removed after verification. Results are small.
 python -m terragpu.benchmark_gpu_io --work-root "$work" --data-root "$data_root" --tiles 512 1024 --sizes 15 31 --repeat "$repeat" --warmup 1 --output "$out/gpu-io.json"
+stage='audit GPU I/O metrics'
+python -m terragpu.gpu_io_metrics "$out/gpu-io.json" "$out/metrics"
 echo "Results: $out. Inspect skipped_modes and gds_verified; cuFile requested does not establish GDS."

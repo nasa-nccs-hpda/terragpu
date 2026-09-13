@@ -144,3 +144,31 @@ path. Ask NCCS which exact mount is enabled for GDS and which CUDA/GDS module
 qualifies the GH200 nodes. A positive platform check must still be followed by
 mount-specific read/write validation with cuFile telemetry. Do not infer direct
 storage from a successful compatibility-mode operation.
+
+## Auditable plotting metrics
+
+New PRISM runs generate a `metrics/` directory automatically after the benchmark.
+For an existing completed run, including one downloaded from PRISM:
+
+```bash
+python -m terragpu.gpu_io_metrics \
+  results/prism-gpu-io-nvme-02/gpu-io.json \
+  results/prism-gpu-io-nvme-02/metrics
+```
+
+The exporter needs only Python's standard library. It validates completion,
+clean revision, the successful-mode/tile matrix, numerical-validation flags,
+repetition counts, finite nonnegative phase times, phase totals and stored medians.
+CPU/backend ratios require matching workload, shape, scope and input sizes.
+It rejects incomplete or inconsistent reports before creating output and refuses
+to overwrite an existing metrics directory.
+
+`summary.csv` contains recomputed medians and within-run min/max values;
+`samples.csv` contains every measured repetition and phase for plotting.
+`same-tile-ratios.csv` compares each GPU mode with its matching CPU tile size,
+when CPU results are present. `preparation.csv` retains separately measured
+conversion/export costs. `provenance.json` records source identifiers, thread
+settings and interpretation limits. These are checks of recorded evidence, not
+a rerun of numerical validation. The exporter cannot establish GDS, independent
+job uncertainty, tuned CPU performance or native-product end-to-end speedups.
+Phase medians must not be added and presented as the median total.
