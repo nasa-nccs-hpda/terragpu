@@ -194,3 +194,55 @@ Setup, scheduling and measurement overhead are not fully attributed. Writes
 can be buffered until close; neither measurement implies an fsync durability
 barrier or GDS. Plot aggregation rejects mixing profiled and unprofiled runs.
 CUDA profiling tests are included in the runner but require PRISM qualification.
+
+## Test the larger-data hypothesis
+
+The controlled size sweep reuses the public WorldView sample without additional
+credentials. It materializes 1x1, 2x2 and 4x4 repetitions of its QA-masked NDVI/NDWI
+raster: approximately 18, 72 and 289 million pixels. These are physical GeoTIFFs,
+not VRT aliases. All files and figures label the repeated extent as synthetic;
+the seams and enlarged coordinates do not represent new observations.
+
+With the publication environment active and at least eight allocated CPU cores:
+
+```bash
+git pull --ff-only
+TERRAGPU_IO_ROOT=/lscratch/$USER/terragpu \
+TERRAGPU_STORAGE_LABEL=nvme \
+srun --ntasks=1 --cpus-per-task=8 bash scripts/run_prism_scaling.sh \
+  results/prism-scaling-01 --scales 1 2 4 --tiles 1024 2048 \
+  --workers 1 4 8 --query-counts 1 3
+
+tar -czf prism-scaling-01-results.tar.gz -C results prism-scaling-01
+```
+
+Use the environment from `scripts/setup_prism_publication.sh`; see
+[PRISM validation](prism-validation.md) for device/environment checks. Allow
+roughly 40 GiB free scratch for this default sample and configuration; the
+runner checks a conservative uncompressed input/output estimate before each
+size. Generated scenes and trial outputs are deleted after use. Timing,
+validation, environment and figure artifacts remain in the results directory.
+
+This tests two separate effects: total data volume (scene size) and work per
+GPU tile (tile size). It uses the reuse strategy for every backend, five measured
+trials plus a warmup, and records CPU/GPU parity for every trial. WorldView QA/index
+preparation and generation of the repeated scene are outside the timer. Timed
+work starts at the generated GeoTIFF and ends after all compressed spatial-feature
+GeoTIFFs close. Do not compare these totals directly with the earlier native
+WorldView preparation-inclusive results. BigTIFF supports large outputs.
+
+`sweep/scaling.csv` contains every configuration's raw-size throughput, median
+runtime and sampled memory peaks. Per-size JSON retains individual trials and
+provenance. `sweep/scaling.png` and PDF compare the best tested CPU and GPU at
+each size and query count; `best-tested.json` identifies the selected worker/tile
+configurations. This selection is descriptive and should be confirmed in fresh
+allocations. Memory sampling and filesystem-cache limitations still apply.
+
+Larger total data alone need not improve the GPU ratio when per-tile compute and
+I/O both scale proportionally. This sweep can reveal that outcome as well as a
+crossover. It does not establish larger-than-VRAM behavior or generalization to
+new scenes. For the paper, confirm findings with independent larger imagery;
+`--source /path/to/real.tif --scales 1` runs the same spatial-feature benchmark on
+an existing real scene without repetition (still normalized to physical float32
+GeoTIFF before timing). Additional scales such as 8 are opt-in and increase disk
+space and runtime substantially.

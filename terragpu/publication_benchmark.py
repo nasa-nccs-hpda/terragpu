@@ -145,7 +145,7 @@ def pipeline(source,folder,queries,*,backend='numpy',workers=1,tile=1024,strateg
         bands=[b or f'band{i+1}' for i,b in enumerate(src.descriptions)]
         profile=dict(driver='GTiff',height=height,width=width,crs=src.crs,transform=src.transform,
                      dtype='float32',nodata=np.nan,tiled=True,blockxsize=256,blockysize=256,
-                     compress='LZW',NUM_THREADS='1')
+                     compress='LZW',BIGTIFF='IF_SAFER',NUM_THREADS='1')
     cache=None;packing=None
     if strategy=='packed':
         with stages.measure('packing'):
