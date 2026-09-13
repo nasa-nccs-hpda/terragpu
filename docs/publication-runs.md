@@ -246,3 +246,20 @@ new scenes. For the paper, confirm findings with independent larger imagery;
 an existing real scene without repetition (still normalized to physical float32
 GeoTIFF before timing). Additional scales such as 8 are opt-in and increase disk
 space and runtime substantially.
+
+### Direct bash launches and CPU allocation evidence
+
+The publication and scaling reports record `execution.cpu_resources`: CPU
+logical count, process affinity and allowlisted Slurm per-task/per-node CPU
+variables. Missing values remain null; job CPU strings such as `8(x2)` remain
+unaltered. These are separate observations, not a verified allocation size.
+A shell can see all node CPUs or inherit stale scheduler variables. In particular,
+`SLURM_CPUS_ON_NODE` is not a per-task worker budget.
+
+Launching with `bash` does not automatically use every visible CPU: the explicit
+`--workers 1 4 8` sweep runs separate configurations with those worker counts,
+and the runner limits common numerical-library thread counts to one. Confirm
+that the allocation permits the requested counts using `scontrol show job
+"$SLURM_JOB_ID"`; the existing allocation/affinity guard cannot prove scheduler
+entitlement when per-task information is absent. No additional `srun` step is
+required by TerraGPU itself. See [PRISM validation](prism-validation.md).
