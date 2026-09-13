@@ -29,6 +29,7 @@ from .datasets import fetch_worldview_sample, sha256, _write_json
 from .engine import array_module
 from .gpu_io import RasterCache, pack_raster
 from .paper_benchmark import _summary
+from .run_provenance import execution_metadata
 from .worldview import process_worldview
 from .worldview_validation import validate as validate_worldview
 
@@ -216,7 +217,7 @@ def run(output,*,source=None,data_root='data',work_root='data/publication',backe
         inputs=[dict(name=p.name,sha256=sha256(p),bytes=p.stat().st_size) for p in paths]
         with rasterio.open(paths[1]) as src:source_shape=[2,src.height,src.width]
     report=dict(schema_version=1,status='running',timestamp_utc=datetime.now(timezone.utc).isoformat(),
-                git_commit=_git('rev-parse','HEAD'),git_dirty=dirty,inputs=inputs,source_shape=source_shape,
+                git_commit=_git('rev-parse','HEAD'),git_dirty=dirty,execution=execution_metadata(),inputs=inputs,source_shape=source_shape,
                 source_kind='WorldView native ARD to QA-masked indices to spatial features' if item else 'user GeoTIFF to spatial features',
                 repeat=repeat,warmup=warmup,seed=seed,storage_label=storage_label,records=[],execution_order=[],
                 hardware=dict(platform=platform.platform(),cpu_count=os.cpu_count(),available_cpus=available_cpus(),

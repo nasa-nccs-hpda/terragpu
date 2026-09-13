@@ -144,3 +144,22 @@ review stereo accuracy before including it; complete methods/related work,
 figures, author review, applicable institutional clearance and archived release.
 See paper/manuscript.md and docs/gpu-geotiff-gap.md. No tag, merge or publication
 is performed by these scripts.
+
+## Allocation provenance for new run series
+
+New reports include a unique run identifier and the Slurm job, step and optional
+array identifiers. Only these selected environment fields are captured; the
+full environment and authentication variables are not exported. The figure
+provenance retains the reported identifiers.
+
+For multiple reports produced with allocation provenance, add
+`--require-distinct-jobs` to the figure command. It requires at least two reports
+with different run IDs and numeric Slurm job IDs, and rejects separate `srun`
+steps from the same allocation. This checks reported allocation identity; it does
+not prove statistical independence, eliminate shared-storage interference or
+replace review of scheduler records.
+
+Older reports and local runs without Slurm remain usable with the default figure
+command. They cannot pass this optional allocation check. Do not invent or guess
+missing job IDs. Keep the same benchmark revision throughout a run series rather
+than upgrading mid-series solely to obtain this metadata.

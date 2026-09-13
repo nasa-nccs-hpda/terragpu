@@ -7,6 +7,8 @@ import math
 from pathlib import Path
 import statistics
 
+from .run_provenance import require_distinct_jobs as check_distinct_jobs
+
 KEYS=('backend','workers','tile','query_count','strategy')
 
 
@@ -40,7 +42,7 @@ def validate_sample(sample,backend):
         raise ValueError('Invalid numerical validation evidence')
 
 
-def summarize(paths,allow_dirty=False):
+def summarize(paths,allow_dirty=False,require_distinct_jobs=False):
     reports=[];hashes=set();matrix=None;identity=None
     for path in map(Path,paths):
         if path.with_suffix('.partial.json').exists():raise ValueError('Partial report remains')
@@ -69,6 +71,7 @@ def summarize(paths,allow_dirty=False):
                 validate_sample(sample,record['backend'])
         reports.append(report)
     if not reports:raise ValueError('No reports')
+    if require_distinct_jobs:check_distinct_jobs(reports)
     if len(reports)>1 and identity['storage_label'] in (None,'unspecified'):
         raise ValueError('Give benchmark runs an explicit storage label before aggregation')
     rows=[]
@@ -82,8 +85,8 @@ def summarize(paths,allow_dirty=False):
     return rows,reports
 
 
-def plot(paths,output,allow_dirty=False):
-    rows,reports=summarize(paths,allow_dirty)
+def plot(paths,output,allow_dirty=False,require_distinct_jobs=False):
+    rows,reports=summarize(paths,allow_dirty,require_distinct_jobs)
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -108,7 +111,9 @@ def plot(paths,output,allow_dirty=False):
     with (output/'run-summary.csv').open('w',newline='') as stream:
         fields=[k for k in rows[0] if k!='run_medians_seconds']
         writer=csv.DictWriter(stream,fieldnames=fields,extrasaction='ignore');writer.writeheader();writer.writerows(rows)
-    provenance=dict(git_commit=reports[0]['git_commit'], storage_label=reports[0].get('storage_label'),
+    provenance=dict(distinct_reported_jobs_checked=require_distinct_jobs,
+                    execution=[r.get('execution') for r in reports],
+                    git_commit=reports[0]['git_commit'], storage_label=reports[0].get('storage_label'),
                     input_manifests=reports[0]['inputs'],
                     report_sha256=[hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths],
                     aggregation='median of run medians; independent job provenance must be checked separately')
@@ -125,6 +130,7 @@ def plot(paths,output,allow_dirty=False):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('paths',nargs='+',type=Path)
     p.add_argument('--output',required=True,type=Path);p.add_argument('--allow-dirty',action='store_true')
+    p.add_argument('--require-distinct-jobs',action='store_true')
     plot(**vars(p.parse_args()))
 
 

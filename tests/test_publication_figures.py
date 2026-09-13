@@ -75,3 +75,18 @@ def test_gpu_measurements_and_numerical_evidence():
     sample['memory']['device_used_start_bytes']=100
     sample['validation']['finite_values']=0
     with pytest.raises(ValueError,match='numerical'):validate_sample(sample,'cupy')
+
+
+def test_optional_distinct_job_gate_keeps_legacy_reports_readable(tmp_path):
+    from test_run_provenance import report as execution_report
+    first=report();second=copy.deepcopy(first);second['timestamp_utc']='different run'
+    paths=[tmp_path/'a.json',tmp_path/'b.json']
+    def write():
+        for path,value in zip(paths,[first,second]):path.write_text(json.dumps(value))
+    write()
+    assert len(summarize(paths)[0])==1
+    with pytest.raises(ValueError,match='run identifier'):summarize(paths,require_distinct_jobs=True)
+    first.update(execution_report('10'));second.update(execution_report('11'));write()
+    assert len(summarize(paths,require_distinct_jobs=True)[0])==1
+    second['execution']['scheduler']['job_id']='10';write()
+    with pytest.raises(ValueError,match='allocation'):summarize(paths,require_distinct_jobs=True)
