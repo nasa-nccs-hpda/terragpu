@@ -16,6 +16,13 @@ finish() {
 trap finish EXIT
 exec > >(tee "$out/run.log") 2>&1
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
+stage='publication dependencies'
+# Catch missing plot dependencies before starting an expensive GPU run.
+if ! python -c 'import psutil; import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot' > "$out/dependencies.txt" 2>&1; then
+ cat "$out/dependencies.txt"
+ echo 'Activate the environment created by scripts/setup_prism_publication.sh.' >&2
+ exit 1
+fi
 stage=preflight
 git rev-parse HEAD > "$out/git-commit.txt"
 git status --short > "$out/git-status.txt"
