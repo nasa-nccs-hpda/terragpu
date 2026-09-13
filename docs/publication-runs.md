@@ -124,7 +124,9 @@ python -m terragpu.publication_figures \
 ```
 
 Aggregation validates matching source, code, environment, hardware, storage label
-and case matrix. It summarizes run medians, not a pooled set of correlated
+and case matrix. It also rejects nonfinite/negative memory values, peaks below
+starting usage, missing GPU memory measurements in GPU cases and invalid recorded
+numerical-validation evidence before creating figures. It summarizes run medians, not a pooled set of correlated
 within-job repetitions. Points show each run median; memory plots report sampled
 process RSS. CPU comparisons in the trial CSV use the best tested CPU case at the
 same query count, rather than selecting only a convenient slow CPU tile size.

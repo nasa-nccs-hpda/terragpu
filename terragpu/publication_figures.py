@@ -13,6 +13,33 @@ KEYS=('backend','workers','tile','query_count','strategy')
 def case_key(record):return tuple(record[k] for k in KEYS)
 
 
+def validate_sample(sample,backend):
+    """Check recorded measurements, without treating sampled peaks as exact peaks."""
+    def finite(value,positive=False):
+        return (not isinstance(value,bool) and isinstance(value,(int,float))
+                and math.isfinite(value) and (value>0 if positive else value>=0))
+    memory=sample['memory']
+    if memory.get('sampling_error') is not None:raise ValueError('Memory sampling failed')
+    if not finite(memory.get('sampling_interval_seconds'),positive=True):
+        raise ValueError('Invalid memory sampling interval')
+    start=memory.get('process_rss_start_bytes');peak=memory.get('process_rss_sampled_peak_bytes')
+    if not finite(start,positive=True) or not finite(peak,positive=True) or peak<start:
+        raise ValueError('Invalid process memory measurements')
+    device=[memory.get(k) for k in ('device_used_start_bytes','device_used_sampled_peak_bytes',
+                                  'cupy_pool_reserved_sampled_peak_bytes')]
+    if backend=='cupy':
+        if not all(finite(v) for v in device) or device[1]<device[0]:
+            raise ValueError('Invalid GPU memory measurements')
+    elif backend=='numpy':
+        if any(v is not None for v in device):raise ValueError('Unexpected GPU memory in CPU case')
+    else:raise ValueError('Unknown backend')
+    check=sample['validation']
+    if (check.get('metadata_and_masks_match') is not True
+            or type(check.get('finite_values')) is not int or check['finite_values']<1
+            or not all(finite(check.get(k)) for k in ('max_absolute_error','rtol','atol'))):
+        raise ValueError('Invalid numerical validation evidence')
+
+
 def summarize(paths,allow_dirty=False):
     reports=[];hashes=set();matrix=None;identity=None
     for path in map(Path,paths):
@@ -39,8 +66,7 @@ def summarize(paths,allow_dirty=False):
             if not math.isclose(statistics.median(values),record['median_seconds'],rel_tol=1e-9):
                 raise ValueError('Summary disagrees with raw timings')
             for sample in record['samples']:
-                if sample['memory']['sampling_error'] is not None:raise ValueError('Memory sampling failed')
-                if sample['validation']['metadata_and_masks_match'] is not True:raise ValueError('Validation failed')
+                validate_sample(sample,record['backend'])
         reports.append(report)
     if not reports:raise ValueError('No reports')
     if len(reports)>1 and identity['storage_label'] in (None,'unspecified'):
