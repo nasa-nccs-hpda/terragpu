@@ -33,3 +33,6 @@ Logs/
 .venv-prism/
 .venv-prism-*/
 .pytest_cache/
+.venv-io-*/
+/prism-*-results.tar.gz
+/discover-*-results.tar.gz

@@ -21,6 +21,7 @@ pace = ["netCDF4>=1.7,<2"]
 viirs = ["netCDF4>=1.7,<2"]
 benchmark = ["scipy>=1.16,<2"]
 parallel = ["dask[array,distributed]>=2025.1"]
+gpu-io = ["kvikio-cu12==26.8.0; sys_platform == 'linux'"]
 test = ["pytest>=8", "build>=1.2"]
 
 [project.scripts]

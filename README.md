@@ -117,3 +117,8 @@ Please consider citing this when using terragpu in a project. You can use the ci
   year = {2020}
 }
 ```
+
+For the experimental device-buffer reader/writer and a GPU-resident spatial
+feature pipeline, see [GPU I/O on Discover](docs/gpu-direct-io.md). This measures
+KvikIO compatibility and cuFile-requested paths separately; native format
+conversion remains an explicit CPU step.
