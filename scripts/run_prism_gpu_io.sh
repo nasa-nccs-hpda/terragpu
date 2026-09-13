@@ -27,12 +27,7 @@ python -c 'import cupy as cp; cp.show_config(); assert float(cp.arange(32).sum()
 # Mount identity is necessary: the GPU model does not establish GDS support.
 if command -v findmnt >/dev/null; then findmnt -T "$work" > "$out/mount.txt" || true; fi
 if command -v df >/dev/null; then df -h "$work" > "$out/storage-space.txt" || true; fi
-gdscheck=$(command -v gdscheck || true)
-if [[ -z "$gdscheck" && -x "${CUDA_HOME:-/usr/local/cuda}/gds/tools/gdscheck" ]]; then
- gdscheck="${CUDA_HOME:-/usr/local/cuda}/gds/tools/gdscheck"
-fi
-if [[ -n "$gdscheck" ]]; then "$gdscheck" -p > "$out/gdscheck.txt" 2>&1 || true
-else printf 'gdscheck not found; cuFile/GDS qualification remains unverified.\n' > "$out/gdscheck.txt"; fi
+bash scripts/check_prism_gds.sh "$work" > "$out/gdscheck.txt" 2>&1 || true
 stage='correctness tests'
 if ! python -m pytest tests/test_gpu_io.py tests/test_gpu_io_benchmark.py -q --tb=short --disable-warnings > "$out/tests.txt" 2>&1; then
  tail -60 "$out/tests.txt";exit 1

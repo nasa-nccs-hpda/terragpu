@@ -126,3 +126,21 @@ writes are cleaned up.
 
 Relevant upstream documentation: [KvikIO quickstart](https://docs.nvidia.com/kvikio/latest/quickstart/)
 and [KvikIO CUDA 12 package](https://pypi.org/project/kvikio-cu12/26.8.0/).
+
+## Diagnose GDS without repeating the benchmark
+
+From the repository in an active PRISM allocation:
+
+```bash
+srun --ntasks=1 --export=ALL bash scripts/check_prism_gds.sh data/gpu-io \
+  2>&1 | tee results/prism-gds-check.txt
+```
+
+This read-only check locates both `gdscheck` and `gdscheck.py`, including
+`CUDA_HOME` and versioned installations under `/usr/local`. It reports the
+filesystem and relevant loaded kernel modules. Missing tools do not prove GDS
+is unavailable: NCCS may provide them through a module or another installation
+path. Ask NCCS which exact mount is enabled for GDS and which CUDA/GDS module
+qualifies the GH200 nodes. A positive platform check must still be followed by
+mount-specific read/write validation with cuFile telemetry. Do not infer direct
+storage from a successful compatibility-mode operation.
