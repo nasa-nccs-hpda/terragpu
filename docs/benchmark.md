@@ -1,3 +1,6 @@
+> Historical, unverified measurements from the original implementation. These lack
+> sufficient provenance for paper comparisons. See benchmark-protocol.md for the new protocol.
+
 # Benchmark
 
 ## Gonji

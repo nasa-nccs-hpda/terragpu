@@ -1,6 +1,6 @@
 import logging  # logging messages
 import unittest
-from xrasterlib.dgfile import DGFile
+from terragpu.metadata.dgfile import DGFile
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"

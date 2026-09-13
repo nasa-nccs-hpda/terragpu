@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "terragpu"
+version = "2026.9.0.dev0"
+description = "CPU and GPU raster processing for remote sensing"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{name = "Jordan A. Caraballo-Vega", email = "jordan.a.caraballo-vega@nasa.gov"}]
+dependencies = [
+  "numpy>=2,<3", "xarray>=2025.1", "certifi>=2024.2.2",
+  "rasterio>=1.4,<2", "rioxarray>=0.19,<1",
+]
+
+[project.optional-dependencies]
+data = ["earthaccess>=0.16,<1"]
+pace = ["netCDF4>=1.7,<2"]
+viirs = ["netCDF4>=1.7,<2"]
+benchmark = ["scipy>=1.16,<2"]
+publication = ["scipy>=1.16,<2", "psutil>=5.9,<8", "matplotlib>=3.9,<4"]
+parallel = ["dask[array,distributed]>=2025.1"]
+gpu-io = ["kvikio-cu12==26.8.0; sys_platform == 'linux'"]
+test = ["pytest>=8", "build>=1.2"]
+
+[project.scripts]
+terragpu-data = "terragpu.datasets:main"
+terragpu-example = "terragpu.example:main"
+terragpu-benchmark = "terragpu.benchmark:main"
+
+[tool.setuptools.packages.find]
+include = ["terragpu*"]
+exclude = ["terragpu.test*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = ["gpu: requires a working CuPy CUDA device"]

@@ -1,51 +1,18 @@
-from terragpu import io
-from terragpu import engine
-from terragpu.array.raster import Raster
-from terragpu.indices.wv_indices import add_indices
-from terragpu.engine import array_module, df_module
+"""Windowed WorldView processing; supply the actual source band order."""
+import argparse
+from terragpu.streaming import process_indices
 
-xp = array_module()
-xf = df_module()
 
-def main(filename, bands):
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('source')
+    parser.add_argument('destination')
+    parser.add_argument('--bands', nargs='+', required=True)
+    parser.add_argument('--indices', nargs='+', default=['ndvi', 'ndwi'])
+    parser.add_argument('--backend', choices=['numpy', 'cupy'], default='numpy')
+    parser.add_argument('--tile-size', type=int, default=1024)
+    print(process_indices(**vars(parser.parse_args())))
 
-    # Read imagery
-    raster = io.imread(filename, bands)
-    print(raster)
-
-    # Calculate some indices
-    raster = add_indices(raster, indices=[
-        'dvi', 'ndvi', 'cs1', 'cs2', 'si', 'fdi', 'dwi',
-        'ndwi', 'gndvi', 'sr'])
-    print(raster)
-
-    # Save to directory
-    io.imsave(raster, "/lscratch/jacaraba/output.tif", crs="EPSG:32618")
-
-    return
 
 if __name__ == '__main__':
-
-    # filename to open
-    filename = '/att/nobackup/jacaraba/AGU2021/terragpu/terragpu/test/data/WV02_Gonji.tif'
-
-    bands = [
-        'CoastalBlue',
-        'Blue',
-        'Green',
-        'Yellow',
-        'Red',
-        'RedEdge',
-        'NIR1',
-        'NIR2'
-    ]
-
-    # Start dask cluster - dask scheduler must be started from main
-    if xp.__name__ == 'cupy':
-        engine.configure_dask(
-            device='gpu',
-            n_workers=4,
-            local_directory='/lscratch/jacaraba')
-
-    # Execute main function and calculate indices
-    main(filename, bands)
+    main()

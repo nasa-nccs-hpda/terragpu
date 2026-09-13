@@ -1,21 +1,84 @@
-# Contributing
+# Contributing to TerraGPU
 
-When contributing to this repository, please first discuss the change you wish to make via issue,
-email, or any other method with the owners of this repository before making a change.
+TerraGPU focuses on GPU acceleration of geospatial processing. Discuss substantial
+changes in a GitHub issue or draft pull request so maintainers can review the
+scientific assumptions, scope and validation plan. Routine bug fixes can start
+with a reproducer and a pull request. Follow the code of conduct below.
 
-Please note we have a code of conduct, please follow it in all your interactions with the project.
+## Set up a development environment
 
-## Pull Request Process
+From a checkout, with uv installed:
 
-1. Ensure any install or build dependencies are removed before the end of the layer when doing a
-   build.
-2. Update the README.md with details of changes to the interface, this includes new environment
-   variables, exposed ports, useful file locations and container parameters.
-3. Increase the version numbers in any examples files and the README.md to the new version that this
-   Pull Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
-4. Regenerate any additional documentation using PDOC (usage details listed below).
-5. Document the proposed changes in the CHANGELOG.md file.
-6. You may submit your merge request for review and the change will be reviewed.
+```bash
+uv venv --python 3.12
+uv pip install --python .venv/bin/python -e '.[test,parallel,pace,viirs,benchmark,publication]'
+.venv/bin/python -m pytest -q
+.venv/bin/python -m build
+```
+
+This installs CPU development and plotting dependencies. The base package keeps
+Dask, CuPy and product-specific optional dependencies separate. Do not make a
+CPU import require CUDA. Do not add machine-learning frameworks or restore the
+former raster-wrapper dependency. Supported Python versions are declared in
+[pyproject.toml](pyproject.toml); CI currently tests Python 3.11, 3.12 and 3.13.
+
+The current tests live in `tests/` and use pytest. GPU tests are marked `gpu` and
+require a functioning CUDA/CuPy environment. A skipped GPU test is not a CUDA pass.
+For PRISM, use the architecture-aware setup scripts and environment recorded in
+[the PRISM checklist](docs/prism-validation.md) and
+[publication run instructions](docs/publication-runs.md).
+
+## Scientific and performance changes
+
+- State the product, units, band mapping, scale/offset, nodata/QA policy and
+  coordinate convention. Preserve affine rasters or native swaths as appropriate.
+- Provide an independent numerical reference and tests for masks, georeferencing,
+  boundaries and relevant malformed input. CPU/GPU agreement alone does not
+  establish that a scientific algorithm is correct.
+- Keep Dask optional. Compare scheduling strategies on equivalent work and output
+  layouts; a new dependency is not itself evidence of better performance.
+- Report the timing scope. Separate resident computation, prepared-cache I/O and
+  native-input-to-output processing. Include required preparation/output costs in
+  end-to-end claims, synchronize CUDA, retain raw trials and disclose cache policy.
+- Record source revision, dependency versions, input checksums, worker counts,
+  hardware and numerical error. Label sampled memory accurately. A cuFile call
+  is not proof of direct-storage transfers.
+
+See [the roadmap](docs/modernization-plan.md),
+[execution backends](docs/execution-backends.md), and
+[GPU I/O experiment](docs/gpu-direct-io.md) for current assumptions and limits.
+
+## Pull request review
+
+Explain the problem, resulting behavior, scientific conventions and validation.
+Use a focused regression test for a bug; run the tests affected by the change and
+required CI checks. Include GPU evidence only if it was actually collected.
+Document changed APIs, CLI arguments and environment variables in the relevant
+Markdown guide. Current source documentation and Markdown guides take precedence
+over historical generated HTML; regenerating that HTML with obsolete commands
+is not a release requirement.
+
+Keep unrelated edits out of the pull request. Summarize user-visible changes in
+[CHANGELOG.md](CHANGELOG.md) when appropriate. Maintainers coordinate version
+changes for releases; contributors should not independently bump every example
+for each pull request. Follow the repository's current version in pyproject.toml.
+No merge, release, archive publication or performance qualification follows
+merely from opening a pull request or passing CPU CI.
+
+## Data and reproducibility
+
+Use small synthetic fixtures or documented public downloads. Never commit
+credentials, tokens, proprietary imagery, private machine paths or raw system
+logs to public GitHub. Review result artifacts before publishing them: environment
+and mount logs can contain private details even when the imagery is public.
+Keep local data, caches, environments and result archives outside tracked source.
+
+Freeze the benchmark revision and environment for a run series. Do not pull
+unrelated changes midway through an independent-job comparison. An analysis-only
+update can be applied later to archived reports; record both benchmark and
+analysis revisions. Share numerical failures and negative performance results.
+The [manuscript scaffold](paper/manuscript.md) lists the remaining publication
+gates and the AI-assistance disclosure that authors must review.
 
 ## Code of Conduct
 
@@ -91,75 +154,3 @@ available at [http://contributor-covenant.org/version/1/4][version]
 
 [homepage]: http://contributor-covenant.org
 [version]: http://contributor-covenant.org/version/1/4/
-
-## Appendix
-
-### Generating Documentation
-
-This repository follows semi-automatic documentation generation. The following
-is an example of how to generate documentation for a single module.
-
-```bash
-conda activate terragpu
-pdoc --html terragpu/raster.py --force
-```
-
-### Linting
-
-This project uses flake8 for PREP8 linting and format. Every submodule should include
-a test section in the tests directory. Refer to the text directory for more examples.
-The Python unittests library is used for these purposes.
-
-### Documenting Methods
-
-The following documentation format should be followed below each method to allow for
-explicit semi-automatic documentation generation.
-
-```bash
-   """
-   Read raster and append data to existing Raster object
-   Args:
-      filename (str): raster filename to read from
-      bands (str list): list of bands to append to object, e.g ['Red']
-      chunks_band (int): integer to map object to memory, z
-      chunks_x (int): integer to map object to memory, x
-      chunks_y (int): integer to map object to memory, y
-   Return:
-      raster (raster object): raster object to manipulate rasters
-   ----------
-   Example
-   ----------
-      raster.readraster(filename, bands)
-   """
-```
-
-### Format of CHANGELOG
-
-The following describes the format for each CHANGELOG release. If there are no contributions
-in any of the sections, they are removed from the description.
-
-```bash
-## [0.0.3] - 2020-12-14
-
-### Added
-- Short description
-
-### Fixed
-- Short description
-
-### Changed
-- Short description
-
-### Removed
-- Short description
-
-### Approved
-Approver Name, Email
-```
-
-### Example Using Container in ADAPT
-
-```bash
-module load singularity
-singularity shell -B /att,/lscratch/jacaraba,/lscratch/jacaraba/singularity_tmp:/tmp,/adapt/nobackup/projects/ilab --nv terragpu/
-```

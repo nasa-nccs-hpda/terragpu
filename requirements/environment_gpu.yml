@@ -1,32 +1,12 @@
-# definition file to build xrasterlib conda environment
-name: xrasterlib
-
+# Candidate for Linux V100/H100 raster-core qualification; run from repo root.
+# RAPIDS/cuML requires a separate selector-generated compatible environment.
+name: terragpu-cuda12
 channels:
   - conda-forge
-  - defaults
-  - anaconda
-  - rapidsai
-  - nvidia
-
 dependencies:
-  - rapids-blazing=0.17
-  - python=3.7
-  - cudatoolkit=10.1
-  - Pillow
+  - python=3.13
+  - cuda-version=12.9
+  - cupy>=14,<15
   - pip
   - pip:
-    - tensorflow==2.3
-    - opencv-python
-    - scikit-image
-    - tifffile
-    - seaborn
-    - scipy
-    - Pillow
-    - imagecodecs
-    - rasterio
-    - webcolors
-    - tqdm
-    - pdoc3
-    - flake8
-    - coverage
-    - numba
+      - -e .[test,parallel]

@@ -1,7 +1,7 @@
 import logging  # logging messages
 import unittest
-from xrasterlib.raster import Raster
-import xrasterlib.indices as indices  # custom indices calculation module
+from terragpu.array.raster import Raster
+import terragpu.indices.wv_indices as indices  # custom indices calculation module
 
 __author__ = "Jordan A Caraballo-Vega, Science Data Processing Branch"
 __email__ = "jordan.a.caraballo-vega@nasa.gov"

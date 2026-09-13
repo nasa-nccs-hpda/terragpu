@@ -1,128 +1,94 @@
-import os
-import logging
-import pathlib
-import xarray as xr
-import rioxarray as rxr
-import dask.array as da
+"""GeoTIFF I/O with explicit CPU/GPU residency and lazy chunked reads."""
+from pathlib import Path
 import numpy as np
-
+import rioxarray as rxr
 from terragpu import engine
 
-xp = engine.array_module()
-xf = engine.df_module()
+CHUNKS = {'band': -1, 'x': 2048, 'y': 2048}
 
-CHUNKS = {'band': 'auto', 'x': 'auto', 'y': 'auto'}
-
-# References
-# https://geoexamples.com/other/2019/02/08/cog-tutorial.html/
-
-# -------------------------------------------------------------------------------
-# Backend Methods
-# -------------------------------------------------------------------------------
 
 def _xarray_to_cupy_(data_array):
-    try:
-        return data_array.map_blocks(xp.asarray)
-    except AttributeError:
-        return xp.asarray(data_array)
+    cp = engine.array_module('cupy')
+    if _is_dask(data_array):
+        return data_array.map_blocks(cp.asarray, meta=cp.empty((0,) * data_array.ndim, dtype=data_array.dtype))
+    return cp.asarray(data_array)
 
 
 def _xarray_to_numpy_(data_array):
-    try:
-        return data_array.map_blocks(xp.asnumpy)
-    except AttributeError:
-        return xp.asnumpy(data_array)
+    meta = data_array._meta if _is_dask(data_array) else data_array
+    if isinstance(meta, np.ndarray):
+        return data_array
+    import cupy as cp
+    if _is_dask(data_array):
+        return data_array.map_blocks(cp.asnumpy, meta=np.empty((0,) * data_array.ndim, dtype=data_array.dtype))
+    return cp.asnumpy(data_array)
 
-# -------------------------------------------------------------------------------
-# Read Methods
-# -------------------------------------------------------------------------------
 
-def imread(filename: str = None, bands: list = None, backend: str = 'dask'):
+def imread(filename, bands=None, backend='numpy', *, chunks=None):
+    path = Path(filename)
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    if path.suffix.lower() not in {'.tif', '.tiff'}:
+        raise ValueError(f'Unsupported raster format: {path.suffix}')
+    return read_tif(path, bands, backend, chunks=chunks)
+
+
+def read_tif(filename, bands=None, backend='numpy', *, chunks=None):
+    """Read a raster. dask/numpy are CPU; cupy/dask-cupy explicitly require GPU.
+
+    Masked source nodata becomes NaN. Data are not radiometrically scaled.
     """
-    Read imagery based on suffix
-    """
-    assert os.path.isfile(filename) 
-    suffix = pathlib.Path(filename).suffix
-
-    # choose which file to read from here
-    engines = {
-        '.tif': read_tif,
-        '.tiff': read_tif,
-        '.hdf': read_hdf,
-        '.shp': read_shp,
-    }
-    return engines[suffix](filename, bands, backend)
-
-
-def read_tif(filename: str, bands: list = None, backend: str = 'dask'):
-    """
-    Read TIF Imagery to GPU.
-    Next Release: cucim support for built-in GPU read.
-    """
-    raster = rxr.open_rasterio(filename, chunks=CHUNKS)
-    if xp.__name__ == 'cupy':
-        raster.data = _xarray_to_cupy_(raster.data)
+    if backend.startswith('dask'):
+        _require_dask()
+    if backend not in {'dask', 'numpy', 'cupy', 'dask-cupy'}:
+        raise ValueError('backend must be dask, numpy, cupy, or dask-cupy')
+    if 'cupy' in backend:
+        engine.array_module('cupy')
+    raster = rxr.open_rasterio(filename, chunks=(chunks or CHUNKS) if backend.startswith('dask') else None, masked=True)
     if bands is not None:
+        if len(bands) != raster.sizes['band'] or len(set(b.lower() for b in bands)) != len(bands):
+            raster.close()
+            raise ValueError('bands must contain one unique name per raster band')
         raster.attrs['band_names'] = [b.lower() for b in bands]
+    if 'cupy' in backend:
+        raster.data = _xarray_to_cupy_(raster.data)
     return raster
 
 
-def read_hdf(filename: str, bands: list = None, backend: str = 'dask'):
-    # rioxarray or cupy
-    raise NotImplementedError
+def imsave(data, filename, compress='LZW', crs=None):
+    return to_tif(data, filename, compress, crs)
 
 
-def read_shp(filename: str, bands: list = None, backend: str = 'dask'):
-    # cuspatial or geopandas
-    raise NotImplementedError
-
-# -------------------------------------------------------------------------------
-# Output Methods
-# -------------------------------------------------------------------------------
-
-def imsave(data, filename: str, compress: str = 'LZW', crs: str = None):
-    """
-    Save imagery based on format
-    """
-    suffix = pathlib.Path(filename).suffix
-    
-    # choose which file to save from here
-    engines = {
-        '.tif': to_tif,
-        '.tiff': to_tif,
-        '.hdf': to_hdf,
-        '.shp': to_shp,
-        '.zarr': to_zarr
-    }
-    return engines[suffix](data, filename, compress, crs)
-
-
-def to_cog():
-    raise NotImplementedError
-
-
-def to_hdf():
-    raise NotImplementedError
-
-
-def to_shp():
-    raise NotImplementedError
-
-
-def to_tif(raster, filename: str, compress: str = 'LZW', crs: str = None):
-    """
-    Save TIFF or TIF files, normally used from raster files.
-    """
-    assert (pathlib.Path(filename).suffix)[:4] == '.tif', \
-        f'to_tif suffix should be one of [.tif, .tiff]'
-    if xp.__name__ == 'cupy':
-        raster.data = _xarray_to_numpy_(raster.data)
-    raster.rio.write_nodata(raster.rio.nodata, encoded=True)
+def to_tif(raster, filename, compress='LZW', crs=None, **creation_options):
+    """Write without mutating the source; Dask arrays are written in chunks."""
+    if Path(filename).suffix.lower() not in {'.tif', '.tiff'}:
+        raise ValueError('Only .tif and .tiff output is supported')
+    output = raster.copy(deep=False)
+    output.data = _xarray_to_numpy_(raster.data)
+    # Derived indices must not inherit integer storage encoding from source.
+    output.encoding = {k: v for k, v in output.encoding.items() if k not in {'dtype', 'scale_factor', 'add_offset', 'rasterio_dtype'}}
     if crs is not None:
-        raster.rio.write_crs(crs, inplace=True)
-    raster.rio.to_raster(filename, BIGTIFF="IF_SAFER", compress=compress)
-    return
+        output = output.rio.write_crs(crs)
+    options = dict(creation_options)
+    if _is_dask(output.data):
+        from dask.utils import SerializableLock
+        options['lock'] = SerializableLock()
+    output.rio.to_raster(filename, BIGTIFF='IF_SAFER', compress=compress, **options)
 
 
-def to_zarr():
-    raise NotImplementedError
+def _unsupported(*args, **kwargs):
+    raise NotImplementedError('This format is not implemented; use GeoTIFF')
+
+
+read_hdf = read_shp = to_hdf = to_shp = to_cog = to_zarr = _unsupported
+
+
+def _is_dask(data):
+    return hasattr(data, "__dask_graph__")
+
+
+def _require_dask():
+    try:
+        import dask.array
+    except ImportError as exc:
+        raise ImportError("Install terragpu[parallel] for Dask raster backends") from exc

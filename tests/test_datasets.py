@@ -1,0 +1,207 @@
+import hashlib
+import io
+import json
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+from terragpu import datasets
+
+
+@pytest.fixture
+def sample(monkeypatch):
+    content = b'fixture raster bytes'
+    monkeypatch.setattr(datasets, 'SAMPLE', {**datasets.SAMPLE, 'size_bytes': len(content),
+                        'sha256': hashlib.sha256(content).hexdigest()})
+    monkeypatch.setattr(datasets, 'urlopen', lambda *a, **k: io.BytesIO(content))
+    return content
+
+
+def test_sample_download_and_offline_cache(tmp_path, monkeypatch, sample):
+    path = datasets.fetch_sample(tmp_path)
+    assert path.read_bytes() == sample
+    def offline(*a, **k):
+        raise AssertionError('Verified cache should not use the network')
+    monkeypatch.setattr(datasets, 'urlopen', offline)
+    assert datasets.fetch_sample(tmp_path) == path
+    assert json.loads((tmp_path/'sample-manifest.json').read_text())['sha256'] == datasets.sha256(path)
+
+
+@pytest.mark.parametrize('content', [b'x', b'x' * 100])
+def test_sample_incomplete_or_oversized_download(tmp_path, monkeypatch, sample, content):
+    monkeypatch.setattr(datasets, 'urlopen', lambda *a, **k: io.BytesIO(content))
+    with pytest.raises(ValueError):
+        datasets.fetch_sample(tmp_path)
+    assert not (tmp_path / datasets.SAMPLE['filename']).exists()
+    assert not list(tmp_path.glob('.download-*'))
+
+
+QUERY = dict(short_name='HLSL30', version='2.0', bbox=(-77.1, 38.8, -76.9, 39.0),
+             start='2024-06-01', end='2024-06-05')
+
+
+@pytest.fixture
+def nasa(monkeypatch):
+    client = SimpleNamespace(__version__='test')
+    def search_data(**kw):
+        assert isinstance(kw['bounding_box'], tuple)
+        assert isinstance(kw['temporal'], tuple)
+        return [{'meta': {'concept-id': 'G-example'}, 'umm': {'GranuleUR': 'example'}}]
+    client.search_data = search_data
+    client.login = lambda **kw: SimpleNamespace(authenticated=True)
+    def download(granules, local_path, **kw):
+        path = Path(local_path) / 'B04.tif'
+        path.write_bytes(b'native file')
+        return [path]
+    client.download = download
+    monkeypatch.setattr(datasets, '_earthaccess', lambda: client)
+    return client
+
+
+def test_nasa_search_never_logs_in(nasa):
+    def forbidden(**kw):
+        raise AssertionError('Search must not authenticate')
+    nasa.login = forbidden
+    assert datasets.nasa_data(**QUERY, search_only=True)['granules'][0]['concept_id'] == 'G-example'
+
+
+def test_nasa_cache_download_and_tampering(tmp_path, nasa, monkeypatch):
+    output = tmp_path / 'nasa'
+    result = datasets.nasa_data(**QUERY, output=output)
+    assert result['files'][0]['sha256'] == datasets.sha256(output/'B04.tif')
+    def offline():
+        raise AssertionError('Completed cache must work without earthaccess/network')
+    monkeypatch.setattr(datasets, '_earthaccess', offline)
+    assert datasets.nasa_data(**QUERY, output=output) == result
+    (output/'B04.tif').write_bytes(b'corrupt')
+    with pytest.raises(ValueError, match='corrupt'):
+        datasets.nasa_data(**QUERY, output=output)
+
+
+def test_nasa_failed_download_not_published(tmp_path, nasa):
+    nasa.download = lambda *a, **kw: []
+    output = tmp_path / 'nasa'
+    with pytest.raises(RuntimeError, match='no downloaded'):
+        datasets.nasa_data(**QUERY, output=output)
+    assert not output.exists()
+    assert not list(tmp_path.glob('.nasa-download-*'))
+
+
+def test_nasa_missing_auth(tmp_path, nasa):
+    nasa.login = lambda **kw: SimpleNamespace(authenticated=False)
+    with pytest.raises(RuntimeError, match='authentication'):
+        datasets.nasa_data(**QUERY, output=tmp_path/'nasa')
+
+
+@pytest.mark.parametrize('overrides', [{'limit': 0}, {'limit': 11}, {'bbox': (1, 1, 0, 0)}, {'end': '2020-01-01'}])
+def test_nasa_query_validation(overrides):
+    with pytest.raises(ValueError):
+        datasets.nasa_data(**{**QUERY, **overrides}, search_only=True)
+
+
+def test_token_file_login_restores_environment(tmp_path, monkeypatch, nasa):
+    token = tmp_path / 'token.txt'
+    token.write_text('test-only-token\n')
+    token.chmod(0o600)
+    monkeypatch.setenv('EARTHDATA_TOKEN', 'previous-test-token')
+    def login(**kwargs):
+        assert datasets.os.environ['EARTHDATA_TOKEN'] == 'test-only-token'
+        assert kwargs == {'strategy': 'environment', 'persist': False}
+        return SimpleNamespace(authenticated=True)
+    nasa.login = login
+    result = datasets.nasa_data(**QUERY, output=tmp_path/'download', token_file=token)
+    assert datasets.os.environ['EARTHDATA_TOKEN'] == 'previous-test-token'
+    assert 'test-only-token' not in json.dumps(result)
+    assert str(token) not in json.dumps(result)
+
+
+def test_token_auth_failure_redacted(tmp_path, monkeypatch, nasa):
+    token = tmp_path / 'token.txt'
+    token.write_text('fake-secret-test-token')
+    token.chmod(0o600)
+    monkeypatch.delenv('EARTHDATA_TOKEN', raising=False)
+    def login(**kwargs):
+        raise ValueError('failed with fake-secret-test-token')
+    nasa.login = login
+    with pytest.raises(RuntimeError) as error:
+        datasets._login(nasa, 'environment', token)
+    assert 'fake-secret' not in str(error.value)
+    assert 'EARTHDATA_TOKEN' not in datasets.os.environ
+
+
+@pytest.mark.parametrize('content', ['', 'Bearer test-token'])
+def test_invalid_token_file(tmp_path, nasa, content):
+    token = tmp_path / 'token.txt'
+    token.write_text(content)
+    token.chmod(0o600)
+    with pytest.raises(ValueError, match='one nonempty token'):
+        datasets._login(nasa, 'environment', token)
+
+
+@pytest.mark.skipif(datasets.os.name != 'posix', reason='POSIX mode check')
+def test_token_file_permissions(tmp_path, nasa):
+    token = tmp_path / 'token.txt'
+    token.write_text('test-only-token')
+    token.chmod(0o644)
+    with pytest.raises(ValueError, match='private'):
+        datasets._login(nasa, 'environment', token)
+
+
+def test_worldview_pinned_download_cache_and_failure(tmp_path, monkeypatch):
+    import hashlib
+    import io
+    from terragpu import sample_data
+    payload = b'public-test-fixture'
+    filename = '1040010025C68500.json'
+    monkeypatch.setattr(sample_data, 'WORLDVIEW_SAMPLE', dict(license='proprietary', files=[dict(
+        name=filename, url='https://example.test/sample', size_bytes=len(payload),
+        sha256=hashlib.sha256(payload).hexdigest())]))
+    monkeypatch.setattr(datasets, 'urlopen', lambda *a, **kw: io.BytesIO(payload))
+    path = datasets.fetch_worldview_sample(tmp_path)
+    assert path.read_bytes() == payload
+    def offline(*a, **kw):raise AssertionError('must reuse verified cache')
+    monkeypatch.setattr(datasets, 'urlopen', offline)
+    assert datasets.fetch_worldview_sample(tmp_path) == path
+    path.write_bytes(b'corrupt')
+    monkeypatch.setattr(datasets, 'urlopen', lambda *a, **kw: io.BytesIO(b'bad'))
+    with pytest.raises(ValueError, match='checksum'):
+        datasets.fetch_worldview_sample(tmp_path)
+    assert path.read_bytes() == b'corrupt'
+    assert not list(tmp_path.glob('.download-*'))
+
+
+def test_exact_granule_is_in_query_and_cache_identity(tmp_path, nasa):
+    seen=[]
+    original=nasa.search_data
+    def search(**kw):
+        seen.append(kw['granule_name'])
+        return original(**kw)
+    nasa.search_data=search
+    datasets.nasa_data(**QUERY,output=tmp_path/'cache',granule_name='example')
+    assert seen==['example']
+    with pytest.raises(ValueError,match='Cached query differs'):
+        datasets.nasa_data(**QUERY,output=tmp_path/'cache',granule_name='other')
+
+
+def test_old_cache_reused_only_for_same_pinned_granule(tmp_path, nasa, monkeypatch):
+    output=tmp_path/'cache'
+    original=datasets.nasa_data(**QUERY,output=output)
+    def offline():raise AssertionError('Verified cache must work offline')
+    monkeypatch.setattr(datasets,'_earthaccess',offline)
+    stages=[]
+    assert datasets.nasa_data(**QUERY,output=output,granule_name='example',progress=stages.append)==original
+    assert stages==['cache verification']
+    with pytest.raises(ValueError,match='Cached query differs'):
+        datasets.nasa_data(**QUERY,output=output,granule_name='another-scene')
+    (output/'B04.tif').write_bytes(b'corrupt')
+    with pytest.raises(ValueError,match='missing/corrupt'):
+        datasets.nasa_data(**QUERY,output=output,granule_name='example')
+
+
+def test_download_failure_reports_current_phase(tmp_path,nasa):
+    stages=[]
+    def failed(*args,**kwargs):raise OSError('provider detail')
+    nasa.download=failed
+    with pytest.raises(OSError):
+        datasets.nasa_data(**QUERY,output=tmp_path/'cache',progress=stages.append)
+    assert stages[-1]=='NASA file download'

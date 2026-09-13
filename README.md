@@ -1,57 +1,83 @@
-# terragpu
+# TerraGPU
 
-Python library to process and classify remote sensing imagery by means of GPUs 
-and CPU parallelization for high performance and commodity base environments.
+GPU-accelerated geospatial raster processing with CPU reference implementations.
+TerraGPU focuses on spectral indices, explicit device residency, windowed I/O,
+and optional distributed arrays. Model training and inference have been removed.
+This is a development release; CUDA validation on PRISM is pending.
 
-We are currently working on tutorials and documentations. Feel to follow this repository for
-documentation updates and upcoming tutorials.
+## Install
 
-[![DOI](https://zenodo.org/badge/295528915.svg)](https://zenodo.org/badge/latestdoi/295528915)
-![Pipeline Status](https://github.com/nasa-cisto-ai/terragpu/actions/workflows/main.yml/badge.svg)
-
-<img src="images/nccslogo.png" height="150" width="300">
-
-## Objectives
-
-- Library to process remote sensing imagery using GPU and CPU parallelization.
-- Machine Learning and Deep Learning image classification and regression.
-- Agnostic array and vector-like data structures.
-- User interface environments via Notebooks for easy to use AI/ML projects.
-- Example notebooks for quick AI/ML start with your own data.
-
-### Installation
-
-The following library is intended to be used to accelerate the development of data science products for remote sensing satellite imagery. terragpu can be installed by itself, but instructions for installing the full environments are listed under the requirements directory so projects, examples, and notebooks can be run.
-
-Note: PIP installations do not include CUDA libraries for GPU support. Make sure
-NVIDIA libraries are installed locally in the system if not using conda.
-
-## Getting Started
-
-``` bash
-├── archives              <- Legacy code stored to historical reference
-├── docs                  <- Default documentation for working with this project
-├── images                <- Store project images
-├── notebooks             <- Jupyter notebooks
-├── examples              <- Examples for utilizing the library
-├── requirements          <- Requirements for installing the dependencies
-├── scripts               <- Utility scripts for analysis
-├── terragpu              <- Library source code
-├── README.md             <- The top-level README for developers using this project
-├── CHANGELOG.md          <- Releases documentation
-├── LICENSE               <- License documentation
-└── setup.py              <- Script to install library
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+# Optional parallel processing and the full development test suite:
+python -m pip install -e '.[parallel,test,pace,viirs]'
+python -m pytest
 ```
 
-## Background
+## Download and run an example
 
-Library to process and classify remote sensing imagery. This is work in progress currently supporting
-Random Forest classification and merging Convolutional Neural Networks from the deep-rsensing project.
-Each particular project includes its own README with information.
+```bash
+python -m terragpu.example
+```
 
-Raster processing relies in xarray and rasterio for memory mapping operations, using Dask as the backend.
-PyTorch is implemented for GPU accelaration of Sckitlearn models. GPU acceleration is provided
-by the NVIDIA RAPIDS environment and we are in the development phase to support AMD GPUs.
+Downloads a checksum-verified 1.7 MB public RGB raster and validates windowed
+processing. No login or PRISM paths are needed. Use `--backend cupy` in a CUDA
+environment. See [automatic example data](docs/example-data.md) for caching,
+offline use and NASA Earthdata downloads. Product-aware workflows are available
+for [HLS](docs/example-data.md#native-hls-ndvi), [PACE](docs/pace.md), and
+[WorldView ARD / VIIRS ocean color](docs/worldview-viirs.md), with real-data CPU
+validation. AVIRIS ingestion remains planned.
+
+## Process a large raster without Dask
+
+```python
+from terragpu.streaming import process_indices
+
+process_indices(
+    "scene.tif", "indices.tif",
+    bands=["blue", "green", "red", "nir1"],  # actual source band order
+    indices=["ndvi", "ndwi"], backend="cupy", tile_size=1024,
+)
+```
+
+Use `backend="numpy"` on CPU. Window processing bounds application array sizes
+by tile size; source blocks, GDAL cache and GPU allocator pools also affect memory.
+The output must not already exist. Input nodata becomes NaN. Product QA masks
+and radiometric conventions must be handled explicitly.
+
+## Work with a raster
+
+```python
+from terragpu import Raster
+from terragpu import io
+
+with Raster("scene.tif", bands=["blue", "green", "red", "nir1"], backend="numpy") as scene:
+    io.imsave(scene.index("ndvi"), "ndvi.tif")
+```
+
+For lazy chunked arrays choose `backend="dask"` or `"dask-cupy"` and install the
+parallel extra. Default I/O uses the CPU NumPy path, not Dask. TerraGPU owns its
+Raster class and has no dependency on the former raster wrapper package.
+
+## Benchmarks and roadmap
+
+```bash
+terragpu-benchmark --backend numpy --size 2048 --output results/numpy.json
+python -m terragpu.benchmark_io --size 2048 --repeat 3 --output results/io.json
+```
+
+See the [geospatial roadmap](docs/modernization-plan.md),
+[execution-backend decision](docs/execution-backends.md),
+[benchmark protocol](docs/benchmark-protocol.md), and
+[GPU installation guide](requirements/README.md).
+The paper plan targets PRISM V100/H100 with HLS, WorldView, PACE, VIIRS and AVIRIS.
+Start with the [PRISM test and dataset checklist](docs/prism-validation.md).
+For an existing allocation, use the [uv setup and expanded paper benchmark commands](docs/prism-paper-runs.md),
+including public WorldView stereo data, focal filtering and spectral-angle workloads.
+Historical scripts in archives/ and generated HTML documentation are not the
+supported API; current self-contained tests live in tests/.
 
 ## Authors
 
@@ -92,10 +118,10 @@ Please consider citing this when using terragpu in a project. You can use the ci
 }
 ```
 
-## References
+For the experimental device-buffer reader/writer and a GPU-resident spatial
+feature pipeline, see [GPU I/O on PRISM](docs/gpu-direct-io.md). This measures
+KvikIO compatibility and cuFile-requested paths separately; native format
+conversion remains an explicit CPU step.
 
-[1] Raschka, S., Patterson, J., & Nolet, C. (2020). Machine learning in python: Main developments and technology trends in data science, machine learning, and artificial intelligence. Information, 11(4), 193.
-
-[2] Paszke, Adam; Gross, Sam; Chintala, Soumith; Chanan, Gregory; et all, PyTorch, (2016), GitHub repository, <https://github.com/pytorch/pytorch>. Accessed 13 February 2020.
-
-[3] Caraballo-Vega, J., Carroll, M., Li, J., & Duffy, D. (2021, December). Towards Scalable & GPU Accelerated Earth Science Imagery Processing: An AI/ML Case Study. In AGU Fall Meeting 2021. AGU.
+For native-input-to-GeoTIFF timing, CPU worker sweeps, tile reuse and sampled
+memory, use the [publication experiment commands](docs/publication-runs.md).
