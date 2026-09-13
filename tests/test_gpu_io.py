@@ -99,3 +99,41 @@ def test_kvikio_mode_contract_and_restoration(monkeypatch,mode,expected):
             assert state['mode']==expected
             raise RuntimeError('processing failure')
     assert state['mode']==CompatMode.AUTO
+
+
+@pytest.mark.parametrize('field,value',[
+    ('transform',[1,0,float('nan'),0,-1,64]),
+    ('transform',[1,0,0,0,float('inf'),64]),
+    ('transform',[1,2,0,2,4,64]),
+    ('transform',[True,0,0,0,-1,64]),
+    ('transform',[1,0,0]),
+    ('bands',[None]),
+    ('bands',['']),
+    ('crs_wkt',''),
+    ('crs_wkt','not a CRS'),
+    ('count',True),
+])
+def test_cache_rejects_invalid_geospatial_manifest_before_io(tmp_path,field,value):
+    import json
+    src=tmp_path/'source.tif';scene(src)
+    pack_raster(src,tmp_path/'cache',8,2)
+    cache=RasterCache(tmp_path/'cache')
+    metadata=dict(cache.meta);metadata[field]=value
+    with pytest.raises(ValueError):
+        with CacheWriter(tmp_path/'bad-output',metadata):pass
+    assert not (tmp_path/'bad-output').exists()
+    assert not list(tmp_path.glob('.raster-cache-*'))
+    (cache.path/'metadata.json').write_text(json.dumps(metadata))
+    with pytest.raises(ValueError):RasterCache(cache.path)
+
+
+def test_rotated_affine_cache_export(tmp_path):
+    src=tmp_path/'source.tif';expected=scene(src)
+    affine=rasterio.Affine(30,5,500000,-2,-30,4000000)
+    with rasterio.open(src,'r+') as dataset:dataset.transform=affine
+    pack_raster(src,tmp_path/'cache',8,2)
+    cache=RasterCache(tmp_path/'cache',verify=True)
+    cache.to_geotiff(tmp_path/'output.tif')
+    with rasterio.open(tmp_path/'output.tif') as output:
+        assert output.transform==affine
+        np.testing.assert_allclose(output.read(1),expected,rtol=1e-6,equal_nan=True)

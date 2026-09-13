@@ -107,22 +107,42 @@ def _write(path, meta, array, mode):
                 raise OSError('Short KvikIO write')
 
 
+def _validate_metadata(meta):
+    if not isinstance(meta,dict) or meta.get('schema')!='terragpu-raster-cache-v1' or meta.get('dtype')!='<f4':
+        raise ValueError('Unsupported raster cache')
+    for key in ('height','width','count','tile_size'):
+        if type(meta.get(key)) is not int or meta[key]<1:
+            raise ValueError('Invalid raster cache dimensions')
+    if type(meta.get('halo')) is not int or meta['halo']<0:
+        raise ValueError('Invalid halo')
+    transform=meta.get('transform')
+    if (not isinstance(transform,(list,tuple)) or len(transform)!=6
+            or any(isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) for v in transform)):
+        raise ValueError('Invalid raster transform')
+    a,b,_,d,e,_=transform
+    determinant=a*e-b*d
+    if not math.isfinite(determinant) or determinant==0:
+        raise ValueError('Singular or nonfinite raster transform')
+    bands=meta.get('bands')
+    if (not isinstance(bands,(list,tuple)) or len(bands)!=meta['count']
+            or any(not isinstance(b,str) or not b.strip() for b in bands)
+            or meta.get('nodata')!='NaN'):
+        raise ValueError('Invalid raster metadata')
+    try:
+        if not isinstance(meta.get('crs_wkt'),str) or not meta['crs_wkt'].strip():
+            raise ValueError('Missing CRS')
+        rasterio.crs.CRS.from_wkt(meta['crs_wkt'])
+    except (ValueError,rasterio.errors.CRSError) as error:
+        raise ValueError('Invalid raster CRS') from error
+
+
 class RasterCache:
     """Read halo tiles; each returned array has band,y,x axes and float32 NaNs."""
     def __init__(self, path, verify=False):
         self.path = Path(path)
         self.meta = json.loads((self.path/'metadata.json').read_text())
         m = self.meta
-        if m.get('schema') != 'terragpu-raster-cache-v1' or m.get('dtype') != '<f4':
-            raise ValueError('Unsupported raster cache')
-        for key in ('height','width','count','tile_size'):
-            if type(m.get(key)) is not int or m[key] < 1:
-                raise ValueError('Invalid raster cache dimensions')
-        if type(m.get('halo')) is not int or m['halo'] < 0:
-            raise ValueError('Invalid halo')
-        if len(m['transform']) != 6 or len(m['bands']) != m['count'] or m.get('nodata') != 'NaN':
-            raise ValueError('Invalid raster metadata')
-        rasterio.crs.CRS.from_wkt(m['crs_wkt'])
+        _validate_metadata(m)
         for row, col in self.tiles():
             file = self.filename(row,col)
             if file.is_symlink() or file.stat().st_size != _elements(m)*4:
@@ -172,6 +192,7 @@ class RasterCache:
 class CacheWriter:
     """Atomic cache creation; partial chunks disappear on any processing failure."""
     def __init__(self,path,metadata,mode='numpy'):
+        _validate_metadata(metadata)
         self.path=Path(path);self.meta=dict(metadata);self.mode=mode;self.written=set()
         self.meta.pop('sha256',None)
 

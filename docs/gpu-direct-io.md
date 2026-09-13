@@ -122,7 +122,9 @@ interchange format. Ingestion applies source scale/offset and maps masks to NaNs
 Input checksums are verified before benchmarking. GPU-produced outputs are
 numerically validated outside timing; the writer does not create host-side
 checksums for those payloads. Existing destinations are rejected and incomplete
-writes are cleaned up.
+writes are cleaned up. Reader and writer metadata checks reject nonfinite or
+singular affine transforms, missing/invalid CRS, invalid band labels and invalid
+dimensions before chunk I/O. Rotated and skewed invertible transforms are retained.
 
 Relevant upstream documentation: [KvikIO quickstart](https://docs.nvidia.com/kvikio/latest/quickstart/)
 and [KvikIO CUDA 12 package](https://pypi.org/project/kvikio-cu12/26.8.0/).
